@@ -14,7 +14,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,7 +23,7 @@ jobs:
       - name: Build data
         env:
           FORCE_BT: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
-        run: python scripts/build_data.py
+        run: python -u scripts/build_data.py
       - name: Commit
         run: |
           git config user.name "data-bot"

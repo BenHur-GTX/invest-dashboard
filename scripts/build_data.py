@@ -67,7 +67,7 @@ FRED = {
 }
 
 
-def http_get(url, tries=3, timeout=30):
+def http_get(url, tries=2, timeout=20):
     last = None
     for i in range(tries):
         try:
@@ -252,11 +252,17 @@ def qqq_state_series(rows, vix_by_date):
 
 def macro_block(start):
     m = {}
+    fails = 0
     for k, sid in FRED.items():
+        if fails >= 3:  # FRED 차단·장애 시 전체 대기 방지
+            m[k] = []; continue
+        t0 = time.time()
         try:
             m[k] = fred(sid, start)
+            print(f"FRED {sid} {len(m[k])} rows {time.time()-t0:.1f}s", flush=True)
         except Exception as e:  # noqa
-            print("FRED fail", sid, e, file=sys.stderr)
+            fails += 1
+            print(f"FRED fail {sid} {e} {time.time()-t0:.1f}s", flush=True)
             m[k] = []
     out = {}
 
@@ -433,7 +439,7 @@ def main():
             symbols[sym] = summarize(sym, name, group, cur, rows)
         except Exception as e:  # noqa
             errors.append(f"{sym}: {e}")
-            print("price fail", sym, e, file=sys.stderr)
+            print("price fail", sym, e, flush=True)
         time.sleep(0.4)
 
     vix_by_date = {r[0]: r[4] for r in hist.get("^VIX", [])}
@@ -466,9 +472,12 @@ def main():
         symbols["^IXIC"]["minus3_23d"] = sum(1 for x in chg if x <= -3)
         symbols["^IXIC"]["minus3_dates"] = [hist["^IXIC"][len(c) - 23 + i][0] for i, x in enumerate(chg) if x <= -3]
 
+    print("prices done", len(symbols), flush=True)
     start = (now - timedelta(days=800)).strftime("%Y-%m-%d")
     macro, raw = macro_block(start)
+    print("macro done", flush=True)
     fng = cnn_fng()
+    print("fng", fng, flush=True)
 
     market = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
