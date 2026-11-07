@@ -59,6 +59,7 @@ th:first-child,td:first-child{text-align:left}
 td.l,th.l{text-align:left;white-space:normal}
 .tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .tbl table tr:last-child td{border-bottom:0}
+.tbl td.l:first-child{min-width:150px}
 tr.total td{font-weight:700;background:#faf9f6}
 .up{color:var(--up)} .dn{color:var(--down)}
 .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:500;line-height:20px;border:1px solid currentColor}
@@ -564,7 +565,7 @@ function vToday(){
   const alerts = E.alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join("");
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
-  ${DATA.locked? `<div class="alert bad">보유 내역이 암호화돼 있습니다. <a href="#rules">규칙 탭 아래</a>에서 키를 입력하세요.</div>`:""}
+  ${DATA.locked? `<div class="alert bad">이 기기에 보유 내역 키가 없습니다. <a href="#rules">규칙 탭 맨 아래</a>에서 키 파일을 선택하고 저장하세요(기기마다 한 번).</div>`:""}
   <div class="alerts">${alerts}</div>
   <h2>오늘 할 일</h2>
   <div class="panel"><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></div>
@@ -769,7 +770,9 @@ function vRules(){
   <p class="note">현재 주가 기준 QQQ 주봉 RSI ${num(E.q.rsi_w,1)} · 50주선 이격 ${num(E.q.gap50w,1)}% (120% 이상이면 과열).</p>
   <h2>보유 내역 키 (암호화 사용 시)</h2>
   <div class="panel"><p class="muted">보유 내역을 공개 저장소에 올릴 때는 암호화합니다. Claude가 준 개인 키를 이 기기에 한 번 붙여넣으면 브라우저에만 저장됩니다.</p>
-  <textarea id="pk" rows="3" placeholder="-----BEGIN PRIVATE KEY----- …"></textarea>
+  <label class="muted" for="pkfile">키 파일(dashboard_key.pem) 선택</label>
+  <input type="file" id="pkfile" accept=".pem,.txt,text/plain" style="margin:6px 0 10px">
+  <textarea id="pk" rows="3" placeholder="또는 키 내용을 붙여넣기: -----BEGIN PRIVATE KEY----- …"></textarea>
   <div style="margin-top:8px;display:flex;gap:8px"><button id="pksave">키 저장</button><button class="ghost" id="pkclear">키 삭제</button></div></div>`;
 }
 
@@ -780,6 +783,7 @@ function render(){
   const fn = {today:vToday, plan:vPlan, crash:vCrash, heat:vHeat, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   if(view==="rules"){
+    $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
     $("#pksave").onclick=()=>{ try{ localStorage.setItem("holdings_key", $("#pk").value.trim()); location.reload(); }catch(e){} };
     $("#pkclear").onclick=()=>{ try{ localStorage.removeItem("holdings_key"); location.reload(); }catch(e){} };
   }
