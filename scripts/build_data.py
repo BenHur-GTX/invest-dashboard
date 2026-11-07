@@ -88,7 +88,10 @@ def yahoo(sym, rng="10y"):
     q = urllib.request.quote(sym)
     for host in ("query1", "query2"):
         try:
-            txt = http_get(f"https://{host}.finance.yahoo.com/v8/finance/chart/{q}?range={rng}&interval=1d&includeAdjustedClose=true")
+            # range=max는 일봉 대신 월봉을 돌려주므로 period1/period2로 요청
+            p2 = int(time.time()) + 86400
+            p1 = 0 if rng == "max" else p2 - int(365.25 * 86400 * int(rng.rstrip("y")))
+            txt = http_get(f"https://{host}.finance.yahoo.com/v8/finance/chart/{q}?period1={p1}&period2={p2}&interval=1d&includeAdjustedClose=true")
             j = json.loads(txt)["chart"]["result"][0]
             ts = j["timestamp"]; qu = j["indicators"]["quote"][0]
             adj = j["indicators"].get("adjclose", [{}])[0].get("adjclose", qu["close"])
@@ -105,7 +108,12 @@ def yahoo(sym, rng="10y"):
             ded = {}
             for r in out:
                 ded[r[0]] = r
-            return [ded[k] for k in sorted(ded)]
+            rows = [ded[k] for k in sorted(ded)]
+            if len(rows) > 300:
+                gaps = [(datetime.strptime(rows[i][0], "%Y-%m-%d") - datetime.strptime(rows[i-1][0], "%Y-%m-%d")).days for i in range(len(rows)-250, len(rows))]
+                if max(gaps) > 10:
+                    raise ValueError(f"{sym}: 일봉이 아님 (간격 {max(gaps)}일)")
+            return rows
         except Exception as e:  # noqa
             err = e
     raise err
