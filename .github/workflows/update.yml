@@ -22,6 +22,7 @@ jobs:
           python-version: "3.12"
       - name: Build data
         env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           FORCE_BT: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: python -u scripts/build_data.py
       - name: Commit

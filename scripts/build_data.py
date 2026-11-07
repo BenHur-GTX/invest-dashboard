@@ -67,11 +67,13 @@ FRED = {
 }
 
 
-def http_get(url, tries=2, timeout=20):
+def http_get(url, tries=2, timeout=20, headers=None):
     last = None
     for i in range(tries):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+            h = {"User-Agent": UA, "Accept": "*/*"}
+            h.update(headers or {})
+            req = urllib.request.Request(url, headers=h)
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return r.read().decode("utf-8", "replace")
         except Exception as e:  # noqa
@@ -121,7 +123,11 @@ def naver(code, count=800):
 
 
 def fred(series, start):
-    txt = http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}&cosd={start}")
+    key = os.environ.get("FRED_API_KEY")
+    if key:  # 공식 API (무료 키) — 러너 IP 차단 회피
+        j = json.loads(http_get(f"https://api.stlouisfed.org/fred/series/observations?series_id={series}&observation_start={start}&api_key={key}&file_type=json", headers={"User-Agent": "invest-dashboard/1.0"}))
+        return [(o["date"], float(o["value"])) for o in j["observations"] if o["value"] not in (".", "")]
+    txt = http_get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}&cosd={start}", headers={"User-Agent": "invest-dashboard/1.0 (python-urllib)"})
     rows = []
     for r in csv.reader(io.StringIO(txt)):
         if not r or r[0].lower().startswith(("date", "observation")):
@@ -135,11 +141,12 @@ def fred(series, start):
 
 def cnn_fng():
     try:
-        j = json.loads(http_get("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", tries=2))
+        j = json.loads(http_get("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", tries=2, headers={"Referer": "https://edition.cnn.com/", "Origin": "https://edition.cnn.com"}))
         fg = j["fear_and_greed"]
         return {"score": round(fg["score"], 1), "rating": fg["rating"], "date": fg["timestamp"][:10],
                 "prev_week": round(fg.get("previous_1_week", 0) or 0, 1)}
-    except Exception:
+    except Exception as e:
+        print("CNN fail", e, flush=True)
         return None
 
 
