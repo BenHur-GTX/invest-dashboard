@@ -445,13 +445,15 @@ def main():
         c = [r[4] for r in hist["QQQ"]]
         q["below97_streak"] = 0
         for i in range(len(c) - 1, 0, -1):
-            if c[i] < sma(c, 200, i) * 0.97:
+            m = sma(c, 200, i)
+            if m is not None and c[i] < m * 0.97:
                 q["below97_streak"] += 1
             else:
                 break
         q["above103_streak"] = 0
         for i in range(len(c) - 1, 0, -1):
-            if c[i] > sma(c, 200, i) * 1.03:
+            m = sma(c, 200, i)
+            if m is not None and c[i] > m * 1.03:
                 q["above103_streak"] += 1
             else:
                 break
