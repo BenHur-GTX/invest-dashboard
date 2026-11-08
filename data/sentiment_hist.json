@@ -1,10 +1,16 @@
 {
 "weeks": {
 "2026-W45": {
-"news_fear_ratio": 89.6,
-"news_fear": 155,
+"yt_neg_ratio": 25.7,
+"yt_comments": 384,
+"news_fear_ratio": 89.5,
+"news_fear": 154,
 "news_greed": 18
 }
 },
-"cache": {}
+"cache": {
+"yt_ids": {
+"디벨롭몽": "UCvrOll07bwpNzGhBHRB5_yw"
+}
+}
 }
