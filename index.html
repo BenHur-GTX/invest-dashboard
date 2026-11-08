@@ -1257,17 +1257,19 @@ function quickBody(total){
       + `<h3>왜 이렇게 나눴나</h3><div class="panel"><ol class="steps">${why.map(w=>`<li>${esc(w)}</li>`).join("")}</ol></div>`;
   } finally { Object.keys(s).forEach(k=>delete s[k]); Object.assign(s, keep); }
 }
+const QUICK_DEFAULT = 1000000;   // 간편 보기 기본 100만원 (Ben 11-08). 계좌 비율만 적립 계산기·보유 설정을 따름
+function quickTotal(){ try{ const v=+localStorage.getItem("quick_total"); if(v>0) return v; }catch(e){} return QUICK_DEFAULT; }
 function vQuick(){
-  const c = quickPct();
+  const c = quickPct(); c.total = quickTotal();
   return `<h2>이번 달 얼마 넣나요?</h2>
   <div class="panel"><div class="inline"><input id="q_total" type="number" inputmode="numeric" min="1" step="1" value="${Math.round(c.total/1e4)}" style="width:140px;font-size:20px;font-weight:700"><span style="font-size:17px">만원</span></div>
-  <p class="note">계좌 비율(현금 ${c.pct.ammo}% · 연금저축 ${c.pct.pension}% · 장투 ${c.pct.longterm}%${c.pct.swing? " · 스윙 "+c.pct.swing+"%":""})은 <a href="#settings">적립 계산기</a>에서 바꿉니다. 종목·비중은 메인 규칙(하락 단계, 거시, 과열, 현금 6단계)이 정합니다.</p></div>
+  <p class="note">기본 100만원이고, 입력값은 이 기기에만 저장됩니다(메인 화면 금액과는 따로). 계좌 비율(현금 ${c.pct.ammo}% · 연금저축 ${c.pct.pension}% · 장투 ${c.pct.longterm}%${c.pct.swing? " · 스윙 "+c.pct.swing+"%":""})은 <a href="#settings">적립 계산기</a>에서 바꿉니다. 종목·비중은 메인 규칙(하락 단계, 거시, 과열, 현금 6단계)이 정합니다.</p></div>
   <div id="q_out" style="margin-top:12px">${quickBody(c.total)}</div>
   <p class="note"><a href="./?#today">전체 대시보드 보기</a></p>`;
 }
 function bindQuick(){
   $("#q_total").addEventListener("input", ()=>{ const t=Math.max(0,Math.round(+$("#q_total").value||0))*1e4; if(!t) return;
-    const c=quickPct(); saveCfg({total:t, pct:c.pct, fractional:c.fractional}); $("#q_out").innerHTML = quickBody(t); });
+    try{ localStorage.setItem("quick_total", t); }catch(e){} $("#q_out").innerHTML = quickBody(t); });
 }
 function vRules(){
   return `<h2>운용 원칙 요약</h2>
