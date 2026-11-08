@@ -584,6 +584,20 @@ function irpOrders(E){
   return {irp, rows};
 }
 
+function ordersHTML(){
+  if(!E.acc.list.find(a=>a.id==="irp"||a.id==="swing")) return `<h3>IRP·스윙 오늘 주문</h3><div class="panel"><p class="muted">보유 내역이 열려야 계산됩니다. 이 기기에 키 파일을 등록하세요(규칙 탭 맨 아래).</p></div>`;
+ const io=irpOrders(E), so=swingOrders(E);
+    const irpT = io? `<h3>④ IRP — 오늘 기준</h3>
+  <div class="tbl"><table><tr><th>종목</th><th>금액</th><th>현재가</th><th>주수</th><th class="l">이유</th></tr>
+  ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
+  </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
+    const swT = so? `<h3>⑤ 직투 스윙 — 오늘 기준 (예수금 ${won(so.cash0)})</h3>
+  <div class="tbl"><table><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">매도 계획</th></tr>
+  ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="6" class="muted">오늘 진입 신호 없음</td></tr>`}
+  </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 종목당 12%, 반도체 합계 30%, 3배 합계 10% 한도 적용. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>` : "";
+    return irpT + swT;
+}
+
 /* ---------- IRP ---------- */
 function planIRP(E){
   const a = E.acc.list.find(x=>x.id==="irp"); if(!a) return null;
@@ -678,6 +692,7 @@ function vToday(){
   <div class="alerts">${alerts}</div>
   <h2>오늘 할 일</h2>
   <div class="panel"><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></div>
+  ${ordersHTML()}
   <div class="grid2">
     <div class="panel"><h3 style="margin-top:0">현금 투입 보조지표 (4개 중 2개)</h3>
       <table>${E.aux.map(a=>`<tr><td class="l">${a.ok?'<span class="dot g"></span>':'<span class="dot n"></span>'}${esc(a.k)}</td><td>${esc(a.v)}</td></tr>`).join("")}</table>
@@ -715,16 +730,7 @@ function vPlan(){
     ${pn.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.w}%</td><td>${won(r.won)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td></tr>`).join("")}
   </table></div>
   <p class="note">${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p>
-  ${(()=>{ const io=irpOrders(E), so=swingOrders(E);
-    const irpT = io? `<h3>④ IRP — 오늘 기준</h3>
-  <div class="tbl"><table><tr><th>종목</th><th>금액</th><th>현재가</th><th>주수</th><th class="l">이유</th></tr>
-  ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
-  </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
-    const swT = so? `<h3>⑤ 직투 스윙 — 오늘 기준 (예수금 ${won(so.cash0)})</h3>
-  <div class="tbl"><table><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">매도 계획</th></tr>
-  ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="6" class="muted">오늘 진입 신호 없음</td></tr>`}
-  </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 종목당 12%, 반도체 합계 30%, 3배 합계 10% 한도 적용. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>` : "";
-    return irpT + swT; })()}`;
+  ${ordersHTML()}`;
 }
 
 
