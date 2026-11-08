@@ -582,14 +582,12 @@ function planIRP(E){
 /* ---------- 연금저축 ---------- */
 function planPension(E){
   const amt = (E.H?.settings?.monthly_pension_krw||450000);
+  // Ben 2026-11-08: 연금저축 = 배당(미국배당다우존스) 60 + 나스닥100 40. 나스닥 쏠림 분산 + 배당 과세이연.
+  // QQQ 고점 대비 -10% 이하면 싸진 나스닥100을 50:50까지 더 삼(싸게 사기). 매도 없음.
   const tilt = E.stage>=1;
-  let rows = tilt ? [{t:"426030",w:65},{t:"360750",w:35}] : [{t:"426030",w:55},{t:"360750",w:45}];
-  // 성장으로 모으고 수령 전 배당 전환(Ben 2026-11-08): 수령 나이-4세부터 매년 배당 +15%p, 최대 60%. 연금계좌 내 교체는 비과세.
+  let rows = tilt ? [{t:"458730",w:50},{t:"426030",w:50}] : [{t:"458730",w:60},{t:"426030",w:40}];
   const by = E.H?.settings?.birth_year, sa = E.H?.settings?.pension_start_age||55;
-  const age = by? new Date().getFullYear()-by : null;
-  const div = age==null? 0 : Math.max(0, Math.min(60, (age-(sa-5))*15));
-  if(div>0) rows = [{t:"458730",w:div}, ...rows.map(r=>({...r, w:Math.round(r.w*(100-div)/100)}))];
-  const glide = by? {age, sa, div, startYear: by+sa-4} : null;
+  const glide = by? {age:new Date().getFullYear()-by, sa} : null;
   let rs = rows.map(r=>({...r, px:priceOf(r.t,E.S)}));
   // 소액이면 1종목으로: 두 번째 몫이 1주 미만이면 나스닥100에 합침
   const small = rs.find(r=>r.t==="360750"); const big = rs.find(r=>r.t==="426030");
@@ -695,7 +693,7 @@ function vPlan(){
     <tr><th>종목</th><th>비중</th><th>금액</th><th>현재가</th><th>주수</th></tr>
     ${pn.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.w}%</td><td>${won(r.won)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td></tr>`).join("")}
   </table></div>
-  <p class="note">${pn.merged? "금액이 작아 S&P500 몫을 나스닥100에 합쳤습니다(1주 미만). ":""}${pn.tilt? "낙폭 -10% 이상이라 나스닥100 비중을 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). ${pn.glide? `성장형으로 모으고 <b>${pn.glide.startYear}년(${pn.glide.sa-4}세)부터</b> 매년 배당형(TIGER 미국배당다우존스, 월배당) 비중을 15%p씩 올려 ${pn.glide.sa}세 수령 때 60%로 맞춥니다. 신규 적립금부터 바꾸고 모자라면 보유분을 교체(연금계좌 안이라 비과세). 현재 ${pn.glide.age}세 · 배당 ${pn.glide.div}%.` : "배당 전환 시점은 보유내역 settings.birth_year(출생연도)가 있으면 계산합니다."}</p>
+  <p class="note">${pn.merged? "금액이 작아 S&P500 몫을 나스닥100에 합쳤습니다(1주 미만). ":""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p>
   <h3>④ IRP·스윙</h3>
   <div class="panel"><p>${E.H.settings.monthly_swing_krw? `스윙 계좌에 ${won(E.H.settings.monthly_swing_krw)} 추가 → 예수금(달러 또는 SGOV)으로 대기, 오늘 탭 신호에만 사용. IRP는 신규 적립 없음.` : "신규 적립 없음."} IRP는 위험자산 비중 목표(폭락 대응 탭), 스윙은 오늘 탭의 신호만 따릅니다.</p></div>`;
 }
@@ -728,10 +726,10 @@ function vScenario(){
   </table></div>
   <p class="note">보조지표(RSI ≤40, VIX ≥20, 공포탐욕 ≤45, 60·120·200일선 터치) 중 2개가 맞는 날 3~5거래일에 나눠 집행합니다. QQQ가 전고점을 되찾으면 차수를 처음으로 돌립니다.</p>
   <h2>다른 계좌</h2>
-  <div class="tbl"><table style="min-width:560px"><tr><th class="l">QQQ 상태</th><th class="l">연금저축 (나스닥100 : S&P500)</th><th class="l">IRP 위험자산 목표</th><th class="l">스윙</th></tr>
-  ${[[1,"55 : 45"],[2,"65 : 35"],[3,"65 : 35"],[4,"65 : 35"],[5,"55 : 45"]].map(([st,pn])=>`<tr${E.state===st?' style="background:var(--accent-soft)"':""}><td class="l"><b>${st}. ${RULES.states[st].name}</b></td><td class="l">${pn}</td><td class="l">${RULES.irpTarget[st].join("~")}%</td><td class="l muted">${st===3||st===4? "QLD·섹터·빅테크 사다리, 거시 수비면 1회 절반" : "지수 −2% 음봉, 섹터·빅테크 과대낙폭"}</td></tr>`).join("")}
+  <div class="tbl"><table style="min-width:560px"><tr><th class="l">QQQ 상태</th><th class="l">연금저축 (배당 : 나스닥100)</th><th class="l">IRP 위험자산 목표</th><th class="l">스윙</th></tr>
+  ${[[1,"60 : 40"],[2,"50 : 50 (QQQ −10% 이하)"],[3,"50 : 50"],[4,"50 : 50"],[5,"60 : 40"]].map(([st,pn])=>`<tr${E.state===st?' style="background:var(--accent-soft)"':""}><td class="l"><b>${st}. ${RULES.states[st].name}</b></td><td class="l">${pn}</td><td class="l">${RULES.irpTarget[st].join("~")}%</td><td class="l muted">${st===3||st===4? "QLD·섹터·빅테크 사다리, 거시 수비면 1회 절반" : "지수 −2% 음봉, 섹터·빅테크 과대낙폭"}</td></tr>`).join("")}
   </table></div>
-  <p class="note">연금저축은 낙폭 −10%부터 나스닥100 비중을 올립니다(레버리지 불가). IRP는 하락할수록 위험자산 비중을 올리되 70%가 법정 한도입니다. 거시 수비면 스윙 신규 레버리지 진입을 멈춥니다.</p>`;
+  <p class="note">연금저축은 미국배당다우존스 60 : 나스닥100 40, QQQ −10% 이하면 50 : 50(레버리지 불가). IRP는 하락할수록 위험자산 비중을 올리되 70%가 법정 한도입니다. 거시 수비면 스윙 신규 레버리지 진입을 멈춥니다.</p>`;
 }
 
 function vCrash(){
@@ -943,7 +941,7 @@ function vRules(){
   return `<h2>운용 원칙 요약</h2>
   <div class="panel"><ol class="steps">
     <li><b>낙폭 기준</b>: "고점 대비"는 최근 5년 최고가 기준입니다. 사상 최고가 기준이면 2000년 같은 폭락 뒤 수년간 계속 '폭락'으로 판정되는 문제가 있어 바꿨습니다(백테스트 검증).</li>
-    <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −30/−40/−60/−80%에만 모은 돈의 15/20/25/40% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절 + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 나스닥100·S&P500 초장기 적립, 매도 없음, 수령 4년 전부터 배당형으로 단계 전환.</li>
+    <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −30/−40/−60/−80%에만 모은 돈의 15/20/25/40% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절 + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개 이상 또는 HY ≥ 6% → 신규 레버리지 중단.</li>
