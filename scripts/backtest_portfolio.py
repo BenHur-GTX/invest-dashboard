@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"]:
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if os.environ.get("ONLY_DIV") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -106,6 +106,19 @@ def prep(y, f):
         for k in range(n):
             if P[t][k] is None and last is not None: P[t][k] = last
             last = P[t][k] if P[t][k] is not None else last
+    # 배당안 연구용: JEPI·JEPQ 상장 전 대용 (실데이터 우선)
+    #  JEPI_X: CBOE S&P500 BuyWrite(^BXM) → 없으면 SPY×0.6 + 단기금리×0.4
+    #  JEPQ_X: CBOE 나스닥100 BuyWrite(^BXN) → 없으면 QQQ×0.75 + 단기금리×0.25
+    D_PROXY = {}
+    for t, bx, base, k in (("JEPI", "^BXM", sret, 0.6), ("JEPQ", "^BXN", qret, 0.75)):
+        bxm = dict((r[0], r[4]) for r in y.get(bx, []) if r[4])
+        if len(bxm) > 2000:
+            bv = ff(list(bxm.items()), dates)
+            br = [0] + [(bv[k2] / bv[k2 - 1] - 1) if bv[k2] and bv[k2 - 1] else base[k2] for k2 in range(1, n)]
+            P[t + "_X"] = splice(dates, br, [(r[0], r[5]) for r in y.get(t, [])]); D_PROXY[t] = bx
+        else:
+            br = [k * base[k2] + (1 - k) * rf[k2 - 1] / 252 if k2 else 0 for k2 in range(n)]
+            P[t + "_X"] = splice(dates, br, [(r[0], r[5]) for r in y.get(t, [])]); D_PROXY[t] = f"{'SPY' if t == 'JEPI' else 'QQQ'}x{k}"
     V200 = {}
     for t in ("SCHD", "JEPI", "DIVO", "JEPQ"):
         arr = P[t]; out = [None] * n; run_sum = 0; cnt = 0; win = []
@@ -193,7 +206,7 @@ def prep(y, f):
     mhot = ff(mh, dates)
     return dict(mhot=mhot, dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
                 states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
-                hy=hy, hy_start=hy_start, baa=baa, nl=nl_d)
+                hy=hy, hy_start=hy_start, baa=baa, nl=nl_d, proxy=D_PROXY)
 
 
 def macro(D, i):
@@ -570,7 +583,7 @@ def bench(D, i0, t, end=None):
     return curve
 
 
-def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None, delever=False, lad_pension=False):
+def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None, delever=False, lad_pension=False, pen_mix=None, irp_mix=None, heat=None):
     """단순안: 1배 지수 고정 적립(매도 없음) + IRP 위험 70%(연 1회 리밸런싱) + 현금 계좌 6단계(ammo=False면 현금 몫도 지수 적립)."""
     P, fx_, dates = D["P"], D["fx"], D["dates"]
     end = end or len(dates) - 1
@@ -579,9 +592,14 @@ def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None, deleve
     principal = sum(INIT.values())
     def buymix(acct, amt, i, fx):
         for t, w in mix.items(): acct.buy(t, amt * w / 100, P, i, fx)
-    buymix(core, INIT["pension"] + INIT["swing"], i0, fx)
-    buymix(irp, INIT["irp"] * irp_risk / 100, i0, fx); irp.buy("SGOV", INIT["irp"] * (100 - irp_risk) / 100, P, i0, fx)
+    pm, im = pen_mix or mix, irp_mix or mix
+    pen = Acct() if pen_mix else core
+    def buyw(acct, amt, i, fx, w_):
+        for t, w in w_.items(): acct.buy(t, amt * w / 100, P, i, fx)
+    buyw(pen, INIT["pension"], i0, fx, pm); buymix(core, INIT["swing"], i0, fx)
+    buyw(irp, INIT["irp"] * irp_risk / 100, i0, fx, im); irp.buy("SGOV", INIT["irp"] * (100 - irp_risk) / 100, P, i0, fx)
     flows = [(dates[i0], -principal)]
+    heat_last = None
     ammo_done = set(); last_month = None; last_year = dates[i0][:4]; curve, prin, log = [], [], []
     for i in range(i0, end + 1):
         d = dates[i]; fx = fx_[i]; dd = D["dd"][i]
@@ -599,17 +617,17 @@ def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None, deleve
                 if lad_pension:   # 연금은 레버리지 불가 → QLD 몫은 QQQ
                     for t, w in lm.items(): core.buy("QQQ" if t == "QLD" else t, MONTHLY["pension"] * w / 100, P, i, fx)
                 else:
-                    buymix(core, MONTHLY["pension"], i, fx)
+                    buyw(pen, MONTHLY["pension"], i, fx, pm)
             else:
-                buymix(core, MONTHLY["longterm"] + MONTHLY["pension"], i, fx)
+                buymix(core, MONTHLY["longterm"], i, fx); buyw(pen, MONTHLY["pension"], i, fx, pm)
             if ammo: am.buy("SGOV", MONTHLY["ammo"], P, i, fx)
             else: buymix(core, MONTHLY["ammo"], i, fx)
         if d[:4] != last_year:   # IRP 연 1회 위험 70% 리밸런싱
             last_year = d[:4]; tot = irp.val(P, i, fx); risk = tot - irp.v("SGOV", P, i, fx); tgt = tot * irp_risk / 100
             if risk > tgt:
-                for t in mix: irp.buy("SGOV", irp.sell(t, (risk - tgt) * mix[t] / 100, P, i, fx), P, i, fx)
+                for t in im: irp.buy("SGOV", irp.sell(t, (risk - tgt) * im[t] / 100, P, i, fx), P, i, fx)
             elif risk < tgt:
-                buymix(irp, irp.sell("SGOV", tgt - risk, P, i, fx), i, fx)
+                buyw(irp, irp.sell("SGOV", tgt - risk, P, i, fx), i, fx, im)
         if ammo:
             for n, (lvl, rem, amix) in enumerate(AMMO_T, 1):
                 if n in ammo_done: continue
@@ -625,8 +643,16 @@ def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None, deleve
                 ammo_done.clear()
         if delever and dd > -1 and core.u.get("QLD", 0) > 1e-12:   # 전고점 회복 시 QLD → QQQ
             got = core.sell("QLD", core.v("QLD", P, i, fx), P, i, fx); core.buy("QQQ", got, P, i, fx); log.append((d, f"QLD {round(got / MAN)}만 → QQQ"))
-        curve.append(core.val(P, i, fx) + irp.val(P, i, fx) + am.val(P, i, fx)); prin.append(principal)
-    return dict(curve=curve, prin=prin, flows=flows, i0=i0, end=end, log=log, A={"core": core, "irp": irp, "ammo": am})
+        if heat and core.u.get("QLD", 0) > 1e-12 and overheat(D, i) >= 3 and (heat_last is None or i - heat_last >= 126):
+            # 과열 3점↑: 장투 QLD 전부 매도 → 평상 배당 몫(heat="div") 또는 SGOV(heat="sgov"), 6개월 휴지
+            heat_last = i; got = core.sell("QLD", core.v("QLD", P, i, fx), P, i, fx)
+            if heat == "sgov": core.buy("SGOV", got, P, i, fx)
+            else:
+                dv = {t: w for t, w in mix.items() if t not in ("QQQ", "SPY", "QLD")} or {"SCHD": 100}; sw = sum(dv.values())
+                for t, w in dv.items(): core.buy(t, got * w / sw, P, i, fx)
+            log.append((d, f"과열 QLD {round(got / MAN)}만 → {heat}"))
+        curve.append(core.val(P, i, fx) + irp.val(P, i, fx) + am.val(P, i, fx) + (pen.val(P, i, fx) if pen is not core else 0)); prin.append(principal)
+    return dict(curve=curve, prin=prin, flows=flows, i0=i0, end=end, log=log, A={"core": core, "irp": irp, "ammo": am, "pen": pen})
 
 
 def xirr(flows, final_d, final_v):
@@ -749,6 +775,41 @@ def ddwin_study(D):
     json.dump(res, open(os.path.join(B.DATA, "ddwin_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def div_study(D):
+    """장투 200만 배당 중심안: 평상 배당 혼합 → 하락 단계 QQQ·QLD → 과열 시 QLD 매도. 현재 규칙(L)과 비교 → data/div_bt.json"""
+    dates, P = D["dates"], D["P"]
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    PEN = {"SCHD": 60, "QQQ": 40}; IRPM = {"SPY": 40, "QQQ": 30, "SCHD": 30}
+    A = {"SCHD": 40, "JEPI_X": 40, "QQQ": 20}; Bm = {"SCHD": 40, "SPY": 40, "JEPQ_X": 20}
+    LA = [(-30, {"QQQ": 40, "QLD": 60}), (-20, {"QQQ": 60, "QLD": 40}), (-15, {"SCHD": 10, "JEPI_X": 10, "QQQ": 60, "QLD": 20}), (-10, {"SCHD": 20, "JEPI_X": 20, "QQQ": 50, "QLD": 10})]
+    LB = [(-30, {"QQQ": 40, "QLD": 60}), (-20, {"SPY": 10, "QQQ": 50, "QLD": 40}), (-15, {"SCHD": 10, "SPY": 20, "QQQ": 50, "QLD": 20}), (-10, {"SCHD": 20, "SPY": 30, "QQQ": 40, "QLD": 10})]
+    V = [("A0 SCHD40·JEPI40·QQQM20 고정", A, None, None), ("A1 A + 하락 단계 QQQ·QLD + 과열 시 QLD→배당", A, LA, "div"),
+         ("A2 A + 하락 단계 QQQ·QLD + 과열 시 QLD→SGOV", A, LA, "sgov"),
+         ("B0 SCHD40·SPY40·JEPQ20 고정", Bm, None, None), ("B1 B + 하락 단계 QQQ·QLD + 과열 시 QLD→배당", Bm, LB, "div"),
+         ("B2 B + 하락 단계 QQQ·QLD + 과열 시 QLD→SGOV", Bm, LB, "sgov")]
+    starts = SCEN + [("JEPQ 상장 후 실데이터(2022-05~)", "2022-05-04", "2022-05-06"), ("2010~", "2010-01-04", "2010-01-06")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "proxy": D["proxy"], "rows": []}
+    for name, a, b in starts:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [x[0] for x in SCEN] else ks[0]
+        bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+        runs = [("현재 규칙(L)", lambda: run(D, i0, cfg=L))] + [(vn, (lambda mx=mx, ld=ld, ht=ht: run_simple(D, i0, mx, True, ladder=ld, heat=ht, pen_mix=PEN, irp_mix=IRPM))) for vn, mx, ld, ht in V]
+        for vn, fn in runs:
+            r = fn(); m = metrics(D, r, bq, bs); h = m["horizon"]
+            row = {"scenario": name, "strategy": vn, "start": dates[i0], "irr": h["end"]["irr"], "worst": m["underwater"].get("worst_vs_principal_pct"),
+                   "uw_months": m["underwater"].get("months"), "mdd5": m["mdd_5y"][0], "y3": (h["3y"] or {}).get("ret_pct"), "y5": (h["5y"] or {}).get("ret_pct"),
+                   "end": h["end"]["ret_pct"], "qqq_end": h["end"]["qqq_all_ret_pct"], "spy_end": h["end"]["spy_all_ret_pct"],
+                   "events": [e for e in r["log"] if "과열" in e[1]][:12]}
+            if "core" in r["A"]:
+                k = len(dates) - 1; core = r["A"]["core"]
+                row["core_mix_end"] = {t: round(core.v(t, P, k, D["fx"][k]) / MAN) for t in core.u if core.u[t] > 1e-12}
+            out["rows"].append(row); print("DIV", json.dumps({x: row[x] for x in ("scenario", "strategy", "irr", "worst", "mdd5", "end")}, ensure_ascii=False), flush=True)
+    for t in ("JEPI", "JEPQ", "SCHD"):   # 대용 지수 검증: 실데이터 구간 연수익
+        pass
+    json.dump(out, open(os.path.join(B.DATA, "div_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def margin_study(D):
     """빚투 극단 + 추세이탈 이하일 때 장투 QLD → QQQM, 효과 비교 → data/margin_bt.json"""
     dates = D["dates"]
@@ -781,6 +842,8 @@ def main():
     dates = D["dates"]
     if os.environ.get("ONLY_MARGIN"):
         margin_study(D); print("ok"); return
+    if os.environ.get("ONLY_DIV"):
+        div_study(D); print("ok"); return
     if os.environ.get("ONLY_DDWIN"):
         ddwin_study(D); print("ok"); return
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dd_window_days": DD_WIN, "data_start": dates[0],
