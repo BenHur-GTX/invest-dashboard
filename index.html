@@ -432,6 +432,17 @@ function valueAccounts(H, S, fx){
 }
 
 /* ---------- 이번 달 장투 200만 ---------- */
+/* QLD 200일선 아래 분할: 1주 단가가 커서 금액 4분할이 안 되면 '살 수 있는 주수'만큼 최대 4주에 나눔 (Ben 11-08) */
+function qldSplit(dollars, px, fractional){
+  if(!px) return {n:0, text:"가격 대기"};
+  if(fractional) return {n:4, text:`매주 ${usd(dollars/4,0)}씩 4주`};
+  const sh = Math.floor(dollars/px);
+  if(sh<=0) return {n:0, text:`1주(${usd(px,0)})가 안 돼 이번 달은 이월, 다음 달 몫과 합쳐 매수`};
+  const weeks = {1:[1],2:[1,3],3:[1,2,3]}[sh] || [1,2,3,4];
+  const per = weeks.map((w,i)=>Math.floor(sh/weeks.length)+(i<sh%weeks.length?1:0));
+  const u = [...new Set(per)].sort((x,y)=>x-y);
+  return {n:sh, weeks, per, text: sh===1 ? "첫 주에 1주" : sh<=3 ? `${weeks.join("·")}주차에 1주씩 (총 ${sh}주)` : `4주에 걸쳐 매주 ${u.join("~")}주 (총 ${sh}주)`};
+}
 function planLongterm(E){
   const H=E.H, s=H?.settings||{}, fx=E.fx, S=E.S;
   const budget = (s.monthly_longterm_krw||2000000)/1e4;
@@ -515,7 +526,7 @@ function planLongterm(E){
     const px = priceOf(t,S), dollars = man*1e4/fx;
     let how = "25일 지정가 또는 시장가 1회";
     if(t==="QLD"){
-      how = below ? "주 1회 4분할 (200일선 아래: -2% 규칙 끔)"
+      how = below ? `200일선 아래라 −2% 조건 없이 나눠 삼: ${qldSplit(dollars, px, s.fractional).text}`
         : `전일 종가 −2% 이하 예약매수(LOC ${px? usd((S.QLD.price)*0.98):"–"} 기준). QQQ RSI ≤ 50이면 2배. 월말 미집행분 절반 매수, 절반 이월(최대 120만). 검증상 매월 1회 매수와 성과 차이는 거의 없음`;
     }
     if(t==="TQQQ") how = "20거래일 분할 (총자산 10% 상한)";
@@ -824,7 +835,7 @@ function vToday(){
   } else if(am.settle) todo.push(`<b>현금 계좌 회복 정산</b>: QQQ 전고점 회복. 투입분 ${won(am.settle.invVal)} 중 절반 ${won(am.settle.half)}은 매도해 SGOV로, 절반은 장투 계좌로 이관(대체 출고, 안 되면 매도 후 장투에서 재매수). 차수 초기화.`);
   else if(true) todo.push(`현금: QQQ 고점 대비 ${RULES.tranches[0].dd}% 전이라 대기. 월 ${won(E.H.settings.monthly_ammo_krw)}은 SGOV에 적립.`);
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
-  if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 4주에 나눠 매주 1번씩 삽니다.");
+  if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 살 수 있는 주수만큼 최대 4주에 나눠 삽니다(예: 2주면 1·3주차에 1주씩). 이번 달 매수 탭에 주차별로 나옵니다.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
   if(irp){ todo.push(irp.kodexOn ? `IRP KODEX 200 슬리브 가동 중 (코스피 고점 대비 ${pct(irp.ksDD,0)}, RSI ${num(irp.ks.rsi,1)}). ${irp.todayBuy? `<b>오늘 음봉 매수일</b>: ${won(irp.tick)}` : "다음 -1.5% 음봉일에 매수."}` : "IRP KODEX 200: 가동 조건 미충족."); }
@@ -963,7 +974,7 @@ function vCrash(){
     <tr><th>상태</th><th class="l">1배 지수 (장투·연금)</th><th class="l">QLD (장투)</th><th class="l">스윙 (직투 700만·IRP)</th><th class="l">현금</th></tr>
     ${[[1,"평소 적립. IRP 위험 55~60%","−2% 음봉일 적립. 과열 2개↑면 보류→SGOV","지수 −2% 음봉·섹터 급락 소액 매수","대기·적립 (SGOV)"],
        [2,"적립 유지","적립 비중 확대 (낙폭표)","빅테크 200일선 −5% 이하 1차 사다리 시작","대기"],
-       [3,"계속 산다. IRP 62~65%","주 1회 4분할. 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−25% 1차 5%, −30% 2차 10% (보조지표 확인)"],
+       [3,"계속 산다. IRP 62~65%","최대 4주에 나눠 매수(주수 기준). 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−25% 1차 5%, −30% 2차 10% (보조지표 확인)"],
        [4,"계속 산다. IRP 70%","적립금 대부분 QLD, TQQQ 소량","3배는 하루 −30%·고점 −80%에서만 관심","−35/−40/−50/−60%에 15/15/25/30%"],
        [5,"평소 적립 복귀. IRP 55~60%","평소 규칙. 30% 초과분 QQQM","평소","전고점 회복 시 차수 초기화"]]
       .map(r=>`<tr${r[0]===stIdx?' style="background:var(--accent-soft)"':""}><td><b>${r[0]}. ${RULES.states[r[0]].name}</b></td>${r.slice(1).map(c=>`<td class="l">${c}</td>`).join("")}</tr>`).join("")}
@@ -1267,7 +1278,7 @@ function quickBody(total){
     const ltWhy = r => r.key==="SCHD" ? "200일선 대비 가장 쌈"
       : r.t==="QQQM" ? "핵심 · 나스닥100"
       : r.t==="SPYM" ? "분산 · S&P500"
-      : r.t==="QLD" ? (lt.below ? "200일선 아래 · 주 1회 4분할" : st0 ? "−2% 하락일 매수" : "하락 구간 · 싸게 2배")
+      : r.t==="QLD" ? (lt.below ? "200일선 아래 · "+qldSplit(r.dollars, r.px, s.fractional).text.replace(/ \(총.*\)/,"") : st0 ? "−2% 하락일 매수" : "하락 구간 · 싸게 2배")
       : r.t==="TQQQ" ? "폭락 · 20일 분할"
       : r.t==="SGOV" ? (oh.score>=2 ? "과열 · 대기 현금" : E.mode.name!=="공격" ? `거시 ${E.mode.name} · 대기 현금` : "대기 현금")
       : "";
