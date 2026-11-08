@@ -1194,6 +1194,7 @@ function vSettings(){
   P.longterm = Math.max(0, 100-P.ammo-P.pension-P.swing);
   const f = (k,n,d,ro)=>`<div class="kvrow"><label for="p_${k}">${n}<span class="muted"> ${d}</span></label><div class="inline"><input id="p_${k}" type="number" inputmode="numeric" min="0" max="100" step="1" value="${P[k]}"${ro?" readonly tabindex=\"-1\" class=\"ro\"":""}><span>%</span><output id="o_${k}" class="muted"></output></div></div>`;
   return `<h2>적립 계산기 <span class="muted" style="font-size:13px;font-weight:400">월 저축액과 계좌 비율을 넣으면 이번 달 계좌별 매수안이 나옵니다</span></h2>
+  <p class="note" style="margin:-4px 2px 10px">금액 하나만 넣고 종목표만 보려면 <a href="./?simple#quick">간편 보기</a></p>
   <div class="panel">
     <label for="c_total"><b>이번 달 저축액</b></label>
     <div class="inline" style="margin:6px 0 4px"><input id="c_total" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(c.total/1e4)}" style="width:120px"><span>만원</span></div>
