@@ -384,7 +384,7 @@ function planLongterm(E){
   const newLev = (alloc.QLD||0)+(alloc.TQQQ||0);
   const after = ltVal + budget;
   const maxLev = Math.max(0, cap*after - curLev);
-  if(newLev > maxLev+0.5){
+  if(!E._noCap && newLev > maxLev+0.5){
     const cut = newLev - maxLev;
     let r = cut;
     const tq = Math.min(alloc.TQQQ||0, r); if(tq){ alloc.TQQQ-=tq; r-=tq; }
@@ -427,7 +427,7 @@ function overheat(E){
     {k:"공포탐욕 ≥ 80 (극단적 탐욕)", on: E.fng==null?null: E.fng>=80, show:E.fng!=null?num(E.fng,0):"자산제곱 확인"},
   ];
   const ref={k:"참고: 경기 과열 (연준 인상기 또는 HY ≤ 2.75%)", on: hikes || (hy!=null && hy<=2.75), show: hy!=null? `HY ${num(hy,2)}%${hikes?" · 인상기":""}`:"–"};
-  const score=sig.filter(x=>x.on).length;
+  const score = E._oh!=null ? E._oh : sig.filter(x=>x.on).length;
   const lt = score>=3 ? "장투: QLD 보유분 20% 매도 → 실탄 풀(SGOV). 1배는 매도 없음" :
              score>=2 ? "장투: 매도 없음, QLD 신규 적립 보류(→ SGOV)" : "장투: 평소대로";
   const sw = score>=4 ? "스윙: 레버리지 전량 + 개별주 절반 매도" :
@@ -530,7 +530,7 @@ function buyWindow(day=25){
 /* ============================================================
    렌더
    ============================================================ */
-const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["heat","과열·현금화"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["backtest","백테스트"],["rules","규칙"]];
+const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["backtest","백테스트"],["rules","규칙"]];
 let E = null, DATA = null;
 
 function renderHero(){
@@ -610,6 +610,40 @@ function vPlan(){
   <p class="note">${pn.tilt? "낙폭 -10% 이상이라 나스닥100 비중을 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(SCHD류)이 필요하면 연금계좌 국내상장으로 담습니다.</p>
   <h3>④ IRP·스윙</h3>
   <div class="panel"><p>신규 적립 없음. IRP는 위험자산 비중 목표(폭락 대응 탭), 스윙은 오늘 탭의 신호만 따릅니다.</p></div>`;
+}
+
+
+function vScenario(){
+  const stages=[[-5,1,"평상 (고점 -10% 이내)"],[-12,2,"조정 -10~-15%"],[-17,3,"하락 -15~-20%"],[-25,3,"하락 -20~-30%"],[-33,4,"폭락 -30% 이하"]];
+  const modes=[["공격","g"],["중립","y"],["수비","r"]];
+  const cell=(dd,st,mode,oh)=>{
+    const E2={...E, dd, state:st, stage: dd<=-30?4: dd<=-20?3: dd<=-15?2: dd<=-10?1:0, mode:{name:mode}, hy:null, _oh:oh??0, _noCap:true};
+    const lt=planLongterm(E2); const o={}; lt.rows.forEach(r=>o[r.t]=r.man);
+    const k=(E.H?.settings?.monthly_longterm_krw||2000000)/1e4;
+    return ["QQQM","SPYM","QLD","TQQQ","SCHD","SGOV"].filter(t=>o[t]>0.05).map(t=>`<span style="white-space:nowrap">${t} <b>${num(o[t]/k*100,0)}</b></span>`).join(" · ");
+  };
+  const am = (mode)=>RULES.tranches.map(t=>`${t.n}차 ${mode==="수비"? "QQQM 100" : mixText(t.mix)}`).join("<br>");
+  const k=E.H?.settings?.monthly_longterm_krw||2000000;
+  return `<h2>상황별 월 적립 비중 (장투 ${won(k)} = 100)</h2>
+  <p class="muted">현재 위치: <b>${pct(E.dd)} · 거시 ${esc(E.mode.name)} · 과열 ${overheat(E).score}개</b>. 표는 지금 쓰는 계산 로직을 조건만 바꿔 돌린 결과입니다. 숫자는 장투 월 적립의 %입니다. 소액 계좌에서는 QLD 30% 상한 때문에 QLD가 줄고 QQQM이 늘어납니다.</p>
+  <div class="tbl"><table style="min-width:620px"><tr><th class="l">QQQ 낙폭</th>${modes.map(m=>`<th class="l"><span class="dot ${m[1]}"></span>거시 ${m[0]}</th>`).join("")}</tr>
+  ${stages.map(([dd,st,lab])=>`<tr${(E.stage===(dd<=-30?4: dd<=-20?3: dd<=-15?2: dd<=-10?1:0))?' style="background:var(--accent-soft)"':""}><td class="l"><b>${lab}</b></td>${modes.map(m=>`<td class="l">${cell(dd,st,m[0])}</td>`).join("")}</tr>`).join("")}
+  </table></div>
+  <p class="note">거시 우선 원칙: 수비면 낙폭과 상관없이 레버리지를 끄고 일부를 SGOV·SCHD로 돌립니다. 중립이면 평상 구간에서 SPYM 일부를 SCHD로, QLD 절반을 SGOV로 돌리고, 낙폭 구간에서는 레버리지 절반만 QQQM으로 옮깁니다. 하이일드 스프레드가 6% 이상이면 수비와 같이 처리합니다.</p>
+  <h2>과열 신호가 겹칠 때 (평상 구간)</h2>
+  <div class="tbl"><table style="min-width:720px"><tr><th class="l">과열 신호</th>${modes.map(m=>`<th class="l">거시 ${m[0]}</th>`).join("")}<th class="l">보유분 매도</th></tr>
+  ${[[0,"0~1개","없음"],[2,"2개","장투 없음 · 스윙 레버리지 30%"],[3,"3개 이상","장투 QLD 20% → 실탄 풀 · 스윙 50~100%"]].map(([n,lab,sell])=>`<tr><td class="l"><b>${lab}</b></td>${modes.map(m=>`<td class="l">${cell(-5,1,m[0],n)}</td>`).join("")}<td class="l muted">${sell}</td></tr>`).join("")}
+  </table></div>
+  <h2>실탄 투입 (모아둔 SGOV)</h2>
+  <div class="tbl"><table style="min-width:520px"><tr><th class="l">QQQ 낙폭</th><th>투입량</th><th class="l">거시 공격·중립</th><th class="l">거시 수비 · HY 6%↑</th></tr>
+  ${RULES.tranches.map(t=>`<tr><td class="l">${t.n}차 · ${t.dd}%${t.n===4?" 이하":""}</td><td>${t.n===4?"남은 전부":"잔액의 "+t.pct+"%"}</td><td class="l">${mixText(t.mix)}</td><td class="l">QQQM 100%</td></tr>`).join("")}
+  </table></div>
+  <p class="note">보조지표(RSI ≤40, VIX ≥20, 공포탐욕 ≤45, 60·120·200일선 터치) 중 2개가 맞는 날 3~5거래일에 나눠 집행합니다. QQQ가 전고점을 되찾으면 차수를 처음으로 돌립니다.</p>
+  <h2>다른 계좌</h2>
+  <div class="tbl"><table style="min-width:560px"><tr><th class="l">QQQ 상태</th><th class="l">연금저축 (나스닥100 : S&P500)</th><th class="l">IRP 위험자산 목표</th><th class="l">스윙</th></tr>
+  ${[[1,"55 : 45"],[2,"65 : 35"],[3,"65 : 35"],[4,"65 : 35"],[5,"55 : 45"]].map(([st,pn])=>`<tr${E.state===st?' style="background:var(--accent-soft)"':""}><td class="l"><b>${st}. ${RULES.states[st].name}</b></td><td class="l">${pn}</td><td class="l">${RULES.irpTarget[st].join("~")}%</td><td class="l muted">${st===3||st===4? "음봉 매매 계속, 나스닥 −3%면 1회 금액 절반" : "음봉 단기 매매 (TQQQ −5%, SOXL −10%)"}</td></tr>`).join("")}
+  </table></div>
+  <p class="note">연금저축은 낙폭 −10%부터 나스닥100 비중을 올립니다(레버리지 불가). IRP는 하락할수록 위험자산 비중을 올리되 70%가 법정 한도입니다. 거시 수비면 스윙 신규 레버리지 진입을 멈춥니다.</p>`;
 }
 
 function vCrash(){
@@ -797,7 +831,7 @@ function render(){
   const h = (location.hash||"#today").slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : "today";
   $("#nav").innerHTML = VIEWS.map(([k,t])=>`<a href="#${k}" ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
-  const fn = {today:vToday, plan:vPlan, crash:vCrash, heat:vHeat, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
+  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
