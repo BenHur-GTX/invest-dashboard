@@ -389,6 +389,103 @@ def run(D, i0, end=None, cfg=None):
     return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end)
 
 
+# ================= 통합 4종목 전략 (SPYM·QQQM·SGOV·QLD) =================
+# 현금 계좌(월 85만)는 기존 규칙 그대로. 나머지(장투·스윙·IRP·연금저축)는 한 덩어리, 월 245만.
+UNI = {
+    # 국면: (SPY, QQQ, SGOV, QLD) 목표 비중 %
+    "U0": {"base": (33, 33, 34, 0), "signals": False},
+    "U1": {"base": (33, 33, 34, 0), "hot2": (30, 30, 40, 0), "hot3": (25, 25, 50, 0),
+           "dd10": (30, 35, 20, 15), "dd20": (25, 35, 10, 30), "dd30": (20, 35, 0, 45), "recov": (25, 35, 10, 30), "signals": True},
+    "U2": {"base": (30, 35, 30, 5), "hot2": (30, 30, 40, 0), "hot3": (25, 25, 50, 0),
+           "dd10": (25, 35, 15, 25), "dd20": (20, 30, 5, 45), "dd30": (15, 25, 0, 60), "recov": (20, 35, 5, 40), "signals": True},
+}
+
+
+def uni_target(cfg, dd, oh, mode, hy, recov):
+    if not cfg["signals"]:
+        return cfg["base"]
+    if dd <= -30: w = cfg["dd30"]
+    elif dd <= -20: w = cfg["dd20"]
+    elif dd <= -10: w = cfg["dd10"]
+    elif recov: w = cfg["recov"]
+    elif oh >= 3: w = cfg["hot3"]
+    elif oh >= 2: w = cfg["hot2"]
+    else: w = cfg["base"]
+    sp, qq, sg, ql = w
+    nolev = mode == "수비" or (hy is not None and hy >= 6)
+    if nolev:   # 거시 우선: QLD 몫 SGOV로 (폭락 -30% 이하면 절반만)
+        cut = ql / 2 if dd <= -30 else ql
+        ql -= cut; sg += cut
+    elif mode == "중립":
+        cut = ql / 4; ql -= cut; sg += cut
+    return (sp, qq, sg, ql)
+
+
+def run_unified(D, i0, key, end=None):
+    cfg = UNI[key]
+    P, fx_, dates = D["P"], D["fx"], D["dates"]
+    end = end or len(dates) - 1
+    core, am = Acct(), Acct()
+    fx = fx_[i0]
+    principal = sum(INIT.values())
+    tw = cfg["base"]
+    for t, w in zip(("SPY", "QQQ", "SGOV", "QLD"), tw):
+        core.buy(t, principal * w / 100, P, i0, fx)
+    flows = [(dates[i0], -principal)]
+    ammo_done = set(); last_month = None; curve, prin, log = [], [], []
+    cyc_min = 0; recov = False; last_tier = 0; trades = 0
+    for i in range(i0, end + 1):
+        d = dates[i]; fx = fx_[i]; dd = D["dd"][i]; st = D["states"][i] or 2
+        mode, hy, _ = macro(D, i); oh = overheat(D, i)
+        nolev = mode == "수비" or (hy is not None and hy >= 6)
+        rsi, vix = D["rsi"][i], D["vix"][i]; c, m200, m60 = D["c"][i], D["ma200"][i], D["ma60"][i]
+        aux = sum([rsi is not None and rsi <= 40, vix is not None and vix >= 20,
+                   (m200 is not None and c <= m200 * 1.01) or (m60 is not None and c <= m60 * 1.01)])
+        cyc_min = min(cyc_min, dd)
+        if dd > -1: cyc_min = 0; recov = False
+        if cyc_min <= -20 and st == 5: recov = True   # -20% 이상 빠진 뒤 200일선 회복 → 전고점까지 회복 국면
+        tier = 3 if dd <= -30 else 2 if dd <= -20 else 1 if dd <= -10 else 0
+        monthly = i > i0 and int(d[8:]) >= 25 and d[:7] != last_month
+        # 리밸런싱 시점: 매월 적립일 + 하락 단계가 깊어지는 날(공포 구간 즉시 대응)
+        rebal = monthly or (cfg["signals"] and tier > last_tier)
+        if monthly:
+            last_month = d[:7]
+            add = sum(MONTHLY.values()); principal += add; flows.append((d, -add))
+            core.buy("SGOV", MONTHLY["longterm"] + MONTHLY["pension"], P, i, fx)
+            am.buy("SGOV", MONTHLY["ammo"], P, i, fx)
+        if rebal:
+            tw = uni_target(cfg, dd, oh, mode, hy, recov)
+            tot = core.val(P, i, fx)
+            cur = {t: core.v(t, P, i, fx) for t in ("SPY", "QQQ", "SGOV", "QLD")}
+            for t, w in zip(("SPY", "QQQ", "SGOV", "QLD"), tw):   # 매도 먼저 → SGOV
+                tgt = tot * w / 100
+                if t != "SGOV" and cur[t] > tgt * 1.02:
+                    core.buy("SGOV", core.sell(t, cur[t] - tgt, P, i, fx), P, i, fx); trades += 1
+            for t, w in zip(("SPY", "QQQ", "SGOV", "QLD"), tw):
+                tgt = tot * w / 100
+                if t != "SGOV" and cur[t] < tgt * 0.98:
+                    core.buy(t, core.sell("SGOV", tgt - cur[t], P, i, fx), P, i, fx); trades += 1
+            if tier != last_tier and tier > last_tier: log.append((d, f"하락 {tier}단계 리밸런싱 {tw}"))
+        if monthly or tier > last_tier or tier == 0: last_tier = tier if (tier > last_tier or monthly) else last_tier
+        if tier == 0: last_tier = 0
+        # 현금 계좌 (기존 규칙)
+        for n, (lvl, rem, mix) in enumerate(AMMO_T, 1):
+            if n in ammo_done: continue
+            if dd <= lvl and aux >= 2:
+                amt = am.sell("SGOV", am.v("SGOV", P, i, fx) * rem / 100, P, i, fx)
+                for t, w in ({"QQQ": 100} if nolev else mix).items(): am.buy(t, amt * w / 100, P, i, fx)
+                ammo_done.add(n)
+            break
+        if dd > -1:
+            for t in [t for t in am.u if t != "SGOV" and am.u[t] > 1e-12]:
+                v = am.v(t, P, i, fx); am.buy("SGOV", am.sell(t, v / 2, P, i, fx), P, i, fx)
+                q = am.u[t]; am.u[t] = 0; core.buy("SGOV", q * P[t][i] * fx, P, i, fx)   # 이관분은 통합 계좌 비중에 맞춰 다음 리밸런싱
+            ammo_done.clear()
+        curve.append(core.val(P, i, fx) + am.val(P, i, fx)); prin.append(principal)
+    return dict(curve=curve, prin=prin, flows=flows, i0=i0, end=end, log=log, trades=trades,
+                A={"core": core, "ammo": am})
+
+
 def bench(D, i0, t, end=None):
     P, fx_, dates = D["P"], D["fx"], D["dates"]; end = end or len(dates) - 1
     u = sum(INIT.values()) / fx_[i0] / P[t][i0]; last = None; curve = []
@@ -533,6 +630,26 @@ def main():
                                     "y5": (m["horizon"]["5y"] or {}).get("ret_pct"), "end": m["horizon"]["end"]["ret_pct"], "irr_end": m["horizon"]["end"]["irr"],
                                     "events": [e for e in r["log"] if "반등" in e[1]][:12]})
             print(name, vname, out["variants"][-1]["worst"], out["variants"][-1]["uw_months"], out["variants"][-1]["y3"], out["variants"][-1]["y5"], out["variants"][-1]["end"], flush=True)
+    out["unified"] = []
+    for name, a, b in SCEN:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k])
+        bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+        for key, label in (("CUR", "기존 5계좌 규칙"), ("U0", "3분할 고정 리밸런싱(신호 없음)"), ("U1", "통합 4종목 신호 리밸런싱"), ("U2", "통합 4종목 공격형")):
+            r = run(D, i0) if key == "CUR" else run_unified(D, i0, key)
+            m = metrics(D, r, bq, bs)
+            h = m["horizon"]
+            row = {"scenario": name, "strategy": label, "start": dates[i0],
+                   "worst": m["underwater"].get("worst_vs_principal_pct"), "uw_months": m["underwater"].get("months"), "uw": m["underwater"],
+                   "mdd5": m["mdd_5y"][0], "y1": (h["1y"] or {}).get("ret_pct"), "y3": (h["3y"] or {}).get("ret_pct"),
+                   "y5": (h["5y"] or {}).get("ret_pct"), "y10": (h["10y"] or {}).get("ret_pct"), "end": h["end"]["ret_pct"], "irr_end": h["end"]["irr"],
+                   "v3_man": (h["3y"] or {}).get("value_man"), "v5_man": (h["5y"] or {}).get("value_man"), "end_man": h["end"]["value_man"],
+                   "trades": r.get("trades"), "events": r["log"][:10],
+                   "qqq": {"worst": m["qqq_all_underwater"].get("worst_vs_principal_pct"), "uw": m["qqq_all_underwater"].get("months"), "y3": (h["3y"] or {}).get("qqq_all_ret_pct"), "y5": (h["5y"] or {}).get("qqq_all_ret_pct"), "end": h["end"]["qqq_all_ret_pct"]},
+                   "spy": {"worst": m["spy_all_underwater"].get("worst_vs_principal_pct"), "uw": m["spy_all_underwater"].get("months"), "y3": (h["3y"] or {}).get("spy_all_ret_pct"), "y5": (h["5y"] or {}).get("spy_all_ret_pct"), "end": h["end"]["spy_all_ret_pct"]}}
+            out["unified"].append(row)
+            print("UNI", name, label, row["worst"], row["uw_months"], row["y3"], row["y5"], row["end"], row["irr_end"], flush=True)
     json.dump(out, open(os.path.join(B.DATA, "portfolio_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("ok")
 
