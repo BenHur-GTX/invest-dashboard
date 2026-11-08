@@ -23,6 +23,7 @@ AMMO_T = [(-30, 15, {"QQQ": 70, "QLD": 30}), (-40, 23.5, {"QQQ": 60, "QLD": 40})
           (-60, 38.5, {"QLD": 80, "QQQ": 20}), (-80, 100, {"QLD": 80, "TQQQ": 20})]
 LT_POOL_T = [(-10, 10, {"QQQ": 70, "QLD": 30}), (-15, 22.2, {"QQQ": 60, "QLD": 40}),
              (-20, 42.9, {"QLD": 80, "QQQ": 20}), (-30, 100, {"QLD": 80, "TQQQ": 20})]
+DD_WIN = int(os.environ.get("DD_WIN", "1260"))
 IRP_T = {1: (55, 60), 2: (58, 62), 3: (62, 65), 4: (68, 70), 5: (55, 60)}
 
 
@@ -116,9 +117,14 @@ def prep(y, f):
     vix_map = {r[0]: r[4] for r in y["^VIX"]}
     vix = ff(list(vix_map.items()), dates)
     states = B.qqq_state_series(q, vix_map)
-    peak, dd = 0, []
-    for x in c:
-        peak = max(peak, x); dd.append((x / peak - 1) * 100)
+    # 낙폭 기준 고점: 최근 5년(1260거래일) 최고가. 사상 최고가 기준이면 2000년 고점 때문에 2007~2015년 내내 '-50% 이하 폭락'으로 판정됨
+    from collections import deque
+    dq, dd = deque(), []
+    for k, x in enumerate(c):
+        while dq and c[dq[-1]] <= x: dq.pop()
+        dq.append(k)
+        while dq[0] <= k - DD_WIN: dq.popleft()
+        dd.append((x / c[dq[0]] - 1) * 100)
     # SOXX 지표
     sx = P["SOXX"]; srsi = B.rsi_series(sx)
     sdd52 = [(sx[i] / max(sx[max(0, i - 251):i + 1]) - 1) * 100 for i in range(n)]
@@ -446,7 +452,7 @@ def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
-    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "data_start": dates[0],
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dd_window_days": DD_WIN, "data_start": dates[0],
            "hy_fred_start": D["hy_start"], "notes": [
                "시작 잔고·월 적립은 현재(2026) 금액 그대로, 물가 조정 없음", "세금·수수료·환전 스프레드 제외",
                "QLD·TQQQ 상장 전은 QQQ 일간 2·3배 − (보수 0.95% + 차입 T-bill) 합성", "SCHD 2011 이전은 SPY, SOXX 2001 이전은 ^SOX(가격지수)",
