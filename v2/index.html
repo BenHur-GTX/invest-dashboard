@@ -143,7 +143,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 const RULES = {
   // 장투 월 200만 배분 (만원) — QQQ 고점 대비 낙폭 단계별
   monthly: [
-    {min:-10,  label:"평상",      alloc:{QQQM:80, SPYM:60, QLD:40}},
+    {min:-10,  label:"평상",      alloc:{QQQM:75, SPYM:35, SCHD:30, QLD:40}},   // SCHD = 배당 몫(SCHD·DGRO·FDVV·DIVO 중 200일선 대비 가장 싼 것)
     {min:-15,  label:"조정 -10%", alloc:{QQQM:90, SPYM:60, QLD:50}},
     {min:-20,  label:"하락 -15%", alloc:{QQQM:90, SPYM:50, QLD:60}},
     {min:-30,  label:"하락 -20%", alloc:{QQQM:60, SPYM:20, QLD:120}},
@@ -411,7 +411,12 @@ function planLongterm(E){
     }
   }
   // ② 과열 점수
-  if(hot && (alloc.QLD||0)>0){ const m=mv("QLD","SGOV",alloc.QLD); notes.push(`과열 신호 ${oh.score}개: QLD ${num(m,0)}만은 사지 않고 SGOV에 이월.`); }
+  if(hot && (alloc.QLD||0)>0){ const q=alloc.QLD; mv("QLD","SCHD",q/2); mv("QLD","SGOV",q/2); let extra=0; if(oh.score>=3) extra=mv("QQQM","SCHD",20*k200);
+    notes.push(`과열 신호 ${oh.score}개: QLD ${num(q,0)}만 중 절반은 배당 ETF, 절반은 SGOV${extra? `, QQQM ${num(extra,0)}만도 배당 ETF로`:""}. 과열 땐 성장보다 배당 쪽을 삽니다.`); }
+  // 배당 → 성장 교체: QQQ 1년 고점 -15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 장투 배당 보유분 30% 매도 → QQQM (126거래일 1회)
+  { const dp=divPick(S), dq=E.q.dd52??E.dd, dvd=S[dp]?.dd52; const ltA=E.acc.list.find(a=>a.id==="longterm");
+    const divHeld=(ltA?.pos||[]).filter(p=>DIV_ETFS.includes(p.t)).reduce((a,p)=>a+p.v,0);
+    if(dq!=null && dvd!=null && dq<=-15 && dvd-dq>=10) notes.push(`배당→성장 교체 조건 충족: QQQ 1년 고점 ${pct(dq,1)}, ${dp} ${pct(dvd,1)}. 장투 배당 보유분의 30%${divHeld? ` (약 ${won(divHeld*0.3)})`:""}를 팔아 QQQM으로${E.stage===4 && !E.noLev? "(폭락 구간이라 절반은 QLD)":""}. 6개월에 1회.`); }
   // QLD 상한 30% (장투 계좌 기준, 매수 후)
   const lt = E.acc.list.find(a=>a.id==="longterm");
   const ltVal = (lt?.val||0)/1e4;
@@ -449,8 +454,10 @@ function planLongterm(E){
   const below = E.state===3||E.state===4;
   const carry = (H?.accounts?.longterm?.qld_carry_krw||0)/1e4;
   const rows = [];
-  for(const [t,man] of Object.entries(alloc)){
+  const DIVP = divPick(S);
+  for(let [t,man] of Object.entries(alloc)){
     if(!man) continue;
+    const key = t; if(t==="SCHD") t = DIVP;
     const px = priceOf(t,S), dollars = man*1e4/fx;
     let how = "25일 지정가 또는 시장가 1회";
     if(t==="QLD"){
@@ -459,12 +466,19 @@ function planLongterm(E){
     }
     if(t==="TQQQ") how = "20거래일 분할 (총자산 10% 상한)";
     if(t==="SGOV") how = "대기 현금 — 조건 해소 시 QLD·QQQM 매수 재원";
-    if(t==="SCHD") how = "25일 1회 (배당 풀)";
+    if(key==="SCHD") how = `25일 1회. 배당 ETF 중 이번 달 가장 싼 것(200일선 ${pct(S[DIVP]?.vs200)})`;
     const sh = px? (s.fractional? dollars/px : Math.floor(dollars/px)) : null;
-    rows.push({t, man, dollars, px, sh, how});
+    rows.push({t, key, man, dollars, px, sh, how});
   }
   if(carry) notes.push(`QLD 이월분 ${num(carry,0)}만 보유 중 — 위 QLD 규칙과 같은 조건에서 함께 집행.`);
   return {row, rows, notes, budget, hot, below};
+}
+
+/* ---------- 배당 ETF 선택 ---------- */
+const DIV_ETFS = ["SCHD","DGRO","FDVV","DIVO"];
+function divPick(S){ // 200일선 대비 가장 싼(이격 낮은) 배당 ETF
+  const c = DIV_ETFS.filter(t=>S[t]?.vs200!=null && S[t]?.price);
+  return c.length? c.reduce((a,b)=> S[b].vs200 < S[a].vs200 ? b : a) : "SCHD";
 }
 
 /* ---------- 과열 점수 (현금화) ---------- */
@@ -484,16 +498,16 @@ function overheat(E){
   const ref={k:"참고: 경기 과열 (연준 인상기 또는 HY ≤ 2.75%)", on: hikes || (hy!=null && hy<=2.75), show: hy!=null? `HY ${num(hy,2)}%${hikes?" · 인상기":""}`:"–"};
   const score = E._oh!=null ? E._oh : sig.filter(x=>x.on).length;
   const lt = score>=3 ? "장투: QLD 보유분 20% 매도 → 현금 풀(SGOV). 1배는 매도 없음" :
-             score>=2 ? "장투: 매도 없음, QLD 신규 적립 보류(→ SGOV)" : "장투: 평소대로";
+             score>=2 ? "장투: 매도 없음, QLD 몫 절반은 배당 ETF·절반은 SGOV (3개↑면 QQQM 20만도 배당으로)" : "장투: 평소대로";
   const sw = score>=4 ? "스윙: 레버리지 전량 + 개별주 절반 매도" :
              score>=3 ? "스윙: 레버리지 50% 매도" :
              score>=2 ? "스윙: 레버리지 30% 매도, 신규 진입 중단" : "스윙: 평소대로";
   return {sig, ref, score, lt, sw};
 }
 const BANDS = {
-  "공격": {one:[65,85], lev:[15,30], div:[0,10], cash:[0,10]},
-  "중립": {one:[65,80], lev:[10,20], div:[5,15], cash:[5,15]},
-  "수비": {one:[60,75], lev:[0,15],  div:[5,15], cash:[10,25]},
+  "공격": {one:[55,80], lev:[15,30], div:[5,20], cash:[0,10]},
+  "중립": {one:[55,75], lev:[10,20], div:[10,25], cash:[5,15]},
+  "수비": {one:[50,70], lev:[0,15],  div:[10,25], cash:[10,25]},
 };
 function bands(E){
   const b = BANDS[E.mode.name] || BANDS["공격"];
@@ -704,9 +718,9 @@ function vScenario(){
   const modes=[["공격","g"],["중립","y"],["수비","r"]];
   const cell=(dd,st,mode,oh)=>{
     const E2={...E, dd, state:st, stage: dd<=-30?4: dd<=-20?3: dd<=-15?2: dd<=-10?1:0, mode:{name:mode}, hy:null, _oh:oh??0, _noCap:true};
-    const lt=planLongterm(E2); const o={}; lt.rows.forEach(r=>o[r.t]=r.man);
+    const lt=planLongterm(E2); const o={}; lt.rows.forEach(r=>o[r.key||r.t]=r.man);
     const k=(E.H?.settings?.monthly_longterm_krw||2000000)/1e4;
-    return ["QQQM","SPYM","QLD","TQQQ","SCHD","SGOV"].filter(t=>o[t]>0.05).map(t=>`<span style="white-space:nowrap">${t} <b>${num(o[t]/k*100,0)}</b></span>`).join(" · ");
+    return ["QQQM","SPYM","QLD","TQQQ","SCHD","SGOV"].filter(t=>o[t]>0.05).map(t=>`<span style="white-space:nowrap">${t==="SCHD"?"배당":t} <b>${num(o[t]/k*100,0)}</b></span>`).join(" · ");
   };
   const am = (mode)=>RULES.tranches.map(t=>`${t.n}차 ${mode==="수비"? "QQQM 100" : mixText(t.mix)}`).join("<br>");
   const k=E.H?.settings?.monthly_longterm_krw||2000000;
@@ -793,7 +807,7 @@ function vHeat(){
   <p class="note">신호는 2000~2026년 QQQ 일봉 검증으로 골랐습니다. 경기 과열은 긴 무료 데이터가 없어 검증하지 못해 점수에 넣지 않고 참고만 합니다.</p></div>
   <h2>점수별 행동</h2>
   <div class="tbl"><table><tr><th>신호 수</th><th class="l">장투 (보수적)</th><th class="l">스윙 (적극적)</th></tr>
-    ${[[2,"매도 없음. QLD 신규 적립 보류 → SGOV","레버리지 30% 매도, 신규 진입 중단"],[3,"QLD 보유분 20% 매도 → 현금 풀. 1배는 매도 안 함","레버리지 50% 매도"],[4,"3개와 같음","레버리지 전량 + 개별주 절반"]]
+    ${[[2,"매도 없음. QLD 몫 절반 배당 ETF·절반 SGOV","레버리지 30% 매도, 신규 진입 중단"],[3,"QLD 보유분 20% 매도 → 현금 풀. 1배는 매도 안 함","레버리지 50% 매도"],[4,"3개와 같음","레버리지 전량 + 개별주 절반"]]
       .map(r=>`<tr${lvl===r[0]?' style="background:var(--accent-soft)"':""}><td><b>${r[0]}개${r[0]===4?" 이상":""}</b></td><td class="l">${r[1]}</td><td class="l">${r[2]}</td></tr>`).join("")}
   </table></div>
   <div class="panel" style="margin-top:10px"><p><b>지금</b>: ${esc(oh.lt)} · ${esc(oh.sw)}</p>
@@ -941,6 +955,7 @@ function vRules(){
   return `<h2>운용 원칙 요약</h2>
   <div class="panel"><ol class="steps">
     <li><b>낙폭 기준</b>: "고점 대비"는 최근 5년 최고가 기준입니다. 사상 최고가 기준이면 2000년 같은 폭락 뒤 수년간 계속 '폭락'으로 판정되는 문제가 있어 바꿨습니다(백테스트 검증).</li>
+    <li><b>장투 배당 몫</b>: 평상 구간 월 200만 중 30만(15%)은 배당 ETF(SCHD·DGRO·FDVV·DIVO 중 200일선 대비 가장 싼 것). 과열이면 QLD 몫 절반과(3개↑) QQQM 20만을 배당으로 돌리고, QQQ가 1년 고점 −15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30%를 QQQM으로 교체(6개월 1회).</li>
     <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −30/−40/−60/−80%에만 모은 돈의 15/20/25/40% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절 + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
