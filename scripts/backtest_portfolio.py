@@ -570,7 +570,7 @@ def bench(D, i0, t, end=None):
     return curve
 
 
-def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None):
+def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None):
     """단순안: 1배 지수 고정 적립(매도 없음) + IRP 위험 70%(연 1회 리밸런싱) + 현금 계좌 6단계(ammo=False면 현금 몫도 지수 적립)."""
     P, fx_, dates = D["P"], D["fx"], D["dates"]
     end = end or len(dates) - 1
@@ -593,7 +593,12 @@ def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None):
         if i > i0 and int(d[8:]) >= 25 and d[:7] != last_month:
             last_month = d[:7]
             add = sum(MONTHLY.values()); principal += add; flows.append((d, -add))
-            buymix(core, MONTHLY["longterm"] + MONTHLY["pension"], i, fx)
+            if ladder:   # 하락 단계별 레버리지 사다리: 장투 몫만 적용, 연금은 1배
+                lm = next((m for lvl, m in ladder if dd <= lvl), mix)
+                for t, w in lm.items(): core.buy(t, MONTHLY["longterm"] * w / 100, P, i, fx)
+                buymix(core, MONTHLY["pension"], i, fx)
+            else:
+                buymix(core, MONTHLY["longterm"] + MONTHLY["pension"], i, fx)
             if ammo: am.buy("SGOV", MONTHLY["ammo"], P, i, fx)
             else: buymix(core, MONTHLY["ammo"], i, fx)
         if d[:4] != last_year:   # IRP 연 1회 위험 70% 리밸런싱
@@ -828,8 +833,9 @@ def main():
         if not ks: continue
         i0 = max(ks, key=lambda k: D["c"][k])
         bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
-        for sname, mix, ammo in SIMPLE:
-            r = run_simple(D, i0, mix, ammo)
+        LAD = [(-30, {"SPY": 20, "QQQ": 20, "QLD": 60}), (-20, {"SPY": 30, "QQQ": 30, "QLD": 40}), (-10, {"SPY": 40, "QQQ": 40, "QLD": 20})]
+        for sname, mix, ammo, *lad in SIMPLE + [("R1 S&P500 50·QQQ 50 + 하락 시 QLD 사다리(-10/-20/-30%→20/40/60) + 현금 6단계", {"SPY": 50, "QQQ": 50}, True, LAD)]:
+            r = run_simple(D, i0, mix, ammo, ladder=(lad[0] if lad else None))
             m = metrics(D, r, bq, bs); h = m["horizon"]
             out["simple"].append({"scenario": name, "strategy": sname, "start": dates[i0], "worst": m["underwater"].get("worst_vs_principal_pct"),
                                   "uw_months": m["underwater"].get("months"), "mdd5": m["mdd_5y"][0], "y3": (h["3y"] or {}).get("ret_pct"),
