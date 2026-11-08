@@ -143,7 +143,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 const RULES = {
   // 장투 월 200만 배분 (만원) — QQQ 고점 대비 낙폭 단계별
   monthly: [
-    {min:-10,  label:"평상",      alloc:{QQQM:75, SPYM:35, SCHD:30, QLD:40}},   // SCHD = 배당 몫(SCHD·DGRO·FDVV·DIVO 중 200일선 대비 가장 싼 것)
+    {min:-10,  label:"평상",      alloc:{QQQM:75, SPYM:35, SCHD:30, QLD:40}},   // SCHD = 배당 몫(SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 것)
     {min:-15,  label:"조정 -10%", alloc:{QQQM:90, SPYM:60, QLD:50}},
     {min:-20,  label:"하락 -15%", alloc:{QQQM:90, SPYM:50, QLD:60}},
     {min:-30,  label:"하락 -20%", alloc:{QQQM:60, SPYM:20, QLD:120}},
@@ -475,7 +475,7 @@ function planLongterm(E){
 }
 
 /* ---------- 배당 ETF 선택 ---------- */
-const DIV_ETFS = ["SCHD","DGRO","FDVV","DIVO"];
+const DIV_ETFS = ["SCHD","JEPI","DIVO","JEPQ"];   // Ben 2026-11-08: 월·분기 배당 대표 4종
 function divPick(S){ // 200일선 대비 가장 싼(이격 낮은) 배당 ETF
   const c = DIV_ETFS.filter(t=>S[t]?.vs200!=null && S[t]?.price);
   return c.length? c.reduce((a,b)=> S[b].vs200 < S[a].vs200 ? b : a) : "SCHD";
@@ -955,7 +955,7 @@ function vRules(){
   return `<h2>운용 원칙 요약</h2>
   <div class="panel"><ol class="steps">
     <li><b>낙폭 기준</b>: "고점 대비"는 최근 5년 최고가 기준입니다. 사상 최고가 기준이면 2000년 같은 폭락 뒤 수년간 계속 '폭락'으로 판정되는 문제가 있어 바꿨습니다(백테스트 검증).</li>
-    <li><b>장투 배당 몫</b>: 평상 구간 월 200만 중 30만(15%)은 배당 ETF(SCHD·DGRO·FDVV·DIVO 중 200일선 대비 가장 싼 것). 과열이면 QLD 몫 절반과(3개↑) QQQM 20만을 배당으로 돌리고, QQQ가 1년 고점 −15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30%를 QQQM으로 교체(6개월 1회).</li>
+    <li><b>장투 배당 몫</b>: 평상 구간 월 200만 중 30만(15%)은 배당 ETF(SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 것). 과열이면 QLD 몫 절반과(3개↑) QQQM 20만을 배당으로 돌리고, QQQ가 1년 고점 −15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30%를 QQQM으로 교체(6개월 1회).</li>
     <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −30/−40/−60/−80%에만 모은 돈의 15/20/25/40% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절 + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>

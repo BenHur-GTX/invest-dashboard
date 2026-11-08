@@ -24,6 +24,7 @@ AMMO_T = [(-30, 15, {"QQQ": 70, "QLD": 30}), (-40, 23.5, {"QQQ": 60, "QLD": 40})
 LT_POOL_T = [(-10, 10, {"QQQ": 70, "QLD": 30}), (-15, 22.2, {"QQQ": 60, "QLD": 40}),
              (-20, 42.9, {"QLD": 80, "QQQ": 20}), (-30, 100, {"QLD": 80, "TQQQ": 20})]
 DD_WIN = int(os.environ.get("DD_WIN", "1260"))
+DIVS = ("SCHD", "JEPI", "DIVO", "JEPQ")
 IRP_T = {1: (55, 60), 2: (58, 62), 3: (62, 65), 4: (68, 70), 5: (55, 60)}
 
 
@@ -53,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "SOXX", "^SOX", "^VIX", "^IRX"]:
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"]:
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -96,6 +97,25 @@ def prep(y, f):
     for i in range(1, n):
         sg.append(sg[-1] * (1 + rf[i - 1] / 252))
     P["SGOV"] = sg
+    # 상장 이후만 존재하는 배당·커버드콜 ETF (상장 전 None)
+    for t in ("JEPI", "DIVO", "JEPQ"):
+        mp = dict((r[0], r[5]) for r in y.get(t, []))
+        P[t] = [mp.get(d) for d in dates]
+        # 휴장 차이로 빈 날 직전값
+        last = None
+        for k in range(n):
+            if P[t][k] is None and last is not None: P[t][k] = last
+            last = P[t][k] if P[t][k] is not None else last
+    V200 = {}
+    for t in ("SCHD", "JEPI", "DIVO", "JEPQ"):
+        arr = P[t]; out = [None] * n; run_sum = 0; cnt = 0; win = []
+        for k in range(n):
+            v = arr[k]
+            if v is None: win = []; run_sum = 0; continue
+            win.append(v); run_sum += v
+            if len(win) > 200: run_sum -= win.pop(0)
+            if len(win) == 200: out[k] = (v / (run_sum / 200) - 1) * 100
+        V200[t] = out
     fx = ff(f["fx"], dates)
     first_fx = next(v for v in fx if v)
     fx = [v or first_fx for v in fx]
@@ -160,7 +180,7 @@ def prep(y, f):
         nl_info.append((nl[i][0], (down, chg4)))
     nl_d = ff(nl_info, dates)
     return dict(dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
-                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
+                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
                 hy=hy, hy_start=hy_start, baa=baa, nl=nl_d)
 
 
@@ -259,6 +279,10 @@ def run(D, i0, end=None, cfg=None):
             al = {"QQQ": row[1], "SPY": row[2], "QLD": row[3], "TQQQ": row[4]}
             if cfg.get("div") and stage == 0:   # 평상 구간: 1배 일부를 배당 ETF로
                 b = cfg["div"]; al["QQQ"] -= b[0]; al["SPY"] -= b[1]; al["SCHD"] = b[0] + b[1]
+            divt = "SCHD"
+            if cfg.get("div_pool"):   # 그달 200일선 대비 가장 싼 배당 ETF
+                cands = [(D["v200"][t][i], t) for t in cfg["div_pool"] if D["v200"][t][i] is not None]
+                if cands: divt = min(cands)[1]
 
             def mv(a, b, x):
                 x = min(al.get(a, 0), x)
@@ -283,7 +307,7 @@ def run(D, i0, end=None, cfg=None):
                 cut = newlev - maxlev; r = cut; tq = min(al.get("TQQQ", 0), r); al["TQQQ"] = al.get("TQQQ", 0) - tq; r -= tq
                 al["QLD"] = max(0, al.get("QLD", 0) - r); al["QQQ"] += cut
             for t, man in al.items():
-                lt.buy(t, man * MAN, P, i, fx)
+                lt.buy(divt if t == "SCHD" else t, man * MAN, P, i, fx)
             # 분기 30% 상한 정리
             if d[5:7] in ("03", "06", "09", "12"):
                 ltv = lt.val(P, i, fx); lev = lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)
@@ -337,8 +361,8 @@ def run(D, i0, end=None, cfg=None):
             if lt.u.get("TQQQ", 0) > 0:
                 got = lt.sell("TQQQ", lt.v("TQQQ", P, i, fx), P, i, fx); lt.buy("QQQ", got, P, i, fx)
         # 배당 → 성장 교체: QQQ 1년 고점 -15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30% 매도 → QQQM(폭락이면 QLD 절반)
-        if cfg.get("div_sell") and D["qdd52"][i] <= -15 and D["divdd52"][i] - D["qdd52"][i] >= 10 and i - div_last >= 126 and lt.u.get("SCHD", 0) > 0:
-            got = lt.sell("SCHD", lt.v("SCHD", P, i, fx) * 0.3, P, i, fx)
+        if cfg.get("div_sell") and D["qdd52"][i] <= -15 and D["divdd52"][i] - D["qdd52"][i] >= 10 and i - div_last >= 126 and any(lt.u.get(t, 0) > 0 for t in DIVS):
+            got = sum(lt.sell(t, lt.v(t, P, i, fx) * 0.3, P, i, fx) for t in DIVS if lt.u.get(t, 0) > 0)
             mx = {"QQQ": 50, "QLD": 50} if (stage == 4 and not nolev) else {"QQQ": 100}
             for t, w in mx.items(): lt.buy(t, got * w / 100, P, i, fx)
             div_last = i; log.append((d, f"배당→성장 교체 {round(got / MAN)}만"))
@@ -641,6 +665,8 @@ def main():
         ("H 배당 15%(QQQM5·SPYM25) + 과열 시 배당, 하락 시 교체", {"div": (5, 25), "div_sell": True}),
         ("I = H에서 교체 매도 없음", {"div": (5, 25)}),
         ("J 배당 20%(QQQM10·SPYM30) + 과열·교체", {"div": (10, 30), "div_sell": True}),
+        ("K 최종: 배당 15% SCHD·JEPI·DIVO·JEPQ 중 싼 것 + 과열·교체", {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"]}),
+        ("L 최종 + 반등 가속 B", {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}),
     ]
     out["variants"] = []
     for name, a, b in SCEN:
