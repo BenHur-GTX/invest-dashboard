@@ -336,7 +336,10 @@ def run(D, i0, end=None, cfg=None):
                 if ltv and lev > 0.30 * ltv:
                     x = lev - 0.30 * ltv; got = lt.sell("TQQQ", x, P, i, fx); got += lt.sell("QLD", x - got, P, i, fx); lt.buy("QQQ", got, P, i, fx)
             # 현금
-            A["ammo"].buy("SGOV", MONTHLY["ammo"], P, i, fx)
+            af = cfg.get("ammo_frac", 1.0)
+            A["ammo"].buy("SGOV", MONTHLY["ammo"] * af, P, i, fx)
+            if af < 1:   # 현금 몫 축소분은 장투에서 1배 지수(QQQ 60·SPY 40)로 바로 매수
+                lt.buy("QQQ", MONTHLY["ammo"] * (1 - af) * 0.6, P, i, fx); lt.buy("SPY", MONTHLY["ammo"] * (1 - af) * 0.4, P, i, fx)
             # 연금저축
             w = (65, 35) if stage >= 1 else (55, 45)
             A["pension"].buy("QQQ", MONTHLY["pension"] * w[0] / 100, P, i, fx)
@@ -766,6 +769,8 @@ def main():
         ("J 배당 20%(QQQM10·SPYM30) + 과열·교체", {"div": (10, 30), "div_sell": True}),
         ("K 최종: 배당 15% SCHD·JEPI·DIVO·JEPQ 중 싼 것 + 과열·교체", {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"]}),
         ("L 최종 + 반등 가속 B", {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}),
+        ("M = L + 현금 적립 절반(나머지 1배 지수 즉시)", {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True, "ammo_frac": 0.5}),
+        ("N = L + 현금 적립 없음(전부 1배 지수 즉시)", {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True, "ammo_frac": 0.0}),
     ]
     out["variants"] = []
     for name, a, b in SCEN:
