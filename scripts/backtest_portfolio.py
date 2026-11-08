@@ -727,6 +727,15 @@ def main():
         for vname, cfg in VARIANTS:
             r = run(D, i0, cfg=cfg)
             m = metrics(D, r, bq, bs)
+            if vname.startswith("L "):   # 채택 규칙의 월별 자산 곡선(그래프용, 만원)
+                cv = {"dates": [], "strat": [], "qqq": [], "spy": [], "prin": []}; lastm = None
+                for k in range(len(r["curve"])):
+                    d = dates[i0 + k]
+                    if d[:7] != lastm or k == len(r["curve"]) - 1:
+                        lastm = d[:7]; cv["dates"].append(d)
+                        for key, arr in (("strat", r["curve"]), ("qqq", bq), ("spy", bs), ("prin", r["prin"])):
+                            cv[key].append(round(arr[k] / MAN))
+                out.setdefault("curves", {})[name] = cv
             out["variants"].append({"scenario": name, "variant": vname, "start": dates[i0],
                                     "worst": m["underwater"].get("worst_vs_principal_pct"), "uw_months": m["underwater"].get("months"),
                                     "mdd5": m["mdd_5y"][0], "y1": (m["horizon"]["1y"] or {}).get("ret_pct"), "y3": (m["horizon"]["3y"] or {}).get("ret_pct"),
