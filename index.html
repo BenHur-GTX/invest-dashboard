@@ -68,6 +68,9 @@ td.l,th.l{text-align:left;white-space:normal}
 .tbl table tr:last-child td{border-bottom:0}
 .tbl td.l:first-child{min-width:150px}
 tr.total td{font-weight:700;background:#faf9f6}
+.sumtbl tr.acct td{background:var(--brand-soft);border-top:2px solid var(--line)}
+.sumtbl td:not(.l),.sumtbl th:not(.l){white-space:nowrap}
+@media (max-width:520px){.sumtbl td,.sumtbl th{padding:7px 6px;font-size:13px}.sumtbl td.l .muted{display:block;font-size:12px}}
 .sigrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
 .sigrow:last-child{border-bottom:0}
 .hp{padding:4px 16px}
@@ -128,6 +131,14 @@ svg.spark{display:block}
 .chart{width:100%;height:220px}
 footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
 .hide{display:none}
+.kvrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.kvrow label{flex:1;font-size:14px}
+.inline{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.inline input{width:84px;text-align:right}
+.inline output{min-width:64px;text-align:right;font-size:13px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin-top:12px}
+.check input{width:auto;margin-top:4px}
+button:disabled{opacity:.45;cursor:not-allowed}
 @media (max-width:860px){
   .hero{grid-template-columns:repeat(3,1fr)}
   .hero .state{grid-column:1/-1}
@@ -215,6 +226,26 @@ function spark(arr, w=96, h=26){
 }
 
 /* ============================================================
+   사용자 설정: 월 저축액·계좌 비율 (이 기기 브라우저에만 저장)
+   ============================================================ */
+const CFG_DEFAULT = {total:2000000, pct:{longterm:60.6, ammo:25.8, pension:13.6, swing:0}, fractional:false};
+function loadCfg(){ try{ const c=JSON.parse(localStorage.getItem("user_cfg")||"null"); if(c && c.total>0) return {...CFG_DEFAULT, ...c, pct:{...CFG_DEFAULT.pct, ...(c.pct||{})}}; }catch(e){} return null; }
+function saveCfg(c){ try{ localStorage.setItem("user_cfg", JSON.stringify(c)); }catch(e){} }
+function skeletonHoldings(){
+  return {updated:null, skeleton:true, settings:{monthly_longterm_krw:2000000, monthly_ammo_krw:850000, monthly_pension_krw:450000, monthly_swing_krw:0, buy_day:25, qld_cap_pct:30, tqqq_cap_total_pct:10, irp_risk_max_pct:70, swing_trade_pct:4, swing_ticker_max_pct:30, cash_trigger_krw:1e8, conflict_rule:"macro"},
+    accounts:{longterm:{name:"장투 (직투)",principal_krw:0,cash_usd:0,positions:[]}, ammo:{name:"폭락장 현금",principal_krw:0,cash_usd:0,tranches_done:[],positions:[]}, pension:{name:"연금저축",principal_krw:0,cash_krw:0,positions:[]}}, trades:[]};
+}
+function applyCfg(H){
+  const c = loadCfg() || (H.skeleton ? CFG_DEFAULT : null); H.cfgSource = c ? "user" : "holdings";   // 보유 내역 없는 방문자는 기본 200만
+  if(c){
+    const m = k => Math.round(c.total*(c.pct[k]||0)/100);
+    Object.assign(H.settings, {monthly_longterm_krw:m("longterm"), monthly_ammo_krw:m("ammo"), monthly_pension_krw:m("pension"), monthly_swing_krw:m("swing"), fractional:!!c.fractional});
+  }
+  H.settings.monthly_swing_krw = H.settings.monthly_swing_krw||0;
+  return H;
+}
+
+/* ============================================================
    데이터 로드 (임베드 → 파일)
    ============================================================ */
 async function getJSON(p){ const r = await fetch(p+"?t="+Date.now(), {cache:"no-store"}); if(!r.ok) throw new Error(p+" "+r.status); return r.json(); }
@@ -230,7 +261,7 @@ async function decryptHoldings(enc){
 }
 async function load(){
   const E = window.__EMBED__;
-  if(E) return {market:E.market, bt:E.backtest||null, study:E.study||null, H:E.holdings, enc:false, locked:false};
+  if(E) return {market:E.market, bt:E.backtest||null, study:E.study||null, H:applyCfg(E.holdings), enc:false, locked:false, owner:true};
   const market = await getJSON("data/market.json");
   const bt = await getJSON("data/backtest.json").catch(()=>null);
   const study = await getJSON("data/overheat_study.json").catch(()=>null);
@@ -242,7 +273,9 @@ async function load(){
   }catch(err){
     H = await getJSON("data/holdings.json").catch(()=>null);
   }
-  return {market, bt, study, H, enc, locked};
+  const owner = !!H;
+  H = applyCfg(H || skeletonHoldings());
+  return {market, bt, study, H, enc, locked, owner};
 }
 
 /* ============================================================
@@ -387,7 +420,8 @@ function planLongterm(E){
   const H=E.H, s=H?.settings||{}, fx=E.fx, S=E.S;
   const budget = (s.monthly_longterm_krw||2000000)/1e4;
   const row = RULES.monthly.find(r=>E.dd>r.min) || RULES.monthly[0];
-  const alloc = {...row.alloc};
+  const k200 = budget/200;
+  const alloc = Object.fromEntries(Object.entries(row.alloc).map(([t,v])=>[t, v*k200]));
   const notes = [];
   const q=E.q;
   const oh = overheat(E);
@@ -397,7 +431,7 @@ function planLongterm(E){
   const lev = ()=> (alloc.QLD||0)+(alloc.TQQQ||0);
   // ① 거시 모드 (공격/중립/수비) — 가격 우선 원칙: 1배는 낙폭 구간에서 계속 산다, 거시는 레버리지와 '비싼 구간'의 1배만 줄인다
   if(E.mode.name==="중립"){
-    if(E.stage===0){ mv("SPYM","SCHD",30); mv("QLD","SGOV",(alloc.QLD||0)/2); notes.push("거시 중립 + 평상 구간: SPYM 30만 → SCHD, QLD 절반 → SGOV."); }
+    if(E.stage===0){ mv("SPYM","SCHD",30*k200); mv("QLD","SGOV",(alloc.QLD||0)/2); notes.push("거시 중립 + 평상 구간: SPYM 30만 → SCHD, QLD 절반 → SGOV."); }
     else { const l=lev()/2; mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",Math.max(0,l-(alloc.TQQQ||0))); notes.push("거시 중립 + 낙폭 구간: 1배는 그대로, 레버리지 절반만 QQQM으로."); }
   } else if(E.mode.name==="수비" || (E.hy!=null && E.hy>=6)){
     const why = E.hy>=6 ? "HY 스프레드 6% 이상" : "거시 수비(빨강 2개 이상)";
@@ -407,7 +441,7 @@ function planLongterm(E){
       notes.push(`${why} + 폭락(-30% 이하): 레버리지 몫 절반은 QQQM, 절반은 SGOV. 반등을 완전히 놓치지 않기 위한 완화 규칙입니다.`);
     } else if(E.stage===0 || !priceFirst){
       mv("QLD","SGOV",alloc.QLD||0); mv("TQQQ","SGOV",alloc.TQQQ||0);
-      mv("QQQM","SGOV",20); mv("SPYM","SCHD",30);
+      mv("QQQM","SGOV",20*k200); mv("SPYM","SCHD",30*k200);
       notes.push(`${why} + ${priceFirst?"평상 구간(싸지 않음)":"거시 우선 설정"}: 레버리지 전액과 QQQM 20만 → SGOV, SPYM 30만 → SCHD. 1배 적립은 줄이되 끊지 않습니다.`);
     } else {
       mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",alloc.QLD||0);
@@ -415,7 +449,7 @@ function planLongterm(E){
     }
   }
   // ② 과열 점수
-  if(hot && (alloc.QLD||0)>0){ const q=alloc.QLD; mv("QLD","SCHD",q/2); mv("QLD","SGOV",q/2); let extra=0; if(oh.score>=3) extra=mv("QQQM","SCHD",20);
+  if(hot && (alloc.QLD||0)>0){ const q=alloc.QLD; mv("QLD","SCHD",q/2); mv("QLD","SGOV",q/2); let extra=0; if(oh.score>=3) extra=mv("QQQM","SCHD",20*k200);
     notes.push(`과열 신호 ${oh.score}개: QLD ${num(q,0)}만 중 절반은 배당 ETF, 절반은 SGOV${extra? `, QQQM ${num(extra,0)}만도 배당 ETF로`:""}. 과열 땐 성장보다 배당 쪽을 삽니다.`); }
   // 배당 → 성장 교체: QQQ 1년 고점 -15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 장투 배당 보유분 30% 매도 → QQQM (126거래일 1회)
   { const dp=divPick(S), dq=E.q.dd52??E.dd, dvd=S[dp]?.dd52; const ltA=E.acc.list.find(a=>a.id==="longterm");
@@ -437,6 +471,24 @@ function planLongterm(E){
     alloc.QQQM += cut;
     notes.push(`QLD 상한 ${s.qld_cap_pct||30}%: 매수 후 장투 평가액 ${num(after,0)}만 기준 레버리지 한도 ${num(maxLev,0)}만 → 초과 ${num(cut,0)}만은 QQQM으로.`);
   }
+  // 최소 주문 단위: 소수점 매수를 안 쓰면 1주 가격보다 작은 몫은 큰 종목으로 합칩니다
+  if(!s.fractional && !E._noCap){
+    const one = t => { const p=priceOf(t,S); return p? p*fx/1e4 : 0; };   // 1주 가격(만원)
+    const order = ["TQQQ","SCHD","SPYM","QLD"];
+    for(const t of order){
+      if((alloc[t]||0)>0 && alloc[t] < one(t)){
+        const to = t==="SPYM"||t==="SCHD" ? "QQQM" : (t==="TQQQ" ? (alloc.QLD>=one("QLD")?"QLD":"QQQM") : "QQQM");
+        notes.push(`${t} 몫 ${num(alloc[t],1)}만은 1주(${num(one(t),1)}만)보다 작아 ${to}에 합쳤습니다.`);
+        mv(t,to,alloc[t]);
+      }
+    }
+    if((alloc.QQQM||0)>0 && alloc.QQQM < one("QQQM")){
+      const tot1 = alloc.QQQM;
+      mv("QQQM","SPYM",tot1);
+      notes.push(`QQQM 1주(${num(one("QQQM"),1)}만)를 살 수 없어 같은 1배 지수인 SPYM(1주 ${num(one("SPYM"),1)}만)으로 바꿨습니다.`);
+      if(alloc.SPYM < one("SPYM")) notes.push("SPYM 1주도 안 됩니다. 소수점 매수를 켜거나 2~3개월 모아서 사세요.");
+    }
+  }
   const below = E.state===3||E.state===4;
   const carry = (H?.accounts?.longterm?.qld_carry_krw||0)/1e4;
   const rows = [];
@@ -453,7 +505,8 @@ function planLongterm(E){
     if(t==="TQQQ") how = "20거래일 분할 (총자산 10% 상한)";
     if(t==="SGOV") how = "대기 현금 — 조건 해소 시 QLD·QQQM 매수 재원";
     if(key==="SCHD") how = `25일 1회. 배당 ETF 중 이번 달 가장 싼 것(200일선 ${pct(S[DIVP]?.vs200)})`;
-    rows.push({t, key, man, dollars, px, sh: px? dollars/px : null, how});
+    const sh = px? (s.fractional? dollars/px : Math.floor(dollars/px)) : null;
+    rows.push({t, key, man, dollars, px, sh, how});
   }
   if(carry) notes.push(`QLD 이월분 ${num(carry,0)}만 보유 중 — 위 QLD 규칙과 같은 조건에서 함께 집행.`);
   return {row, rows, notes, budget, hot, below};
@@ -678,7 +731,11 @@ function planPension(E){
   let rows = tilt ? [{t:"458730",w:50},{t:NQ,w:50}] : [{t:"458730",w:60},{t:NQ,w:40}];   // 11-08: TIME 액티브 → TIGER 나스닥100 지수형(변동성 1.8배 문제)
   const by = E.H?.settings?.birth_year, sa = E.H?.settings?.pension_start_age||55;
   const glide = by? {age:new Date().getFullYear()-by, sa} : null;
-  return {amt, tilt, glide, rows: rows.map(r=>{ const px=priceOf(r.t,E.S); const won_=amt*r.w/100; return {...r, name:KR_NAMES[r.t], won:won_, px, sh: px? Math.floor(won_/px): null}; })};
+  let rs = rows.map(r=>({...r, px:priceOf(r.t,E.S)}));
+  // 1주 미만인 몫은 이번 달 예수금으로 두고 다음 달 같은 몫과 합쳐 매수(비중 유지)
+  const short = rs.filter(r=>r.px && amt*r.w/100 < r.px).map(r=>KR_NAMES[r.t]);
+  const merged = short.length? short : null;
+  return {amt, tilt, merged, glide, rows: rs.map(r=>{ const won_=amt*r.w/100; return {...r, name:KR_NAMES[r.t], won:won_, sh: r.px? Math.floor(won_/r.px): null}; })};
 }
 
 /* ---------- 매수 창 ---------- */
@@ -698,7 +755,7 @@ function buyWindow(day=25){
 /* ============================================================
    렌더
    ============================================================ */
-const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["people","인간지표"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"]];
+const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["people","인간지표"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"],["settings","내 설정"]];
 let E = null, DATA = null;
 
 /* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
@@ -739,7 +796,7 @@ function vToday(){
   const lt = planLongterm(E), am = planAmmo(E), sw = planSwing(E), irp = planIRP(E);
   const bw = buyWindow(E.H?.settings?.buy_day||25);
   const todo = [];
-  if(bw.inWindow) todo.push(`<b>적립 매수 기간입니다.</b> 이번 달 매수 탭의 표대로 장투 200만·연금저축 45만을 집행하세요.`);
+  if(bw.inWindow) todo.push(`<b>적립 매수 기간입니다.</b> 이번 달 매수 탭의 표대로 장투 ${won(E.H.settings.monthly_longterm_krw)}·연금저축 ${won(E.H.settings.monthly_pension_krw)}을 집행하세요.`);
   else todo.push(`다음 적립은 <b>${bw.label}</b> (D-${bw.dday}). 지금은 아래 조건부 매수만 확인합니다.`);
   { const bo=planBoost(E);
     { const hs=humanSignals().rows.filter(r=>r.alert); if(hs.length) todo.push(`<b>인간지표 과열 경보</b>: ${hs.map(r=>esc(r.k.split(" (")[0])).join(", ")} 자기 과거 상위 10%. 규칙 변경은 없고, QLD·3배 신규 매수는 한 번 더 확인(과열·현금화 탭).`); }
@@ -747,9 +804,9 @@ function vToday(){
     if(bo.stop) todo.push(`<b>반등 가속 손절</b>: 추세이탈 재발. 가속으로 산 QLD만 매도 → SGOV.`); }
   if(am.action){
     const a=am.action;
-    todo.push(`현금 <b>${a.t.n}차</b>${a.pre?" (RSI 30 선도착, 절반 선집행)":""}: ${a.ready? "<b>집행일</b>" : "보조지표 2개 미충족 — 대기"} · 잔액의 ${a.pctUse}% = ${am.bal>0? won(a.amt) : "잔액 0원(이번 달 85만 적립 후 그 10%)"} · ${mixText(a.t.mix)} · ${a.split} 분할`);
+    todo.push(`현금 <b>${a.t.n}차</b>${a.pre?" (RSI 30 선도착, 절반 선집행)":""}: ${a.ready? "<b>집행일</b>" : "보조지표 2개 미충족 — 대기"} · 잔액의 ${a.pctUse}% = ${am.bal>0? won(a.amt) : `잔액 0원(이번 달 ${won(E.H.settings.monthly_ammo_krw)} 적립 후 그 ${a.pctUse}%)`} · ${mixText(a.t.mix)} · ${a.split} 분할`);
   } else if(am.settle) todo.push(`<b>현금 계좌 회복 정산</b>: QQQ 전고점 회복. 투입분 ${won(am.settle.invVal)} 중 절반 ${won(am.settle.half)}은 매도해 SGOV로, 절반은 장투 계좌로 이관(대체 출고, 안 되면 매도 후 장투에서 재매수). 차수 초기화.`);
-  else if(true) todo.push(`현금: QQQ 고점 대비 ${RULES.tranches[0].dd}% 전이라 대기. 월 85만은 SGOV에 적립.`);
+  else if(true) todo.push(`현금: QQQ 고점 대비 ${RULES.tranches[0].dd}% 전이라 대기. 월 ${won(E.H.settings.monthly_ammo_krw)}은 SGOV에 적립.`);
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
   if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 4주에 나눠 매주 1번씩 삽니다.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
@@ -759,7 +816,7 @@ function vToday(){
   const alerts = E.alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join("");
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
-  ${DATA.locked? `<div class="alert bad">이 기기에 보유 내역 키가 없습니다. <a href="#rules">규칙 탭 맨 아래</a>에서 키 파일을 선택하고 저장하세요(기기마다 한 번).</div>`:""}
+  ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#settings">내 설정</a>에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
   <div class="alerts">${alerts}</div>
   ${humanSummary()}
   <h2>오늘 할 일</h2>
@@ -777,6 +834,30 @@ function vToday(){
   </div>
   ${E.acc.list.length? `<h2>계좌 요약</h2>${accountsTable(true)}`:""}`;
 }
+function planSummaryHTML(lt, pn, am){
+  const s = E.H.settings;
+  const ltRows = lt.rows.filter(r=>r.man>0.05);
+  const ltTot = ltRows.reduce((a,r)=>a+r.man*1e4,0);
+  const accts = [
+    {n:"장투 (직투)", sub:"달러 환전", items: ltRows.map(r=>({t:r.t, amt:r.man*1e4, note: r.key==="SCHD"? "배당" : r.t==="QLD"? "레버리지" : r.t==="SGOV"? "대기 현금" : ""})), tot: ltTot},
+    {n:"폭락장 현금", sub:"모아 두기", items:[{t:"SGOV", amt:s.monthly_ammo_krw, note: am.action? `${am.action.t.n}차 투입 대상`:"하락 단계까지 대기"}], tot:s.monthly_ammo_krw},
+    {n:"연금저축", sub:"국내상장", items: pn.rows.map(r=>({t:r.name, amt:r.won, note:""})), tot: pn.amt},
+  ];
+  if(s.monthly_swing_krw>0) accts.push({n:"스윙", sub:"예수금", items:[{t:"예수금", amt:s.monthly_swing_krw, note:"음봉·과대낙폭 매수일까지 대기"}], tot:s.monthly_swing_krw});
+  const G = accts.reduce((a,x)=>a+x.tot,0) || 1;
+  // 자산군 합계: 나스닥100 / S&P500 / 배당 / 레버리지 / 현금성
+  const cls = t => /QLD|TQQQ/.test(t)? "레버리지" : /SGOV|예수금/.test(t)? "현금성" : /SPYM|S&P500/.test(t)? "S&P500" : /QQQM|나스닥100/.test(t)? "나스닥100" : "배당";
+  const mix = {}; accts.forEach(a=>a.items.forEach(i=>{ const k=cls(i.t); mix[k]=(mix[k]||0)+i.amt; }));
+  const won0 = v => Math.round(v/1e3)*1e3;
+  return `<h3>이번 달 매수 한눈에</h3>
+  <div class="tbl"><table class="sumtbl">
+    <tr><th class="l">종목</th><th>계좌 내</th><th>전체</th><th>금액</th></tr>
+    ${accts.map(a=>`<tr class="acct"><td class="l" colspan="3"><b>${esc(a.n)}</b> <span class="muted">${esc(a.sub)} · 전체의 ${num(a.tot/G*100,0)}%</span></td><td><b>${won(won0(a.tot))}</b></td></tr>
+      ${a.items.map(i=>`<tr><td class="l">${esc(i.t)}${i.note? ` <span class="muted">${esc(i.note)}</span>`:""}</td><td>${num(a.tot? i.amt/a.tot*100:0,0)}%</td><td>${num(i.amt/G*100,1)}%</td><td>${won(won0(i.amt))}</td></tr>`).join("")}`).join("")}
+    <tr class="total"><td class="l">전체 합계</td><td></td><td>100%</td><td>${won(won0(G))}</td></tr>
+  </table></div>
+  <p class="note">자산군: ${Object.entries(mix).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${num(v/G*100,0)}%`).join(" · ")}. 종목별 매수 방법과 주수는 아래 계좌별 표에 있습니다. IRP는 월 적립이 없어 여기서 빠집니다.</p>`;
+}
 function mixText(m){ return Object.entries(m).map(([k,v])=>`${k} ${v}%`).join(" + "); }
 
 function vPlan(){
@@ -786,14 +867,16 @@ function vPlan(){
   <h2>이번 달 적립 (${bw.label})</h2>
   <div class="panel"><p class="lead">현재 구간: <b>${esc(lt.row.label)}</b> · QQQ 고점 대비 ${pct(E.dd)} · 상태 ${E.state}. ${RULES.states[E.state].name}</p>
   <p class="muted">1배 지수(QQQM·SPYM)는 상태와 무관하게 매월 삽니다. QLD 몫만 규칙에 따라 시점이 달라집니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></div>
+  ${cfgBanner()}
+  ${planSummaryHTML(lt, pn, am)}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
   <div class="tbl"><table>
-    <tr><th>종목</th><th>금액</th><th>달러</th><th>현재가</th><th>약 주수</th><th class="l">매수 방법</th></tr>
-    ${lt.rows.map(r=>`<tr><td><b>${r.t}</b></td><td>${num(r.man,0)}만</td><td>${usd(r.dollars,0)}</td><td>${usd(r.px)}</td><td>${r.sh!=null? num(r.sh,1):"–"}</td><td class="l muted">${esc(r.how)}</td></tr>`).join("")}
+    <tr><th>종목</th><th>금액</th><th>달러</th><th>현재가</th><th>${E.H.settings.fractional?"주수(소수점)":"주수"}</th><th class="l">매수 방법</th></tr>
+    ${lt.rows.map(r=>`<tr><td><b>${r.t}</b></td><td>${num(r.man, r.man<10?1:0)}만</td><td>${usd(r.dollars,0)}</td><td>${usd(r.px)}</td><td>${r.sh!=null? num(r.sh, E.H.settings.fractional?2:0):"–"}</td><td class="l muted">${esc(r.how)}</td></tr>`).join("")}
     <tr class="total"><td>합계</td><td>${num(tot,0)}만</td><td>${usd(tot*1e4/E.fx,0)}</td><td></td><td></td><td></td></tr>
   </table></div>
   ${lt.notes.length? `<div class="panel" style="margin-top:10px">${lt.notes.map(n=>`<p>· ${esc(n)}</p>`).join("")}</div>`:""}
-  <h3>② 폭락장 현금 85만 → SGOV</h3>
+  <h3>② 폭락장 현금 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
   <div class="panel"><p>매달 SGOV로 적립합니다 (원하면 SGOV 80 + 엔화 20). 현재 잔액 ${won(am.bal)} · 집행 차수 ${am.done.length? am.done.join(", ")+"차":"없음"}.
   ${am.action? `<br><b>이번 달 현금 ${am.action.t.n}차 대상</b> — 폭락 대응 탭 참고.`:""}</p></div>
   <h3>③ 연금저축 ${won(pn.amt)} (국내상장, 레버리지 불가)</h3>
@@ -801,7 +884,7 @@ function vPlan(){
     <tr><th>종목</th><th>비중</th><th>금액</th><th>현재가</th><th>주수</th></tr>
     ${pn.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.w}%</td><td>${won(r.won)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td></tr>`).join("")}
   </table></div>
-  <p class="note">${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p>
+  <p class="note">${pn.merged? `${pn.merged.join("·")} 몫이 1주 가격보다 작아 이번 달은 예수금으로 두고 다음 달 같은 몫과 합쳐 삽니다. `:""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p>
   ${ordersHTML()}`;
 }
 
@@ -1086,6 +1169,48 @@ function dualChart(c){
   return `<svg viewBox="0 0 ${W} ${h}" class="chart" preserveAspectRatio="none" role="img" aria-label="자산 곡선"><polyline fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke" points="${c.map((r,i)=>x(i)+","+y(r[2])).join(" ")}"/><polyline fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" points="${c.map((r,i)=>x(i)+","+y(r[1])).join(" ")}"/></svg>`;
 }
 
+function cfgBanner(){
+  const s=E.H.settings;
+  const tot = s.monthly_longterm_krw+s.monthly_ammo_krw+s.monthly_pension_krw+(s.monthly_swing_krw||0);
+  return `<div class="panel"><p>월 저축 <b>${won(tot)}</b> = 장투 ${won(s.monthly_longterm_krw)} · 현금 ${won(s.monthly_ammo_krw)} · 연금저축 ${won(s.monthly_pension_krw)}${s.monthly_swing_krw? " · 스윙 "+won(s.monthly_swing_krw):""} <a href="#settings">바꾸기</a></p></div>`;
+}
+function vSettings(){
+  const c = loadCfg() || {...CFG_DEFAULT, pct:{...CFG_DEFAULT.pct}};
+  const f = (k,n,d)=>`<div class="kvrow"><label for="p_${k}">${n}<span class="muted"> ${d}</span></label><div class="inline"><input id="p_${k}" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="${c.pct[k]}"><span>%</span><output id="o_${k}" class="muted"></output></div></div>`;
+  return `<h2>내 설정</h2>
+  <div class="panel">
+    <label for="c_total"><b>이번 달 저축액 (원)</b></label>
+    <input id="c_total" type="number" inputmode="numeric" min="0" step="10000" value="${c.total}" style="margin:6px 0 4px">
+    <p class="muted" id="c_total_txt"></p>
+    <h3>계좌별 비율</h3>
+    ${f("longterm","장투 (직투)","1배 지수 + QLD 적립")}
+    ${f("ammo","폭락장 현금","SGOV에 쌓아 두었다가 하락 단계에 투입")}
+    ${f("pension","연금저축","국내상장 나스닥100·S&P500")}
+    ${f("swing","스윙","단기 음봉 매매용 예수금")}
+    <p id="c_sum" class="note"></p>
+    <label class="check"><input id="c_frac" type="checkbox" ${c.fractional?"checked":""}> 미국주식 소수점 매수 사용 (끄면 1주 단위로 계산하고, 1주가 안 되는 몫은 큰 종목에 합칩니다)</label>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="c_save">저장하고 이번 달 매수 보기</button><button class="ghost" id="c_reset">기본값으로</button></div>
+    <p class="note">입력값은 이 기기 브라우저에만 저장됩니다. 다른 사람이 같은 주소를 열어도 각자 따로 설정합니다. 기본값은 월 200만 = 장투 60.6% · 현금 25.8% · 연금저축 13.6%입니다.</p>
+  </div>
+  <h2>비율을 정할 때</h2>
+  <div class="panel"><ol class="steps">
+    <li>현금은 20~30%를 권합니다. 너무 작으면 폭락장에서 1~4차 투입이 의미 없을 만큼 작아집니다.</li>
+    <li>장투 월 금액이 QQQM 1주(약 ${won((priceOf("QQQM",E.S)||0)*E.fx)})보다 작으면 소수점 매수를 켜거나 몇 달 모아서 사세요.</li>
+    <li>연금저축은 세액공제 한도(연 600만, IRP 합산 900만)를 넘기면 공제 효과가 없습니다. 월 50만이 연 600만입니다.</li>
+    <li>스윙은 0%가 기본입니다. 단기 매매 경험이 없으면 비워 두세요.</li>
+  </ol></div>`;
+}
+function bindSettings(){
+  const keys=["longterm","ammo","pension","swing"];
+  const upd=()=>{ const t=+$("#c_total").value||0; let sum=0;
+    keys.forEach(k=>{ const v=+$("#p_"+k).value||0; sum+=v; $("#o_"+k).textContent = won(t*v/100); });
+    $("#c_total_txt").textContent = won(t);
+    $("#c_sum").innerHTML = Math.abs(sum-100)<0.05 ? `합계 100%` : `<span class="r">합계 ${num(sum,1)}% — 100%가 되도록 맞춰 주세요</span>`;
+    $("#c_save").disabled = Math.abs(sum-100)>=0.05 || t<=0; };
+  ["c_total",...keys.map(k=>"p_"+k)].forEach(id=>$("#"+id).addEventListener("input",upd)); upd();
+  $("#c_save").onclick=()=>{ const c={total:+$("#c_total").value, pct:Object.fromEntries(keys.map(k=>[k,+$("#p_"+k).value||0])), fractional:$("#c_frac").checked}; saveCfg(c); location.hash="plan"; location.reload(); };
+  $("#c_reset").onclick=()=>{ try{ localStorage.removeItem("user_cfg"); }catch(e){} location.reload(); };
+}
 function vRules(){
   return `<h2>운용 원칙 요약</h2>
   <div class="panel"><ol class="steps">
@@ -1095,7 +1220,7 @@ function vRules(){
     <li><b>새 지표가 규칙에 들어간 곳</b>: ① 볼린저 하단 이탈 → 현금 투입 보조지표 1개 + 스윙 2·3회차 매수일 신호. ② 인간지표 공포(한국 반대매매 2년 상위 10% 또는 AAII 하위 10%) → 현금 투입 보조지표 1개 + 스윙 분할 매수일 신호. ③ 인간지표 과열(미국 빚투 또는 AAII 상위 10%) → 과열 점수 +1, 단 가격 과열 신호가 1개 이상 있을 때만(지표 단독으로는 매도 안 함). ④ 오늘 탭 RSI·공포탐욕·VIX 단계 라벨은 현재 위치 안내이고, 실제 금액은 주문표·현금 차수표를 따릅니다.</li>
     <li><b>보조지표 검증 (2026-11-08)</b>: QQQ·SPY·SOXX·코스피 전 기간. 볼린저 하단 이탈은 이후 21일 수익률이 평소의 약 2배(QQQ 하락 국면 +2.0% vs +0.4%, SOXX +3.2% vs +1.3%)라 스윙 분할매수 날짜 신호로 추가. 슬로우 스토캐스틱은 평소와 차이가 없어 제외. '바닥 확인 후 매수'(스토캐스틱 골든크로스·볼린저 재진입 대기)는 회차 도달일 즉시 매수보다 평균 0.7~2.9% 비싸게 사서 채택 안 함 — 회차 가격에 닿으면 바로 삽니다.</li>
     <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV 50% → QLD(현금 계좌 제외), 추세이탈 재발 시 그 몫만 SGOV로 손절. 백테스트상 장기 연 +0.3~1.1%p, 닷컴형 최대 손실 약 +2%p.</li>
-    <li><b>계좌 역할</b>: 장투(직투, 월 200만) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 85만, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 5/10/15/15/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 45만) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
+    <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 5/10/15/15/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개 이상 또는 HY ≥ 6% → 신규 레버리지 중단.</li>
@@ -1115,8 +1240,9 @@ function render(){
   const h = (location.hash||"#today").slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : "today";
   $("#nav").innerHTML = VIEWS.map(([k,t])=>`<a href="#${k}" ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
-  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
+  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules, settings:vSettings}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
+  if(view==="settings") bindSettings();
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
     $("#pksave").onclick=()=>{ try{ localStorage.setItem("holdings_key", $("#pk").value.trim()); location.reload(); }catch(e){} };
