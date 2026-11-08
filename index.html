@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0f3d3e">
-<title>적립 대시보드</title>
+<title>Stock Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
@@ -148,7 +148,7 @@ footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
 <header>
   <div class="wrap">
     <div class="top">
-      <h1>적립 대시보드</h1>
+      <h1>Stock Dashboard</h1>
       <div class="meta" id="meta">불러오는 중…</div>
     </div>
     <div class="hero" id="hero" aria-live="polite"></div>
@@ -192,7 +192,7 @@ const RULES = {
   irpTarget: {1:[55,60], 2:[58,62], 3:[62,65], 4:[68,70], 5:[55,60]},
   fngLink: "https://naver.me/xZKtAlYM",
 };
-const KR_NAMES = {"0048J0":"KODEX 미국머니마켓액티브","360750":"TIGER 미국S&P500","426030":"TIME 미국나스닥100액티브","0046A0":"TIGER 미국초단기국채","0137W0":"KIWOOM 미국S&P500&GOLD","069500":"KODEX 200","458730":"TIGER 미국배당다우존스"};
+const KR_NAMES = {"0048J0":"KODEX 미국머니마켓액티브","360750":"TIGER 미국S&P500","426030":"TIME 미국나스닥100액티브","133690":"TIGER 미국나스닥100","0046A0":"TIGER 미국초단기국채","0137W0":"KIWOOM 미국S&P500&GOLD","069500":"KODEX 200","458730":"TIGER 미국배당다우존스"};
 
 /* ============================================================
    유틸
@@ -293,7 +293,7 @@ function engine(D){
   if(hy!=null && hy>=6) alerts.push({c:"bad", t:`하이일드 스프레드 <b>${num(hy,2)}%</b> ≥ 6% — 신규 레버리지 중단 (7~8% + VIX 30~50에서 재개).`});
   const ks = S["^KS11"];
   if(ks?.chg!=null && ks.chg<=-3) alerts.push({c:"", t:`코스피 <b>${pct(ks.chg)}</b> — IRP KODEX 200 음봉 매수 규칙 확인.`});
-  if(state===3||state===4) alerts.push({c:"info", t:`QQQ ${RULES.states[state].name} 상태: QLD 1층(-2% 적립)은 끄고, QLD 몫은 주 1회 4분할로 삽니다. 1배 지수는 계속 삽니다.`});
+  if(state===3||state===4) alerts.push({c:"info", t:`QQQ ${RULES.states[state].name} 상태: 장투 계좌 QLD는 −2% 하락일 매수를 끄고, 월 QLD 몫을 매주 1번씩 4번 나눠 삽니다. 1배 지수는 계속 삽니다.`});
   if(acc.directTotal >= (H?.settings?.cash_trigger_krw||1e8)) alerts.push({c:"info", t:`직투 자산 1억 도달 — 스윙 계좌 현금 50% 규칙 적용.`});
 
   return {M,S,H,fx,q,vix,fng,dd,state,stage,aux,auxN,L,mode,noLev,hy,acc,alerts};
@@ -658,10 +658,10 @@ function planIRP(E){
   const kodexOn = (ksDD!=null && ksDD<=-10) || (ks.rsi!=null && ks.rsi<=30);
   const sleeve = a.val*0.20, tick = sleeve*0.10*(ks.rsi!=null && ks.rsi<=25 ? 2 : 1);
   // 위험자산 구성(Ben 2026-11-08): S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 부족분은 이 비율로, 모자란 종목부터.
-  const MIX = {"360750":40, "426030":30, "458730":30};
+  const MIX = {"360750":40, "133690":30, "458730":30};   // 나스닥100: 신규는 TIGER 지수형(11-08), 기존 TIME 액티브 보유분도 같은 칸으로 계산
   const riskPos = (a.pos||[]).filter(p=>p.risk); const riskV = riskPos.reduce((x,p)=>x+p.v,0);
   const after = riskV + Math.max(0,gapLo);
-  const buys = Object.entries(MIX).map(([t,w])=>{ const have=riskPos.filter(p=>p.t===t).reduce((x,p)=>x+p.v,0); return {t, w, name:KR_NAMES[t], have, need: Math.max(0, after*w/100 - have)}; });
+  const buys = Object.entries(MIX).map(([t,w])=>{ const have=riskPos.filter(p=>p.t===t || (t==="133690" && p.t==="426030")).reduce((x,p)=>x+p.v,0); return {t, w, name:KR_NAMES[t], have, need: Math.max(0, after*w/100 - have)}; });
   const needSum = buys.reduce((x,b)=>x+b.need,0); if(needSum>0 && gapLo>0) buys.forEach(b=>b.buy = gapLo*b.need/needSum); else buys.forEach(b=>b.buy=0);
   return {a, lo, hi, max, cur, gapLo, gapHi, ks, ksDD, kodexOn, sleeve, tick, todayBuy: kodexOn && ks.chg!=null && ks.chg<=-1.5, MIX, buys};
 }
@@ -672,7 +672,7 @@ function planPension(E){
   // Ben 2026-11-08: 연금저축 = 배당(미국배당다우존스) 60 + 나스닥100 40. 나스닥 쏠림 분산 + 배당 과세이연.
   // QQQ 고점 대비 -10% 이하면 싸진 나스닥100을 50:50까지 더 삼(싸게 사기). 매도 없음.
   const tilt = E.stage>=1;
-  let rows = tilt ? [{t:"458730",w:50},{t:"426030",w:50}] : [{t:"458730",w:60},{t:"426030",w:40}];
+  let rows = tilt ? [{t:"458730",w:50},{t:"133690",w:50}] : [{t:"458730",w:60},{t:"133690",w:40}];   // 11-08: TIME 액티브 → TIGER 나스닥100 지수형(변동성 1.8배 문제)
   const by = E.H?.settings?.birth_year, sa = E.H?.settings?.pension_start_age||55;
   const glide = by? {age:new Date().getFullYear()-by, sa} : null;
   return {amt, tilt, glide, rows: rows.map(r=>{ const px=priceOf(r.t,E.S); const won_=amt*r.w/100; return {...r, name:KR_NAMES[r.t], won:won_, px, sh: px? Math.floor(won_/px): null}; })};
@@ -748,7 +748,7 @@ function vToday(){
   } else if(am.settle) todo.push(`<b>현금 계좌 회복 정산</b>: QQQ 전고점 회복. 투입분 ${won(am.settle.invVal)} 중 절반 ${won(am.settle.half)}은 매도해 SGOV로, 절반은 장투 계좌로 이관(대체 출고, 안 되면 매도 후 장투에서 재매수). 차수 초기화.`);
   else if(true) todo.push(`현금: QQQ 고점 대비 ${RULES.tranches[0].dd}% 전이라 대기. 월 85만은 SGOV에 적립.`);
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
-  if(lt.below) todo.push("QQQ 200일선 아래: QLD는 -2% 날짜와 무관하게 주 1회 4분할.");
+  if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 4주에 나눠 매주 1번씩 삽니다.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
   if(irp){ todo.push(irp.kodexOn ? `IRP KODEX 200 슬리브 가동 중 (코스피 고점 대비 ${pct(irp.ksDD,0)}, RSI ${num(irp.ks.rsi,1)}). ${irp.todayBuy? `<b>오늘 음봉 매수일</b>: ${won(irp.tick)}` : "다음 -1.5% 음봉일에 매수."}` : "IRP KODEX 200: 가동 조건 미충족."); }
@@ -976,7 +976,7 @@ function accountsTable(compact){
 }
 /* ---------- 전체 합계 (Ben 2026-11-08) ---------- */
 const ASSET_CLASS = [
-  ["나스닥100", "#0f3d3e", ["QQQM","QQQ","426030"]],
+  ["나스닥100", "#0f3d3e", ["QQQM","QQQ","426030","133690"]],
   ["S&P500", "#3f7f7f", ["SPYM","SPY","VOO","360750","0137W0"]],
   ["배당", "#8a9a5b", ["SCHD","JEPI","JEPQ","DIVO","FDVV","DGRO","VIG","O","MO","458730"]],
   ["레버리지", "#b54708", ["QLD","TQQQ","SOXL"]],
