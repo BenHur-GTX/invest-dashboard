@@ -19,8 +19,8 @@ SCEN = [
 ]
 MONTHLY_RULES = [  # (min dd 초과, QQQM, SPYM, QLD, TQQQ) 만원 / 200만
     (-10, 80, 60, 40, 0), (-15, 90, 60, 50, 0), (-20, 90, 50, 60, 0), (-30, 60, 20, 120, 0), (-999, 40, 0, 120, 40)]
-AMMO_T = [(-30, 15, {"QQQ": 70, "QLD": 30}), (-40, 23.5, {"QQQ": 60, "QLD": 40}),
-          (-60, 38.5, {"QLD": 80, "QQQ": 20}), (-80, 100, {"QLD": 80, "TQQQ": 20})]
+AMMO_T = [(-25, 5, {"QQQ": 80, "QLD": 20}), (-30, 10.5, {"QQQ": 70, "QLD": 30}), (-35, 17.6, {"QQQ": 60, "QLD": 40}),
+          (-40, 21.4, {"QQQ": 50, "QLD": 50}), (-50, 45.5, {"QLD": 80, "QQQ": 20}), (-60, 100, {"QLD": 80, "TQQQ": 20})]  # 11-08 개정
 LT_POOL_T = [(-10, 10, {"QQQ": 70, "QLD": 30}), (-15, 22.2, {"QQQ": 60, "QLD": 40}),
              (-20, 42.9, {"QLD": 80, "QQQ": 20}), (-30, 100, {"QLD": 80, "TQQQ": 20})]
 DD_WIN = int(os.environ.get("DD_WIN", "1260"))
@@ -62,7 +62,7 @@ def load():
         time.sleep(0.4)
     f = {}
     for k, sid in {"fx": "DEXKOUS", "ft_old": "DFEDTAR", "ft_new": "DFEDTARU", "dgs2": "DGS2", "sahm": "SAHMREALTIME",
-                   "icsa": "ICSA", "walcl": "WALCL", "tga": "WTREGEN", "rrp": "RRPONTSYD", "hy": "BAMLH0A0HYM2", "baa": "BAA10Y"}.items():
+                   "icsa": "ICSA", "walcl": "WALCL", "tga": "WTREGEN", "rrp": "RRPONTSYD", "hy": "BAMLH0A0HYM2", "baa": "BAA10Y", "margin": "BOGZ1FL663067003Q"}.items():
         try:
             f[k] = B.fred(sid, "1990-01-01"); print("fred", sid, len(f[k]), flush=True)
         except Exception as e:
@@ -179,7 +179,19 @@ def prep(y, f):
         chg4 = nl[i][1] - nl[i - 4][1] if i >= 4 else None
         nl_info.append((nl[i][0], (down, chg4)))
     nl_d = ff(nl_info, dates)
-    return dict(dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
+    # 미국 빚투(연준 가계 마진 대출) 전년 대비, 과거 40분기 대비 상위 10% 여부. 분기 시작일 + 5개월 뒤부터 사용(발표 지연)
+    mg = f.get("margin") or []
+    mh = []
+    for k in range(4, len(mg)):
+        if not mg[k - 4][1]: continue
+        yoy = mg[k][1] / mg[k - 4][1] - 1
+        hist = [mg[j][1] / mg[j - 4][1] - 1 for j in range(max(4, k - 40), k) if mg[j - 4][1]]
+        hot = len(hist) >= 12 and sum(x <= yoy for x in hist) / len(hist) >= 0.9
+        y_, m_ = int(mg[k][0][:4]), int(mg[k][0][5:7]) + 5
+        if m_ > 12: y_ += 1; m_ -= 12
+        mh.append((f"{y_:04d}-{m_:02d}-01", hot))
+    mhot = ff(mh, dates)
+    return dict(mhot=mhot, dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
                 states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
                 hy=hy, hy_start=hy_start, baa=baa, nl=nl_d)
 
@@ -253,6 +265,7 @@ def run(D, i0, end=None, cfg=None):
     ammo_done, lt_done = set(), set()
     cyc_min = 0; boost = {'ammo': {}, 'longterm': {}}; boosts_in_cycle = 0; prev_st = None; armed_low = None
     lt_last_sell = -10 ** 9
+    mswap = False
     div_last = -10 ** 9
     sw_pos = {}  # t: {"avg":px, "half":bool, "lots":n, "last":i}
     sw_last_oh = -10 ** 9
@@ -300,6 +313,15 @@ def run(D, i0, end=None, cfg=None):
                 q = al.get("QLD", 0); mv("QLD", "SCHD", q / 2); mv("QLD", "SGOV", q / 2)
                 if oh >= 3: mv("QQQ", "SCHD", 20)
             elif oh >= 2: mv("QLD", "SGOV", al.get("QLD", 0))
+            if cfg.get("margin") and D["mhot"][i] and st in (3, 4):   # 빚투 극단 + 추세이탈 이하: 신규 레버리지 → QQQ
+                mv("TQQQ", "QQQ", al.get("TQQQ", 0)); mv("QLD", "QQQ", al.get("QLD", 0))
+            mcond = bool(D["mhot"][i]) and st in (3, 4)
+            if cfg.get("margin") == "swap":   # 조건 첫 진입 시 보유 레버리지도 QQQ로 1회 교체
+                if mcond and not mswap:
+                    ltA = A["longterm"]; got = ltA.sell("TQQQ", ltA.v("TQQQ", P, i, fx), P, i, fx) + ltA.sell("QLD", ltA.v("QLD", P, i, fx), P, i, fx)
+                    ltA.buy("QQQ", got, P, i, fx); mswap = True; log.append((d, f"빚투 경보: 장투 레버리지 {round(got / MAN)}만 → QQQ"))
+                elif not mcond:
+                    mswap = False
             lt = A["longterm"]; ltv = lt.val(P, i, fx) / MAN
             curlev = (lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)) / MAN
             maxlev = max(0, 0.30 * (ltv + 200) - curlev); newlev = al.get("QLD", 0) + al.get("TQQQ", 0)
@@ -620,10 +642,38 @@ def metrics(D, r, bq, bs):
     }
 
 
+def margin_study(D):
+    """빚투 극단 + 추세이탈 이하일 때 장투 QLD → QQQM, 효과 비교 → data/margin_bt.json"""
+    dates = D["dates"]
+    base = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    V = [("현재 규칙", base), ("M 빚투 경보 시 신규 QLD → QQQM", {**base, "margin": "new"}), ("N = M + 보유 QLD도 QQQM 교체", {**base, "margin": "swap"})]
+    hot_days = [dates[i] for i in range(len(dates)) if D["mhot"][i] and (i == 0 or not D["mhot"][i - 1])]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "hot_starts": hot_days,
+           "hot_share": round(sum(1 for x in D["mhot"] if x) / len(dates) * 100, 1), "rows": []}
+    starts = [(n, a, b) for n, a, b in SCEN] + [("전체 (1999-03~)", dates[0], dates[0]), ("2010~", "2010-01-04", "2010-01-31")]
+    for name, a, b in starts:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [s[0] for s in SCEN] else ks[0]
+        bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+        for vn, cfg in V:
+            r = run(D, i0, cfg=cfg); m = metrics(D, r, bq, bs); h = m["horizon"]
+            # 장투 계좌만 따로: 최종 평가액(만원)
+            lt_end = round(r["A"]["longterm"].val(D["P"], len(dates) - 1, D["fx"][-1]) / MAN)
+            out["rows"].append({"scenario": name, "variant": vn, "start": dates[i0], "worst": m["underwater"].get("worst_vs_principal_pct"),
+                                "uw_months": m["underwater"].get("months"), "y1": (h["1y"] or {}).get("ret_pct"), "y3": (h["3y"] or {}).get("ret_pct"),
+                                "y5": (h["5y"] or {}).get("ret_pct"), "end": h["end"]["ret_pct"], "irr": h["end"]["irr"], "lt_end_man": lt_end,
+                                "events": [e for e in r["log"] if "빚투" in e[1]][:10]})
+            print(name, vn, out["rows"][-1]["worst"], out["rows"][-1]["y3"], out["rows"][-1]["end"], out["rows"][-1]["irr"], lt_end, flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "margin_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_MARGIN"):
+        margin_study(D); print("ok"); return
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dd_window_days": DD_WIN, "data_start": dates[0],
            "hy_fred_start": D["hy_start"], "notes": [
                "시작 잔고·월 적립은 현재(2026) 금액 그대로, 물가 조정 없음", "세금·수수료·환전 스프레드 제외",
