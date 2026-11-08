@@ -168,6 +168,12 @@ def kofia(key):
     if ds:
         v = ds[-1][1]; res["deposit"] = {"date": ds[-1][0], "value": v, "pctile_2y": _pctile([x[1] for x in ds[:-1]], v),
                                          "chg_20d": round((v / ds[-21][1] - 1) * 100, 1) if len(ds) > 21 else None}
+    ops = [(it["basDt"], pick(it, r"brkTrdUcolMnyVsOppsTrdAmt")) for it in fund]
+    ops = [x for x in ops if x[1] is not None]
+    if ops:
+        # 반대매매 금액: 5일 평균으로 잡음 제거
+        avg = [sum(v for _, v in ops[max(0, i - 4):i + 1]) / len(ops[max(0, i - 4):i + 1]) for i in range(len(ops))]
+        res["forced"] = {"date": ops[-1][0], "value": ops[-1][1], "avg5": round(avg[-1]), "pctile_2y": _pctile(avg[:-1], avg[-1])}
     if cs and ds:
         res["credit_to_deposit"] = round(cs[-1][1] / ds[-1][1] * 100, 1)
     return res
