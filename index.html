@@ -72,6 +72,7 @@ td.l,th.l{text-align:left;white-space:normal}
 .tbl table tr:last-child td{border-bottom:0}
 .tbl td.l:first-child{min-width:150px}
 tr.total td{font-weight:700;background:#faf9f6}
+body.simple nav,body.simple #stages{display:none}
 .sumtbl tr.acct td{background:var(--brand-soft);border-top:2px solid var(--line)}
 .sumtbl td:not(.l),.sumtbl th:not(.l){white-space:nowrap}
 @media (max-width:520px){.sumtbl td,.sumtbl th{padding:7px 6px;font-size:13px}.sumtbl td.l .muted{display:block;font-size:12px}}
@@ -1231,6 +1232,43 @@ function bindSettings(){
   $("#c_save").onclick=()=>{ const {t,P}=read(); saveCfg({total:t, pct:P, fractional:$("#c_frac").checked}); location.hash="plan"; location.reload(); };
   $("#c_reset").onclick=()=>{ try{ localStorage.removeItem("user_cfg"); }catch(e){} location.reload(); };
 }
+
+/* ---------- 간편 보기: 총액 하나 → 계좌·종목 자동 분배 (판단은 메인 규칙 그대로) ---------- */
+function quickPct(){
+  const c = loadCfg(); if(c) return {total:c.total, pct:c.pct, fractional:!!c.fractional};
+  const s = E.H.settings, t = s.monthly_longterm_krw+s.monthly_ammo_krw+s.monthly_pension_krw+(s.monthly_swing_krw||0);
+  const P = k=>Math.round((s["monthly_"+k+"_krw"]||0)/t*100);
+  const pct = {ammo:P("ammo"), pension:P("pension"), swing:P("swing")}; pct.longterm = 100-pct.ammo-pct.pension-pct.swing;
+  return {total:t, pct, fractional:!!s.fractional};
+}
+function quickBody(total){
+  const c = quickPct(), s = E.H.settings, keep = {...s};
+  Object.assign(s, {monthly_longterm_krw:total*c.pct.longterm/100, monthly_ammo_krw:total*c.pct.ammo/100, monthly_pension_krw:total*c.pct.pension/100, monthly_swing_krw:total*(c.pct.swing||0)/100});
+  try{
+    const lt = planLongterm(E), pn = planPension(E), am = planAmmo(E), oh = overheat(E);
+    const why = [
+      `장투: ${lt.row.label} 구간(QQQ 5년 고점 대비 ${pct(E.dd)}) 비율을 씁니다. 거시 ${E.mode.name}, 과열 점수 ${oh.score}/6.`,
+      ...lt.notes,
+      ...(lt.rows.some(r=>r.key==="SCHD"&&r.man>0.05)? [`배당 몫은 SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 ${divPick(E.S)}.`] : []),
+      `연금저축: 배당다우존스 : 나스닥100 = ${pn.tilt? "50 : 50 (QQQ −10% 이하라 나스닥 비중↑)":"60 : 40"}. 나스닥100은 ${nasdaqPick(E)==="426030"? "QQQ −20% 이하라 TIME 액티브(고베타)":"평상시라 TIGER 지수형"}.`,
+      am.action? `현금: ${am.action.t.n}차 투입 대상입니다. 모아 둔 SGOV의 ${am.action.t.pct}%를 ${mixText(am.action.t.mix)}로, 보조지표 2개가 맞는 날 3~5거래일 분할.` : `현금: QQQ ${RULES.tranches[0].dd}%부터 6단계로 투입합니다. 지금은 SGOV에 모읍니다.`,
+    ];
+    return planSummaryHTML(lt, pn, am).replace(/^\s*<h3>[^<]*<\/h3>/,"").replace("종목별 매수 방법과 주수는 아래 계좌별 표에 있습니다.","매수 방법·주수는 <a href=\"#plan\">이번 달 매수</a> 탭에 있습니다.")
+      + `<h3>왜 이렇게 나눴나</h3><div class="panel"><ol class="steps">${why.map(w=>`<li>${esc(w)}</li>`).join("")}</ol></div>`;
+  } finally { Object.keys(s).forEach(k=>delete s[k]); Object.assign(s, keep); }
+}
+function vQuick(){
+  const c = quickPct();
+  return `<h2>이번 달 얼마 넣나요?</h2>
+  <div class="panel"><div class="inline"><input id="q_total" type="number" inputmode="numeric" min="1" step="1" value="${Math.round(c.total/1e4)}" style="width:140px;font-size:20px;font-weight:700"><span style="font-size:17px">만원</span></div>
+  <p class="note">계좌 비율(현금 ${c.pct.ammo}% · 연금저축 ${c.pct.pension}% · 장투 ${c.pct.longterm}%${c.pct.swing? " · 스윙 "+c.pct.swing+"%":""})은 <a href="#settings">적립 계산기</a>에서 바꿉니다. 종목·비중은 메인 규칙(하락 단계, 거시, 과열, 현금 6단계)이 정합니다.</p></div>
+  <div id="q_out" style="margin-top:12px">${quickBody(c.total)}</div>
+  <p class="note"><a href="./?#today">전체 대시보드 보기</a></p>`;
+}
+function bindQuick(){
+  $("#q_total").addEventListener("input", ()=>{ const t=Math.max(0,Math.round(+$("#q_total").value||0))*1e4; if(!t) return;
+    const c=quickPct(); saveCfg({total:t, pct:c.pct, fractional:c.fractional}); $("#q_out").innerHTML = quickBody(t); });
+}
 function vRules(){
   return `<h2>운용 원칙 요약</h2>
   <div class="panel"><ol class="steps">
@@ -1259,11 +1297,12 @@ function vRules(){
 function render(){
   const home = DATA.owner ? "today" : "settings";   // 첫 화면: 보유 키 있으면 오늘, 방문자는 적립 계산기
   const h = (location.hash||"#"+home).slice(1);
-  const view = VIEWS.find(v=>v[0]===h) ? h : home;
+  const view = (VIEWS.find(v=>v[0]===h) || h==="quick") ? h : home;
   $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<3?` class="key${i===2?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
-  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules, settings:vSettings}[view];
+  const fn = {quick:vQuick, today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules, settings:vSettings}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   if(view==="settings") bindSettings();
+  if(view==="quick") bindQuick();
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
     $("#pksave").onclick=()=>{ try{ localStorage.setItem("holdings_key", $("#pk").value.trim()); location.reload(); }catch(e){} };
@@ -1274,6 +1313,7 @@ function footer(){ return `<footer>투자 판단 보조 도구입니다. 규칙 
 
 (async()=>{
   try{
+    if(new URLSearchParams(location.search).has("simple")){ document.body.classList.add("simple"); if(location.hash!=="#quick") history.replaceState(null,"","?simple#quick"); document.title="Stock Dashboard 간편"; }
     DATA = await load();
     E = engine(DATA);
     renderHero(); render();
