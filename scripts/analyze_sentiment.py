@@ -81,6 +81,25 @@ def num(v):
 
 
 # ---------- 수집 ----------
+def fed_margin():
+    """FINRA 차단 시 대안: 연준 금융계정(Z.1) 가계 증권신용(마진 대출) 분기 잔고, FRED."""
+    last = None
+    for sid in ("BOGZ1FL153067005Q", "BOGZ1FL663067003Q"):
+        try:
+            rows = B.fred(sid, "1980-01-01")
+            if len(rows) > 80:
+                # 분기 말 월(YYYY-MM)로 키. 분기 시작일 → +2개월
+                out = {}
+                for d, v in rows:
+                    y, m = int(d[:4]), int(d[5:7]) + 4   # 분기 말+2개월(발표 지연 반영), 분석에서 +1개월 더
+                    if m > 12: y += 1; m -= 12
+                    out[f"{y:04d}-{m:02d}"] = v
+                return out
+        except Exception as e:  # noqa
+            last = e
+    raise ValueError(f"FRED 마진 시계열 실패: {last}")
+
+
 def finra_margin():
     url = find_link("https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics", r"\.xlsx?")
     data = get_bytes(url)
@@ -113,7 +132,7 @@ def aaii():
 
 
 def naaim():
-    url = find_link("https://www.naaim.org/programs/naaim-exposure-index/", r"\.xlsx?($|\?)")
+    url = find_link("https://www.naaim.org/programs/naaim-exposure-index/", r"xls")
     data = get_bytes(url)
     out = {}
     for _, rows in sheet_rows(data, "xlsx" if ".xlsx" in url.lower() else "xls"):
@@ -160,6 +179,8 @@ def price_map(sym):
 def fwd(dates, px, d):
     """d(YYYY-MM-DD) 이후 첫 거래일 기준 수익률 dict"""
     import bisect
+    if d < dates[0]:
+        return None
     i = bisect.bisect_left(dates, d)
     if i >= len(dates):
         return None
@@ -170,8 +191,12 @@ def bucket_study(series, transform, label, lookback, prices, hi_is="과열"):
     """series: {date: value}. transform: 'level' 또는 'yoy'(전년 대비 %). 자기 과거 lookback개 대비 백분위."""
     ks = sorted(series)
     vals = [series[k] for k in ks]
+    if transform == "yoy4":  # 분기 데이터: 4분기 전 대비
+        transform = "yoy"; step_override = 4
+    else:
+        step_override = None
     if transform == "yoy":
-        step = 12 if len(ks[0]) == 7 else 52
+        step = step_override or (12 if len(ks[0]) == 7 else 52)
         ks2, v2 = [], []
         for i in range(step, len(ks)):
             if vals[i - step]:
@@ -218,6 +243,7 @@ def main():
     jobs = [
         ("finra_margin_yoy", finra_margin, "yoy", "FINRA 마진부채 전년 대비 증가율", 120, "과열(빚투 급증)"),
         ("finra_margin_lvl", finra_margin, "level", "FINRA 마진부채 수준", 60, "과열"),
+        ("fed_margin_yoy", fed_margin, "yoy4", "연준 가계 증권신용(마진) 전년 대비", 40, "과열(빚투 급증)"),
         ("aaii", aaii, "level", "AAII 개인투자자 강세−약세", 260, "과열(낙관)"),
         ("naaim", naaim, "level", "NAAIM 액티브 매니저 노출", 260, "과열(풀베팅)"),
         ("cboe_pc", cboe_pc, "level", "CBOE 주식 풋콜비율", 756, "공포(풋 쏠림)"),
