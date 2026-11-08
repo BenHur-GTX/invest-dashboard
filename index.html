@@ -31,6 +31,13 @@ header .wrap{padding-top:14px;padding-bottom:0}
 .hero .v{font-size:20px;font-weight:700;margin-top:2px}
 .hero .s{font-size:12px;color:#d7e6e6}
 .hero .state .v{font-size:24px}
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14)}
+.stages>div{background:var(--brand);padding:8px 14px;font-size:12.5px;color:#d7e6e6;line-height:1.45}
+.stages b{color:#fff;font-weight:600}
+.stages .lv{display:inline-block;padding:0 6px;border-radius:4px;font-size:12px;font-weight:600;margin:0 4px;background:rgba(255,255,255,.12);color:#fff}
+.stages .lv.buy{background:#f4b37a;color:#3a1d05}.stages .lv.hot{background:#ff9b9b;color:#3a0505}
+.stages .nx{color:#b8d0d0}
+@media (max-width:860px){.stages{grid-template-columns:1fr}}
 nav{position:sticky;top:0;z-index:5;background:var(--brand);border-top:1px solid rgba(255,255,255,.14)}
 nav .wrap{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
 nav .wrap::-webkit-scrollbar{display:none}
@@ -130,6 +137,7 @@ footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
       <div class="meta" id="meta">불러오는 중…</div>
     </div>
     <div class="hero" id="hero" aria-live="polite"></div>
+    <div class="stages" id="stages"></div>
   </div>
 </header>
 <nav aria-label="화면 이동"><div class="wrap" id="nav"></div></nav>
@@ -151,11 +159,13 @@ const RULES = {
   ],
   // 현금 4차: pct=모은 돈(사이클 시작 기준) 대비, rem=집행 시점 남은 잔액 대비 (15/20/25/40 → 15/23.5/38.5/100)
   tranches: [
-    // 현금 계좌(Ben 2026-11-08): QQQ 고점 대비 -30/-40/-60/-80%에서만. 선집행 없음
-    {n:1, dd:-30, pct:15, rem:15,   mix:{QQQM:70, QLD:30}},
-    {n:2, dd:-40, pct:20, rem:23.5, mix:{QQQM:60, QLD:40}},
-    {n:3, dd:-60, pct:25, rem:38.5, mix:{QLD:80, QQQM:20}},
-    {n:4, dd:-80, pct:40, rem:100,  mix:{QLD:80, TQQQ:20}},
+    // 현금 계좌(Ben 2026-11-08 개정): QQQ 5년 고점 대비 -25/-30/-35/-40/-50/-60%에 모은 돈의 10/5/10/20/25/30%. 선집행 없음
+    {n:1, dd:-25, pct:10, rem:10,   mix:{QQQM:80, QLD:20}},
+    {n:2, dd:-30, pct:5,  rem:5.6,  mix:{QQQM:70, QLD:30}},
+    {n:3, dd:-35, pct:10, rem:11.8, mix:{QQQM:60, QLD:40}},
+    {n:4, dd:-40, pct:20, rem:26.7, mix:{QQQM:50, QLD:50}},
+    {n:5, dd:-50, pct:25, rem:45.5, mix:{QLD:80, QQQM:20}},
+    {n:6, dd:-60, pct:30, rem:100,  mix:{QLD:80, TQQQ:20}},
   ],
   states: {
     1:{name:"상승", desc:"가격 > 50일선 > 200일선, 고점 대비 -10% 이내"},
@@ -240,6 +250,8 @@ function engine(D){
     {k:"VIX ≥ 20", ok: vix!=null && vix>=20, v: vix!=null? num(vix,1):"–"},
     {k:"공포탐욕 ≤ 45", ok: fng!=null && fng<=45, v: fng!=null? num(fng,0):"자산제곱 확인"},
     {k:"60/120/200일선 터치", ok: !!(q.touch && (q.touch.ma60||q.touch.ma120||q.touch.ma200)), v: q.touch? ["ma60","ma120","ma200"].filter(k=>q.touch[k]).map(k=>k.slice(2)+"일").join("·")||"없음":"–"},
+    {k:"QQQ 볼린저 하단 이탈", ok: !!q.bb_break, v: q.bb_pctb!=null? "%B "+num(q.bb_pctb,0):"–"},
+    {k:"인간지표 공포 (반대매매 급증·AAII 비관 극단)", ok: humanFear(M), v: humanFearText(M)},
   ];
   const auxN = aux.filter(a=>a.ok).length;
 
@@ -440,6 +452,14 @@ function divPick(S){ // 200일선 대비 가장 싼(이격 낮은) 배당 ETF
 }
 
 /* ---------- 과열 점수 (현금화) ---------- */
+/* 인간지표 → 규칙 연결 (Ben 2026-11-08): 과열은 가격 신호와 겹칠 때만 +1, 공포는 분할매수 날짜 신호 */
+function humanHeat(M){ const H=M.sentiment||{}; const m=H.margin?.pctile, a=H.aaii?.pctile;
+  const on=(m!=null&&m>=90)||(a!=null&&a>=90);
+  return {on, text:`빚투 ${m!=null? "상위 "+(100-m)+"%":"–"} · AAII ${a!=null? "상위 "+(100-a)+"%":"–"}`}; }
+function humanFear(M){ const H=M.sentiment||{}; const f=H.kofia?.forced?.pctile_2y, a=H.aaii?.pctile;
+  return (f!=null&&f>=90)||(a!=null&&a<=10); }
+function humanFearText(M){ const H=M.sentiment||{}; const f=H.kofia?.forced?.pctile_2y, a=H.aaii?.pctile;
+  return `반대매매 ${f!=null? "상위 "+(100-f)+"%":"–"} · AAII ${a!=null? "하위 "+a+"%":"–"}`; }
 function overheat(E){
   // 2000~2026 QQQ·QLD 검증(data/overheat_study.json)으로 고른 신호. RSI ≥70·VIX 저점은 이후 수익이 평균 이상이라 제외.
   const q=E.q, m=E.M.macro||{};
@@ -454,13 +474,15 @@ function overheat(E){
     {k:"공포탐욕 ≥ 80 (극단적 탐욕)", on: E.fng==null?null: E.fng>=80, show:E.fng!=null?num(E.fng,0):"자산제곱 확인"},
   ];
   const ref={k:"참고: 경기 과열 (연준 인상기 또는 HY ≤ 2.75%)", on: hikes || (hy!=null && hy<=2.75), show: hy!=null? `HY ${num(hy,2)}%${hikes?" · 인상기":""}`:"–"};
-  const score = E._oh!=null ? E._oh : sig.filter(x=>x.on).length;
+  const hh = humanHeat(E.M), base = sig.filter(x=>x.on).length;
+  const human = {k:"인간지표 과열 (미국 빚투·AAII 낙관 상위 10%) — 가격 신호 1개 이상일 때만 +1", on: hh.on && base>=1, show: hh.text + (hh.on && base<1? " · 가격 신호 없어 미가산":"")};
+  const score = E._oh!=null ? E._oh : base + (human.on?1:0);
   const lt = score>=3 ? "장투: QLD 보유분 20% 매도 → 현금 풀(SGOV). 1배는 매도 없음" :
              score>=2 ? "장투: 매도 없음, QLD 몫 절반은 배당 ETF·절반은 SGOV (3개↑면 QQQM 20만도 배당으로)" : "장투: 평소대로";
   const sw = score>=4 ? "스윙: 레버리지 전량 + 개별주 절반 매도" :
              score>=3 ? "스윙: 레버리지 50% 매도" :
              score>=2 ? "스윙: 레버리지 30% 매도, 신규 진입 중단" : "스윙: 평소대로";
-  return {sig, ref, score, lt, sw};
+  return {sig, ref, human, score, lt, sw};
 }
 const BANDS = {
   "공격": {one:[55,80], lev:[15,30], div:[5,20], cash:[0,10]},
@@ -495,7 +517,7 @@ function planAmmo(E){
     if(next.reached){
       const pctUse = next.rem;
       const amt = bal * pctUse/100;
-      action = {t:next, pre, ready: E.auxN>=2 || pre, amt, pctUse, split: next.n===4? "20~40거래일" : "3~5거래일"};
+      action = {t:next, pre, ready: E.auxN>=2 || pre, amt, pctUse, split: next.n===RULES.tranches.length? "20~40거래일" : "3~5거래일"};
     }
   }
   // 회복 정산(Ben 2026-11-08): 투입 후 QQQ가 전고점 회복(고점 대비 -1% 이내) → 현금 계좌가 산 종목(SGOV 제외)
@@ -580,7 +602,7 @@ function swingOrders(E){
     if(sh<1 && pxw<=target*1.7 && pxw<=cash) sh = 1;   // 배정액의 1.7배 이내면 1주로 반올림
     if(sh<1){ skip.push(`${t}: 1주(${won(pxw)}) ${cash<pxw? "예수금 부족":"배정 금액보다 비쌈"}`); continue; }
     const amt = sh*pxw; cash -= amt; if(SEMIS.includes(t)) semis += amt; if(s.group==="섹터 ETF") sectorDone = true;
-    let next = "5거래일 이상 지난 뒤 RSI ≤ 30 또는 볼린저 하단 이탈한 날 2회차 (최대 3회)";
+    let next = "5거래일 이상 지난 뒤 RSI ≤ 30·볼린저 하단 이탈·공포탐욕 ≤ 25·인간지표 공포 중 하나가 뜬 날 2회차 (최대 3회)";
     if(s.group==="빅테크"){ const m=x.ma?.["200"]; const step = x.vs200<=-15?3: x.vs200<=-10?2: 1; next = step>=3? "3차까지 도달 — 추가 없음(종목당 12%)" : (m? `${step+1}차: ${usd(m*(1-0.05*(step+1)))} 이하(200일선 −${5*(step+1)}%) + RSI ≤ 40 또는 볼린저 하단 이탈` : "다음 차수 −5%p 아래"); }
     if(s.group.startsWith("3배")) next = "하루 −30% 또는 고점 −80% 조건에서 1회 3%씩, 3배 합계 10%까지";
     out.push({t, group:s.group, sh, px:x.price, amt, why:s.now+(x.bb_break? " · 볼린저 하단 이탈":""), sell:s.sell, next});
@@ -661,17 +683,36 @@ function buyWindow(day=25){
 const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"]];
 let E = null, DATA = null;
 
+/* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
+function stage(v, levels){ // levels: [[조건함수, 라벨, 종류], ...] 위에서부터 첫 일치
+  if(v==null) return {lab:"–", cls:""};
+  const i=levels.findIndex(l=>l[0](v)); const l=levels[i]; return {lab:l[1], cls:l[2]||"", next: levels[i+1]};
+}
+function stagesHTML(E){
+  const q=E.q;
+  const R=[[v=>v>=70,"과열","hot"],[v=>v>30,"보통"],[v=>v>25,"매수 관심","buy"],[v=>v>20,"강력 매수","buy"],[v=>true,"초강력 매수","buy"]];
+  const Rn=["","≤ 30 매수 관심","≤ 25 강력 매수","≤ 20 초강력 매수","최저 단계"];
+  const F=[[v=>v>=80,"극단적 탐욕 · 과열","hot"],[v=>v>=55,"탐욕"],[v=>v>=45,"중립"],[v=>v>25,"공포"],[v=>v>15,"극단적 공포 · 분할 매수","buy"],[v=>v>10,"강력 매수","buy"],[v=>true,"최대 비중 확대","buy"]];
+  const Fn=["≤ 79 탐욕","≤ 54 중립","≤ 44 공포","≤ 25 극단적 공포","≤ 15 강력 매수","≤ 10 최대 비중 확대","최저 단계"];
+  const V=[[v=>v<15,"안정 · 방심 주의","hot"],[v=>v<20,"보통"],[v=>v<30,"불안"],[v=>v<40,"공포 · 매수 기회","buy"],[v=>true,"패닉 · 강력 매수","buy"]];
+  const Vn=["≥ 15 보통","≥ 20 불안","≥ 30 공포 · 매수 기회","≥ 40 패닉 · 강력 매수","최고 단계"];
+  const cell=(name,val,levels,nexts,d)=>{ if(val==null) return `<div><b>${name}</b> –</div>`;
+    const i=levels.findIndex(l=>l[0](val)), l=levels[i];
+    return `<div><b>${name} ${num(val,d)}</b><span class="lv ${l[2]||""}">${l[1]}</span><span class="nx">다음 ${nexts[i]}</span></div>`; };
+  return cell("RSI",q.rsi,R,Rn,1) + cell("공포탐욕",E.fng,F,Fn,0) + cell("VIX",E.vix,V,Vn,1);
+}
 function renderHero(){
   const q=E.q, st=RULES.states[E.state];
   const bw = buyWindow(E.H?.settings?.buy_day||25);
   const stateColor = {1:"#9fe0b8",2:"#ffd88a",3:"#ffb38a",4:"#ff9b9b",5:"#b9d8ff"}[E.state];
   $("#hero").innerHTML = `
     <div class="state"><div class="k">QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${E.state}. ${st.name}</div><div class="s">${esc(st.desc)}</div></div>
-    <div><div class="k">고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">현금 ${E.dd<=RULES.tranches[0].dd? "투입 구간":"대기 (−30%부터)"}</div></div>
+    <div><div class="k">고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">현금 ${E.dd<=RULES.tranches[0].dd? "투입 구간":`대기 (${RULES.tranches[0].dd}%부터)`}</div></div>
     <div><div class="k">200일선 대비</div><div class="v">${pct(q.vs200,1)}</div><div class="s">RSI ${num(q.rsi,1)}</div></div>
     <div><div class="k">VIX</div><div class="v">${num(E.vix,1)}</div><div class="s">공포탐욕 ${E.fng!=null? num(E.fng,0) : `<a href="${RULES.fngLink}" style="color:#ffd8b8" target="_blank" rel="noopener">자산제곱</a>`}</div></div>
     <div><div class="k">거시 모드</div><div class="v">${esc(E.mode.name)}</div><div class="s">빨강 ${E.L.filter(l=>l.c==="r").length} · 노랑 ${E.L.filter(l=>l.c==="y").length}</div></div>
     <div><div class="k">적립일</div><div class="v">${bw.inWindow? "매수 기간" : "D-"+bw.dday}</div><div class="s">${bw.label}</div></div>`;
+  $("#stages").innerHTML = stagesHTML(E);
   const g = new Date(E.M.generated);
   $("#meta").innerHTML = `${E.M.snapshot? "스냅샷 · " : ""}갱신 ${g.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} · 원/달러 ${num(E.fx,1)}`;
 }
@@ -690,7 +731,7 @@ function vToday(){
     const a=am.action;
     todo.push(`현금 <b>${a.t.n}차</b>${a.pre?" (RSI 30 선도착, 절반 선집행)":""}: ${a.ready? "<b>집행일</b>" : "보조지표 2개 미충족 — 대기"} · 잔액의 ${a.pctUse}% = ${am.bal>0? won(a.amt) : "잔액 0원(이번 달 85만 적립 후 그 10%)"} · ${mixText(a.t.mix)} · ${a.split} 분할`);
   } else if(am.settle) todo.push(`<b>현금 계좌 회복 정산</b>: QQQ 전고점 회복. 투입분 ${won(am.settle.invVal)} 중 절반 ${won(am.settle.half)}은 매도해 SGOV로, 절반은 장투 계좌로 이관(대체 출고, 안 되면 매도 후 장투에서 재매수). 차수 초기화.`);
-  else if(true) todo.push("현금: QQQ 고점 대비 -30% 전이라 대기. 월 85만은 SGOV에 적립.");
+  else if(true) todo.push(`현금: QQQ 고점 대비 ${RULES.tranches[0].dd}% 전이라 대기. 월 85만은 SGOV에 적립.`);
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
   if(lt.below) todo.push("QQQ 200일선 아래: QLD는 -2% 날짜와 무관하게 주 1회 4분할.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
@@ -706,9 +747,9 @@ function vToday(){
   <div class="panel"><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></div>
   ${ordersHTML()}
   <div class="grid2">
-    <div class="panel"><h3 style="margin-top:0">현금 투입 보조지표 (4개 중 2개)</h3>
+    <div class="panel"><h3 style="margin-top:0">현금 투입 보조지표 (${E.aux.length}개 중 2개)</h3>
       <table>${E.aux.map(a=>`<tr><td class="l">${a.ok?'<span class="dot g"></span>':'<span class="dot n"></span>'}${esc(a.k)}</td><td>${esc(a.v)}</td></tr>`).join("")}</table>
-      <p class="note">충족 ${E.auxN}/4 · 공포탐욕은 <a href="${RULES.fngLink}" target="_blank" rel="noopener">자산제곱 대시보드</a> 값을 기준으로 봅니다.</p>
+      <p class="note">충족 ${E.auxN}/${E.aux.length} · 공포탐욕은 <a href="${RULES.fngLink}" target="_blank" rel="noopener">자산제곱 대시보드</a> 값을 기준으로 봅니다.</p>
     </div>
     <div class="panel"><h3 style="margin-top:0">거시 신호등</h3>
       <table>${E.L.map(l=>`<tr><td class="l"><span class="dot ${l.c}"></span>${esc(l.t)}</td><td>${esc(l.st)}</td></tr>`).join("")}</table>
@@ -769,9 +810,9 @@ function vScenario(){
   </table></div>
   <h2>현금 투입 (모아둔 SGOV)</h2>
   <div class="tbl"><table style="min-width:520px"><tr><th class="l">QQQ 낙폭</th><th>투입량</th><th class="l">거시 공격·중립</th><th class="l">거시 수비 · HY 6%↑</th></tr>
-  ${RULES.tranches.map(t=>`<tr><td class="l">${t.n}차 · ${t.dd}%${t.n===4?" 이하":""}</td><td>${"모은 돈의 "+t.pct+"%"+(t.n===4?" (남은 전부)":" (잔액의 "+t.rem+"%)")}</td><td class="l">${mixText(t.mix)}</td><td class="l">QQQM 100%</td></tr>`).join("")}
+  ${RULES.tranches.map(t=>`<tr><td class="l">${t.n}차 · ${t.dd}%${t.n===RULES.tranches.length?" 이하":""}</td><td>${"모은 돈의 "+t.pct+"%"+(t.n===RULES.tranches.length?" (남은 전부)":" (잔액의 "+t.rem+"%)")}</td><td class="l">${mixText(t.mix)}</td><td class="l">QQQM 100%</td></tr>`).join("")}
   </table></div>
-  <p class="note">보조지표(RSI ≤40, VIX ≥20, 공포탐욕 ≤45, 60·120·200일선 터치) 중 2개가 맞는 날 3~5거래일에 나눠 집행합니다. QQQ가 전고점을 되찾으면 차수를 처음으로 돌립니다.</p>
+  <p class="note">보조지표(RSI ≤40, VIX ≥20, 공포탐욕 ≤45, 60·120·200일선 터치, 볼린저 하단 이탈, 인간지표 공포) 중 2개가 맞는 날 3~5거래일에 나눠 집행합니다. QQQ가 전고점을 되찾으면 차수를 처음으로 돌립니다.</p>
   <h2>다른 계좌</h2>
   <div class="tbl"><table style="min-width:560px"><tr><th class="l">QQQ 상태</th><th class="l">연금저축 (배당 : 나스닥100)</th><th class="l">IRP 위험자산 목표</th><th class="l">스윙</th></tr>
   ${[[1,"60 : 40"],[2,"50 : 50 (QQQ −10% 이하)"],[3,"50 : 50"],[4,"50 : 50"],[5,"60 : 40"]].map(([st,pn])=>`<tr${E.state===st?' style="background:var(--accent-soft)"':""}><td class="l"><b>${st}. ${RULES.states[st].name}</b></td><td class="l">${pn}</td><td class="l">${RULES.irpTarget[st].join("~")}%</td><td class="l muted">${st===3||st===4? "QLD·섹터·빅테크 사다리, 거시 수비면 1회 절반" : "지수 −2% 음봉, 섹터·빅테크 과대낙폭"}</td></tr>`).join("")}
@@ -788,13 +829,13 @@ function vCrash(){
     <p class="lead">QQQ 고점 대비 <b>${pct(E.dd)}</b> · 200일선 ${pct(E.q.vs200)} · RSI ${num(E.q.rsi,1)} · 상태 <b>${E.state}. ${RULES.states[E.state].name}</b></p>
     ${ddBar(E.dd)}
   </div>
-  <h2>현금 4차 투입 (잔액 ${won(am.bal)})</h2>
+  <h2>현금 ${RULES.tranches.length}차 투입 (잔액 ${won(am.bal)})</h2>
   <div class="panel"><ol class="steps">
     ${am.list.map(t=>{ const isNow = am.action && am.action.t.n===t.n; return `<li class="${t.done?"done":""} ${isNow?"now":""}">
-      <b>${t.n}차 · QQQ ${t.dd}%${t.n===4?" 이하":""}</b> — ${"모아둔 돈의 "+t.pct+"%"+(t.n===4? " = 남은 잔액 전부":" = 그 시점 잔액의 "+t.rem+"%")} · ${mixText(t.mix)}
+      <b>${t.n}차 · QQQ ${t.dd}%${t.n===RULES.tranches.length?" 이하":""}</b> — ${"모아둔 돈의 "+t.pct+"%"+(t.n===RULES.tranches.length? " = 남은 잔액 전부":" = 그 시점 잔액의 "+t.rem+"%")} · ${mixText(t.mix)}
       <div class="muted">${t.done? "집행 완료" : t.reached? (isNow? (am.action.ready? "도달 · 보조지표 충족 → 이번 주 3~5거래일 분할 집행" : "도달 · 보조지표 2개 충족일까지 대기") : "도달") : (isNow && am.action.pre? "RSI 30 선도착 → 절반 선집행" : "미도달")}</div></li>`; }).join("")}
   </ol>
-  ${(()=>{const bo=planBoost(E); return `<p><b>반등 가속</b> — QQQ가 5년 고점 대비 −20% 이상 빠진 뒤 200일선을 +3% 위로 2일 연속 회복하면, 장투 현금 풀 SGOV의 50%(지금 기준 ${won(bo.amt)})를 QLD로 옮깁니다. 현금 계좌는 −30/−40/−60/−80% 규칙만 따릅니다. 다시 추세이탈하면 그 몫만 SGOV로 되돌리고, 전고점을 회복하면 초기화합니다(한 사이클 2회까지). 현재: 이번 사이클 최저 ${pct(bo.cm,1)} · ${bo.fire? "<b>지금 실행 조건</b>" : bo.stop? "<b>손절 조건</b>" : bo.deep? "−20% 도달, 회복 신호 대기" : "−20% 미도달 (대기)"}${bo.held? " · 가속분 보유 중":""}.</p>`})()}
+  ${(()=>{const bo=planBoost(E); return `<p><b>반등 가속</b> — QQQ가 5년 고점 대비 −20% 이상 빠진 뒤 200일선을 +3% 위로 2일 연속 회복하면, 장투 현금 풀 SGOV의 50%(지금 기준 ${won(bo.amt)})를 QLD로 옮깁니다. 현금 계좌는 ${RULES.tranches.map(t=>t.dd).join("/")}% 규칙만 따릅니다. 다시 추세이탈하면 그 몫만 SGOV로 되돌리고, 전고점을 회복하면 초기화합니다(한 사이클 2회까지). 현재: 이번 사이클 최저 ${pct(bo.cm,1)} · ${bo.fire? "<b>지금 실행 조건</b>" : bo.stop? "<b>손절 조건</b>" : bo.deep? "−20% 도달, 회복 신호 대기" : "−20% 미도달 (대기)"}${bo.held? " · 가속분 보유 중":""}.</p>`})()}
   <p><b>회복 정산</b> — QQQ가 전고점을 되찾으면 현금으로 산 종목(현재 ${won(am.invVal||0)})의 <b>절반은 매도해 SGOV로</b> 다시 현금화하고, <b>나머지 절반은 장투 계좌로</b> 옮깁니다. 이후 1차부터 다시 시작합니다. ${am.settle? "<b>지금 정산 대상입니다.</b>" : ""}<br><span class="muted">매도분은 해외주식 양도세 대상(연 250만 공제 후 22%, 직투 계좌 합산). 큰 차익은 배우자 증여(10년 6억 공제, 3개월 내 증여세 신고) 후 매도 — 단 증여 후 1년 안에 팔면 원래 취득가로 과세(이월과세). 이관은 미래에셋 해외주식 대체 출고로 가능하면 세금이 없습니다.</span></p>
   <p class="note">집행 순서: ① 현금(SGOV) → ② IRP 안전자산 → ③ 마지막으로 기존 1배 일부 전환(직투는 양도세 22% 발생, 4단계에서만). 장투 1배·QLD는 가격 손절하지 않습니다. 대신 QLD 30% 상한, TQQQ 총자산 10% 상한, HY 6% 규칙으로 위험을 제한합니다. QQQ가 전고점을 회복하면 차수를 초기화하고 TQQQ는 전량 QLD·QQQM으로, 2층 QLD는 절반을 QQQM으로 옮깁니다.</p></div>
 
@@ -803,8 +844,8 @@ function vCrash(){
     <tr><th>상태</th><th class="l">1배 지수 (장투·연금)</th><th class="l">QLD (장투)</th><th class="l">스윙 (직투 700만·IRP)</th><th class="l">현금</th></tr>
     ${[[1,"평소 적립. IRP 위험 55~60%","−2% 음봉일 적립. 과열 2개↑면 보류→SGOV","지수 −2% 음봉·섹터 급락 소액 매수","대기·적립 (SGOV)"],
        [2,"적립 유지","적립 비중 확대 (낙폭표)","빅테크 200일선 −5% 이하 1차 사다리 시작","대기"],
-       [3,"계속 산다. IRP 62~65%","주 1회 4분할. 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−30%부터 1차 15% (보조지표 확인)"],
-       [4,"계속 산다. IRP 70%","적립금 대부분 QLD, TQQQ 소량","3배는 하루 −30%·고점 −80%에서만 관심","−30/−35/−40%에 2·3·4차"],
+       [3,"계속 산다. IRP 62~65%","주 1회 4분할. 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−25% 1차 10%, −30% 2차 5% (보조지표 확인)"],
+       [4,"계속 산다. IRP 70%","적립금 대부분 QLD, TQQQ 소량","3배는 하루 −30%·고점 −80%에서만 관심","−35/−40/−50/−60%에 10/20/25/30%"],
        [5,"평소 적립 복귀. IRP 55~60%","평소 규칙. 30% 초과분 QQQM","평소","전고점 회복 시 차수 초기화"]]
       .map(r=>`<tr${r[0]===stIdx?' style="background:var(--accent-soft)"':""}><td><b>${r[0]}. ${RULES.states[r[0]].name}</b></td>${r.slice(1).map(c=>`<td class="l">${c}</td>`).join("")}</tr>`).join("")}
   </table></div>
@@ -859,8 +900,9 @@ function humanHTML(){
 function vHeat(){
   const oh=overheat(E), bd=bands(E), st=DATA.study;
   const lvl = oh.score>=4?4: oh.score>=3?3: oh.score>=2?2: 0;
-  return `<h2>과열 점수 ${oh.score} / 5</h2>
+  return `<h2>과열 점수 ${oh.score} / 6</h2>
   <div class="panel"><table>${oh.sig.map(x=>`<tr><td class="l"><span class="dot ${x.on===null?"n":x.on?"r":"g"}"></span>${esc(x.k)}</td><td>${esc(x.show)}</td></tr>`).join("")}
+  <tr><td class="l"><span class="dot ${oh.human.on?"r":"n"}"></span>${esc(oh.human.k)}</td><td>${esc(oh.human.show)}</td></tr>
   <tr><td class="l muted"><span class="dot n"></span>${esc(oh.ref.k)}</td><td class="muted">${esc(oh.ref.show)}${oh.ref.on?" · 해당":""}</td></tr></table>
   <p class="note">신호는 2000~2026년 QQQ 일봉 검증으로 골랐습니다. 경기 과열은 긴 무료 데이터가 없어 검증하지 못해 점수에 넣지 않고 참고만 합니다.</p></div>
   <h2>점수별 행동</h2>
@@ -1012,9 +1054,10 @@ function vRules(){
   <div class="panel"><ol class="steps">
     <li><b>낙폭 기준</b>: "고점 대비"는 최근 5년 최고가 기준입니다. 사상 최고가 기준이면 2000년 같은 폭락 뒤 수년간 계속 '폭락'으로 판정되는 문제가 있어 바꿨습니다(백테스트 검증).</li>
     <li><b>장투 배당 몫</b>: 평상 구간 월 200만 중 30만(15%)은 배당 ETF(SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 것). 과열이면 QLD 몫 절반과(3개↑) QQQM 20만을 배당으로 돌리고, QQQ가 1년 고점 −15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30%를 QQQM으로 교체(6개월 1회).</li>
+    <li><b>새 지표가 규칙에 들어간 곳</b>: ① 볼린저 하단 이탈 → 현금 투입 보조지표 1개 + 스윙 2·3회차 매수일 신호. ② 인간지표 공포(한국 반대매매 2년 상위 10% 또는 AAII 하위 10%) → 현금 투입 보조지표 1개 + 스윙 분할 매수일 신호. ③ 인간지표 과열(미국 빚투 또는 AAII 상위 10%) → 과열 점수 +1, 단 가격 과열 신호가 1개 이상 있을 때만(지표 단독으로는 매도 안 함). ④ 오늘 탭 RSI·공포탐욕·VIX 단계 라벨은 현재 위치 안내이고, 실제 금액은 주문표·현금 차수표를 따릅니다.</li>
     <li><b>보조지표 검증 (2026-11-08)</b>: QQQ·SPY·SOXX·코스피 전 기간. 볼린저 하단 이탈은 이후 21일 수익률이 평소의 약 2배(QQQ 하락 국면 +2.0% vs +0.4%, SOXX +3.2% vs +1.3%)라 스윙 분할매수 날짜 신호로 추가. 슬로우 스토캐스틱은 평소와 차이가 없어 제외. '바닥 확인 후 매수'(스토캐스틱 골든크로스·볼린저 재진입 대기)는 회차 도달일 즉시 매수보다 평균 0.7~2.9% 비싸게 사서 채택 안 함 — 회차 가격에 닿으면 바로 삽니다.</li>
     <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV 50% → QLD(현금 계좌 제외), 추세이탈 재발 시 그 몫만 SGOV로 손절. 백테스트상 장기 연 +0.3~1.1%p, 닷컴형 최대 손실 약 +2%p.</li>
-    <li><b>계좌 역할</b>: 장투(직투, 월 200만) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 85만, SGOV) = QQQ −30/−40/−60/−80%에만 모은 돈의 15/20/25/40% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 45만) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
+    <li><b>계좌 역할</b>: 장투(직투, 월 200만) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 85만, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 10/5/10/20/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 45만) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개 이상 또는 HY ≥ 6% → 신규 레버리지 중단.</li>
