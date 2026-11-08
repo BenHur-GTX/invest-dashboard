@@ -683,6 +683,7 @@ function vToday(){
   if(bw.inWindow) todo.push(`<b>적립 매수 기간입니다.</b> 이번 달 매수 탭의 표대로 장투 200만·연금저축 45만을 집행하세요.`);
   else todo.push(`다음 적립은 <b>${bw.label}</b> (D-${bw.dday}). 지금은 아래 조건부 매수만 확인합니다.`);
   { const bo=planBoost(E);
+    { const hs=humanSignals().rows.filter(r=>r.alert); if(hs.length) todo.push(`<b>인간지표 과열 경보</b>: ${hs.map(r=>esc(r.k.split(" (")[0])).join(", ")} 자기 과거 상위 10%. 규칙 변경은 없고, QLD·3배 신규 매수는 한 번 더 확인(과열·현금화 탭).`); }
     if(bo.fire) todo.push(`<b>반등 가속</b>: QQQ가 ${pct(bo.cm,0)}까지 빠진 뒤 200일선 회복. 장투 현금 풀 SGOV의 50% ${won(bo.amt)} → QLD (현금 계좌는 제외). 다시 추세이탈하면 이 몫만 SGOV로 손절.`);
     if(bo.stop) todo.push(`<b>반등 가속 손절</b>: 추세이탈 재발. 가속으로 산 QLD만 매도 → SGOV.`); }
   if(am.action){
@@ -831,6 +832,29 @@ function ddBar(dd){
   <div class="muted" style="display:flex;justify-content:space-between"><span>0%</span><span>−10</span><span>−15</span><span>−20</span><span>−30</span><span>−40%</span></div>`;
 }
 
+/* ---------- 인간지표 (Ben 2026-11-08, 참고 경보) ---------- */
+function humanSignals(){
+  const H=E.M.sentiment||{}; const rows=[];
+  const st=(p,hiBad=true)=> p==null? ["n","기준선 쌓는 중"] : (hiBad? (p>=90?["r","과열 극단"]: p<=10?["g","공포 극단"]:["n","보통"]) : (p>=90?["g","공포 극단"]: p<=10?["r","과열 극단"]:["n","보통"]));
+  if(H.margin){ const m=H.margin, s=st(m.pctile); rows.push({k:"미국 빚투 (연준 가계 마진 대출, 전년 대비)", v:`${pct(m.yoy,1)} · ${m.quarter.slice(0,4)}년 ${Math.floor((+m.quarter.slice(5,7)-1)/3)+1}분기`, p:m.pctile, c:s[0], st:s[1], note:"상위 10%였던 뒤 QQQ 1년 평균 −4.1% (평소 +14.3%)", alert:m.pctile>=90}); }
+  if(H.aaii){ const a=H.aaii, s=st(a.pctile); rows.push({k:"AAII 개인투자자 강세−약세", v:`${num(a.value,1)}%p (강세 ${num(a.bull,0)} · 약세 ${num(a.bear,0)}) · ${esc(a.date)}`, p:a.pctile, c:s[0], st:s[1], note:"상위 10% 뒤 QQQ 1년 +3.8% (평소 +13.5%), 하위 10% 뒤 3개월 +4.1% (평소 +3.2%)", alert:a.pctile>=90}); }
+  const k=H.kofia;
+  if(k?.credit){ const s=st(k.credit.pctile_2y); rows.push({k:"한국 신용융자 잔고", v:`${num(k.credit.value/1e6,1)}조 · 20일 ${pct(k.credit.chg_20d,1)} · ${esc(k.credit.date)}`, p:k.credit.pctile_2y, c:s[0], st:s[1], note:"검증 전 (데이터 쌓는 중)", alert:false}); }
+  if(k?.deposit){ rows.push({k:"투자자예탁금", v:`${num(k.deposit.value/1e6,1)}조 · 20일 ${pct(k.deposit.chg_20d,1)}${k.credit_to_deposit!=null? " · 신용/예탁 "+num(k.credit_to_deposit,1)+"%":""}`, p:k.deposit.pctile_2y, c:"n", st:"참고", note:"신용/예탁 비율이 높을수록 빚투 비중↑", alert:false}); }
+  const wp=H.weekly_pctile||{};
+  if(H.youtube){ const y=H.youtube, s=st(wp.yt_neg_ratio,false); rows.push({k:"유튜브 댓글 비관 비율", v:`${y.neg_ratio==null?"–":num(y.neg_ratio,0)+"%"} · 7일 댓글 ${num(y.comments_7d,0)}개`, p:wp.yt_neg_ratio, c:s[0], st:s[1], note:`채널: ${esc(y.channels.map(c=>c.name).join(", "))} · 욕·손절 vs 가즈아·인증`, alert:false}); }
+  if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:"반대매매·개미 눈물 vs TQQQ 수익·계좌 인증", alert:false}); }
+  return {rows, H};
+}
+function humanHTML(){
+  const {rows,H}=humanSignals();
+  if(!rows.length) return "";
+  return `<h2>인간지표 (참고 경보)</h2>
+  <div class="tbl"><table><tr><th class="l">지표</th><th class="l">최근 값</th><th>자기 과거 대비</th><th>판정</th><th class="l">검증</th></tr>
+  ${rows.map(r=>`<tr><td class="l">${r.k}</td><td class="l">${r.v}</td><td>${r.p==null?"–":"상위 "+num(100-r.p,0)+"%"}</td><td><span class="dot ${r.c}"></span>${r.st}</td><td class="l muted">${r.note}</td></tr>`).join("")}
+  </table></div>
+  <p class="note">매수·매도 규칙에는 넣지 않고 경보로만 씁니다. 과열 극단이 겹치면 과열 점수 2개 행동(QLD 신규 보류)을 앞당겨 검토, 공포 극단이면 현금 차수 대기 중 마음 다잡기용. 마진·AAII는 1990년대부터 검증(data/sentiment_study.json), 유튜브·뉴스는 매주 기록을 쌓아 1년 뒤부터 백분위가 의미 있습니다(현재 ${H.weeks_recorded??0}주). 라오어 카페·서학개미 레버리지 순매수는 매달 캡처로 기록합니다.${H.errors?.length? "<br>수신 실패: "+esc(H.errors.join(" / ")):""}</p>`;
+}
 function vHeat(){
   const oh=overheat(E), bd=bands(E), st=DATA.study;
   const lvl = oh.score>=4?4: oh.score>=3?3: oh.score>=2?2: 0;
@@ -845,6 +869,7 @@ function vHeat(){
   </table></div>
   <div class="panel" style="margin-top:10px"><p><b>지금</b>: ${esc(oh.lt)} · ${esc(oh.sw)}</p>
   <p class="muted">장투 매도 제한: 한 번 팔면 6개월(126거래일) 쉬기, 해외주식 실현이익 연 250만 공제 안을 우선(초과분 22%). 판 돈은 현금 풀에 넣어 QQQ 고점 대비 −10% 1차부터 다시 씁니다. 직투 자산 1억 이후에는 매도금의 절반을 배당 풀(SCHD)로.</p></div>
+  ${humanHTML()}
   ${st? studyTable(st):""}
   <h2>장투 계좌 목표 밴드 · 거시 ${esc(bd.mode)}</h2>
   <div class="tbl"><table><tr><th>구분</th><th>목표 밴드</th><th>현재</th><th class="l">조치</th></tr>

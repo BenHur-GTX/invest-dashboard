@@ -506,11 +506,17 @@ def main():
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)
+    try:
+        import sentiment as SENT
+        sent = SENT.collect(DATA, fred, now)
+    except Exception as e:  # noqa
+        sent = {"errors": [f"sentiment: {e}"]}
+    print("sentiment", {k: v for k, v in sent.items() if k in ("errors", "weeks_recorded")}, flush=True)
 
     market = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fx": {"usdkrw": symbols.get("KRW=X", {}).get("price")},
-        "symbols": symbols, "macro": macro, "fng": fng, "errors": errors,
+        "symbols": symbols, "macro": macro, "fng": fng, "sentiment": sent, "errors": errors,
         "snapshot": False,
     }
     with open(os.path.join(DATA, "market.json"), "w", encoding="utf-8") as f:

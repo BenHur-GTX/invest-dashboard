@@ -20,16 +20,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: pip install -q xlrd
       - name: Build data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+          FORCE_SENT: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
           FORCE_BT: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: python -u scripts/build_data.py
       - name: Commit
         run: |
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"
-          git add data/market.json data/backtest.json
+          git add data/market.json data/backtest.json data/sentiment_hist.json
           git diff --cached --quiet || git commit -m "data: $(date -u +%Y-%m-%dT%H:%MZ)"
           git pull --rebase origin main
           git push
