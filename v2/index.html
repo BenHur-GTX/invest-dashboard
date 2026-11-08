@@ -942,7 +942,7 @@ function humanSignals(){
   if(k?.forced){ const f=k.forced, s=st(f.pctile_2y,false); rows.push({k:"한국 반대매매 금액 (5일 평균)", v:`${num(f.avg5/1e8,0)}억 · ${esc(f.date)}`, p:f.pctile_2y, c:s[0], st:s[1], note:"급증 = 강제 청산(투매) 국면, 바닥 근처 신호 후보", alert:false}); }
   const wp=H.weekly_pctile||{};
   if(H.youtube){ const y=H.youtube, s=st(wp.yt_neg_ratio,false); rows.push({k:"유튜브 댓글 비관 비율", v:`${y.neg_ratio==null?"–":num(y.neg_ratio,0)+"%"} · 7일 댓글 ${num(y.comments_7d,0)}개`, p:wp.yt_neg_ratio, c:s[0], st:s[1], note:`채널: ${esc(y.channels.map(c=>c.name).join(", "))} · 욕·손절 vs 가즈아·인증`, alert:false}); }
-  if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:"반대매매·개미 눈물 vs TQQQ 수익·계좌 인증", alert:false}); }
+  if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:`반대매매·개미 눈물 vs TQQQ 수익·계좌 인증 (${n.source==="google_news_rss"?"구글 뉴스":"네이버 뉴스"})`, alert:false}); }
   return {rows, H};
 }
 function humanHTML(){

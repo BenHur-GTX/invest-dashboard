@@ -139,6 +139,29 @@ def naver_news(cid, sec):
     return {"fear": fear, "greed": greed, "fear_total": f, "greed_total": g, "fear_ratio": round(f / (f + g) * 100, 1) if f + g else None}
 
 
+def google_news():
+    """키 없는 대안: 구글 뉴스 RSS(한국어), 검색어별 최근 7일 기사 수(검색어당 최대 100건)."""
+    import xml.etree.ElementTree as ET
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    def count(q):
+        url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": f'"{q}" when:7d', "hl": "ko", "gl": "KR", "ceid": "KR:ko"})
+        root = ET.fromstring(_get(url))
+        n = 0
+        for it in root.iter("item"):
+            pd = it.findtext("pubDate")
+            try:
+                if pd and parsedate_to_datetime(pd) >= since:
+                    n += 1
+            except (TypeError, ValueError):
+                pass
+        time.sleep(0.5)
+        return n
+    fear = {q: count(q) for q in NEWS_FEAR}
+    greed = {q: count(q) for q in NEWS_GREED}
+    f, g = sum(fear.values()), sum(greed.values())
+    return {"source": "google_news_rss", "fear": fear, "greed": greed, "fear_total": f, "greed_total": g, "fear_ratio": round(f / (f + g) * 100, 1) if f + g else None}
+
+
 def kofia(key):
     base = "https://apis.data.go.kr/1160100/service/GetKofiaStatisticsInfoService"
     end = datetime.now().strftime("%Y%m%d"); beg = (datetime.now() - timedelta(days=800)).strftime("%Y%m%d")
@@ -212,6 +235,8 @@ def collect(data_dir, fred, now):
     nid, nsec = os.environ.get("NAVER_CLIENT_ID"), os.environ.get("NAVER_CLIENT_SECRET")
     if nid and nsec:
         run("news", lambda: naver_news(nid, nsec))
+    else:
+        run("news", google_news)
     dk = os.environ.get("DATA_GO_KR_KEY")
     if dk:
         run("kofia", lambda: kofia(dk))
