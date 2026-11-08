@@ -70,6 +70,17 @@ td.l,th.l{text-align:left;white-space:normal}
 tr.total td{font-weight:700;background:#faf9f6}
 .sigrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
 .sigrow:last-child{border-bottom:0}
+.hp{padding:4px 16px}
+.hrow{padding:11px 0;border-bottom:1px solid var(--line)}
+.hrow:last-child{border-bottom:0}
+.hrow .h1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hrow .hst{margin-left:auto;font-size:12.5px;color:var(--ink2)}
+.hrow .hv{margin-top:3px;font-variant-numeric:tabular-nums}
+.hrow .hn{font-size:12.5px;color:var(--ink2);margin-top:2px}
+.hrow .hu{font-size:12.5px;color:var(--brand);margin-top:2px;font-weight:500}
+.hsum{display:block;margin:12px 0 0;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:inherit;text-decoration:none;font-size:13.5px;transition:border-color .15s ease}
+.hsum:hover{border-color:var(--brand)}
+.hsum:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .sigrow .sk{flex:1;min-width:0}
 .sigrow .sv{text-align:right;font-variant-numeric:tabular-nums;max-width:48%}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
@@ -684,7 +695,7 @@ function buyWindow(day=25){
 /* ============================================================
    렌더
    ============================================================ */
-const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"]];
+const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["people","인간지표"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"]];
 let E = null, DATA = null;
 
 /* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
@@ -747,6 +758,7 @@ function vToday(){
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
   ${DATA.locked? `<div class="alert bad">이 기기에 보유 내역 키가 없습니다. <a href="#rules">규칙 탭 맨 아래</a>에서 키 파일을 선택하고 저장하세요(기기마다 한 번).</div>`:""}
   <div class="alerts">${alerts}</div>
+  ${humanSummary()}
   <h2>오늘 할 일</h2>
   <div class="panel"><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></div>
   ${ordersHTML()}
@@ -881,25 +893,43 @@ function ddBar(dd){
 function humanSignals(){
   const H=E.M.sentiment||{}; const rows=[];
   const st=(p,hiBad=true)=> p==null? ["n","기준선 쌓는 중"] : (hiBad? (p>=90?["r","과열 극단"]: p<=10?["g","공포 극단"]:["n","보통"]) : (p>=90?["g","공포 극단"]: p<=10?["r","과열 극단"]:["n","보통"]));
-  if(H.margin){ const m=H.margin, s=st(m.pctile); rows.push({k:"미국 빚투 (연준 가계 마진 대출, 전년 대비)", v:`${pct(m.yoy,1)} · ${m.quarter.slice(0,4)}년 ${Math.floor((+m.quarter.slice(5,7)-1)/3)+1}분기`, p:m.pctile, c:s[0], st:s[1], note:"상위 10%였던 뒤 QQQ 1년 평균 −4.1% (평소 +14.3%)", alert:m.pctile>=90}); }
-  if(H.aaii){ const a=H.aaii, s=st(a.pctile); rows.push({k:"AAII 개인투자자 강세−약세", v:`${num(a.value,1)}%p (강세 ${num(a.bull,0)} · 약세 ${num(a.bear,0)}) · ${esc(a.date)}`, p:a.pctile, c:s[0], st:s[1], note:"상위 10% 뒤 QQQ 1년 +3.8% (평소 +13.5%), 하위 10% 뒤 3개월 +4.1% (평소 +3.2%)", alert:a.pctile>=90}); }
+  if(H.margin){ const m=H.margin, s=st(m.pctile); rows.push({k:"미국 빚투 (연준 가계 마진 대출, 전년 대비)", v:`${pct(m.yoy,1)} · ${m.quarter.slice(0,4)}년 ${Math.floor((+m.quarter.slice(5,7)-1)/3)+1}분기`, p:m.pctile, c:s[0], st:s[1], note:"상위 10%였던 뒤 QQQ 1년 평균 −4.1% (평소 +14.3%). 발표가 약 5개월 늦어 매매 신호로는 부적합(백테스트)", g:"미국", use:"과열 점수 +1 (가격 과열과 겹칠 때만)", alert:m.pctile>=90}); }
+  if(H.aaii){ const a=H.aaii, s=st(a.pctile); rows.push({k:"AAII 개인투자자 강세−약세", v:`${num(a.value,1)}%p (강세 ${num(a.bull,0)} · 약세 ${num(a.bear,0)}) · ${esc(a.date)}`, p:a.pctile, c:s[0], st:s[1], note:"상위 10% 뒤 QQQ 1년 +3.8% (평소 +13.5%), 하위 10% 뒤 3개월 +4.1% (평소 +3.2%)", g:"미국", use:"낙관 극단 → 과열 +1 · 비관 극단 → 현금·스윙 매수일 보조지표", alert:a.pctile>=90}); }
   const k=H.kofia;
-  if(k?.credit){ const s=st(k.credit.pctile_2y); rows.push({k:"한국 신용융자 잔고", v:`${num(k.credit.value/1e12,1)}조 · 20일 ${pct(k.credit.chg_20d,1)} · ${esc(k.credit.date)}`, p:k.credit.pctile_2y, c:s[0], st:s[1], note:"최근 2년 대비 · 장기 검증 전", alert:false}); }
-  if(k?.deposit){ rows.push({k:"투자자예탁금", v:`${num(k.deposit.value/1e12,1)}조 · 20일 ${pct(k.deposit.chg_20d,1)}${k.credit_to_deposit!=null? " · 신용/예탁 "+num(k.credit_to_deposit,1)+"%":""}`, p:k.deposit.pctile_2y, c:"n", st:"참고", note:"신용/예탁 비율이 높을수록 빚투 비중↑", alert:false}); }
-  if(k?.forced){ const f=k.forced, s=st(f.pctile_2y,false); rows.push({k:"한국 반대매매 금액 (5일 평균)", v:`${num(f.avg5/1e8,0)}억 · ${esc(f.date)}`, p:f.pctile_2y, c:s[0], st:s[1], note:"급증 = 강제 청산(투매) 국면, 바닥 근처 신호 후보", alert:false}); }
+  if(k?.credit){ const s=st(k.credit.pctile_2y); rows.push({k:"한국 신용융자 잔고", v:`${num(k.credit.value/1e12,1)}조 · 20일 ${pct(k.credit.chg_20d,1)} · ${esc(String(k.credit.date).replace(/(\d{4})(\d{2})(\d{2})/,"$1-$2-$3"))}`, p:k.credit.pctile_2y, c:s[0], st:s[1], note:"20일 변화가 크게 마이너스면 빚투 정리(디레버리징) 진행 중", g:"한국", use:"참고만", alert:false}); }
+  if(k?.deposit){ rows.push({k:"투자자예탁금", v:`${num(k.deposit.value/1e12,1)}조 · 20일 ${pct(k.deposit.chg_20d,1)}${k.credit_to_deposit!=null? " · 신용/예탁 "+num(k.credit_to_deposit,1)+"%":""}`, p:k.deposit.pctile_2y, c:"n", st:"참고", note:"신용/예탁 비율이 높을수록 빚투 비중↑", g:"한국", use:"참고만", alert:false}); }
+  if(k?.forced){ const f=k.forced, s=st(f.pctile_2y,false); rows.push({k:"한국 반대매매 금액 (5일 평균)", v:`${num(f.avg5/1e8,0)}억 · ${esc(String(f.date).replace(/(\d{4})(\d{2})(\d{2})/,"$1-$2-$3"))}`, p:f.pctile_2y, c:s[0], st:s[1], note:"급증 = 강제 청산(투매) 국면, 바닥 근처에서 자주 나옴", g:"한국", use:"2년 상위 10% → 현금·스윙 매수일 보조지표", alert:false}); }
   const wp=H.weekly_pctile||{};
-  if(H.youtube){ const y=H.youtube, s=st(wp.yt_neg_ratio,false); rows.push({k:"유튜브 댓글 비관 비율", v:`${y.neg_ratio==null?"–":num(y.neg_ratio,0)+"%"} · 7일 댓글 ${num(y.comments_7d,0)}개`, p:wp.yt_neg_ratio, c:s[0], st:s[1], note:`채널: ${esc(y.channels.map(c=>c.name).join(", "))} · 욕·손절 vs 가즈아·인증`, alert:false}); }
-  if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:`반대매매·개미 눈물 vs TQQQ 수익·계좌 인증 (${n.source==="google_news_rss"?"구글 뉴스":"네이버 뉴스"})`, alert:false}); }
+  if(H.youtube){ const y=H.youtube, s=st(wp.yt_neg_ratio,false); rows.push({k:"유튜브 댓글 비관 비율", v:`${y.neg_ratio==null?"–":num(y.neg_ratio,0)+"%"} · 7일 댓글 ${num(y.comments_7d,0)}개`, p:wp.yt_neg_ratio, c:s[0], st:s[1], note:`채널: ${esc(y.channels.map(c=>c.name).join(", "))} · 욕·손절 vs 가즈아·인증`, g:"여론", use:"참고만 (1년 기준선 쌓는 중)", alert:false}); }
+  if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:`반대매매·개미 눈물 vs TQQQ 수익·계좌 인증 (${n.source==="google_news_rss"?"구글 뉴스":"네이버 뉴스"})`, g:"여론", use:"참고만 (1년 기준선 쌓는 중)", alert:false}); }
   return {rows, H};
 }
 function humanHTML(){
   const {rows,H}=humanSignals();
-  if(!rows.length) return "";
-  return `<h2>인간지표 (참고 경보)</h2>
-  <div class="tbl"><table><tr><th class="l">지표</th><th class="l">최근 값</th><th>자기 과거 대비</th><th>판정</th><th class="l">검증</th></tr>
-  ${rows.map(r=>`<tr><td class="l">${r.k}</td><td class="l">${r.v}</td><td>${r.p==null?"–":"상위 "+num(100-r.p,0)+"%"}</td><td><span class="dot ${r.c}"></span>${r.st}</td><td class="l muted">${r.note}</td></tr>`).join("")}
-  </table></div>
-  <p class="note">매수·매도 규칙에는 넣지 않고 경보로만 씁니다. 과열 극단이 겹치면 과열 점수 2개 행동(QLD 신규 보류)을 앞당겨 검토, 공포 극단이면 현금 차수 대기 중 마음 다잡기용. 마진·AAII는 1990년대부터 검증(data/sentiment_study.json), 유튜브·뉴스는 매주 기록을 쌓아 1년 뒤부터 백분위가 의미 있습니다(현재 ${H.weeks_recorded??0}주). 라오어 카페·서학개미 레버리지 순매수는 매달 캡처로 기록합니다.${H.errors?.length? "<br>수신 실패: "+esc(H.errors.join(" / ")):""}</p>`;
+  if(!rows.length) return `<div class="panel muted">인간지표 데이터를 기다리는 중입니다.</div>`;
+  const grp=[["미국","미국 빚투·개인 심리"],["한국","한국 빚투·투매"],["여론","뉴스·유튜브 여론"]];
+  return grp.map(([g,t])=>{ const rs=rows.filter(r=>r.g===g); if(!rs.length) return "";
+    return `<h3>${t}</h3><div class="panel hp">${rs.map(r=>`<div class="hrow">
+      <div class="h1"><span class="dot ${r.c}"></span><b>${r.k}</b><span class="hst">${r.st}${r.p==null?"":" · 상위 "+num(100-r.p,0)+"%"}</span></div>
+      <div class="hv">${r.v}</div>
+      <div class="hn">${r.note}</div>
+      <div class="hu">매매 연결: ${r.use}</div></div>`).join("")}</div>`; }).join("") +
+  `<p class="note">"상위 x%"는 자기 과거(미국 10년·한국 2년·여론 1년) 대비 위치입니다. 빨강 = 과열 극단, 초록 = 공포 극단(역발상 매수 우호). 라오어 카페·서학개미 레버리지 순매수는 매달 25일 캡처로 기록합니다(현재 여론 기록 ${H.weeks_recorded??0}주).${H.errors?.length? "<br>수신 실패: "+esc(H.errors.join(" / ")):""}</p>`;
+}
+function humanSummary(){
+  const {rows,H}=humanSignals(); if(!rows.length) return "";
+  const hot=rows.filter(r=>r.c==="r"), fear=rows.filter(r=>r.c==="g");
+  const short=r=>r.k.split(" (")[0];
+  const parts=[`과열 ${hot.length}${hot.length? " ("+hot.map(short).join(", ")+")":""}`, `공포 ${fear.length}${fear.length? " ("+fear.map(short).join(", ")+")":""}`];
+  if(H.news?.fear_ratio!=null) parts.push(`뉴스 공포 ${num(H.news.fear_ratio,0)}%`);
+  if(H.youtube?.neg_ratio!=null) parts.push(`유튜브 비관 ${num(H.youtube.neg_ratio,0)}%`);
+  if(H.kofia?.credit?.chg_20d!=null) parts.push(`한국 신용융자 20일 ${pct(H.kofia.credit.chg_20d,1)}`);
+  return `<a class="hsum" href="#people"><b>인간지표</b> ${parts.join(" · ")} <span class="muted">→ 자세히</span></a>`;
+}
+function vPeople(){
+  return `<h2>인간지표 (빚투·심리·여론)</h2>
+  <p class="muted" style="margin-top:-4px">가격이 아니라 사람들의 돈과 말로 시장 온도를 봅니다. 대부분 참고용이고, 매매에 연결된 것은 각 항목의 "매매 연결"에 적었습니다.</p>
+  ${humanHTML()}`;
 }
 function vHeat(){
   const oh=overheat(E), bd=bands(E), st=DATA.study;
@@ -916,7 +946,7 @@ function vHeat(){
   </table></div>
   <div class="panel" style="margin-top:10px"><p><b>지금</b>: ${esc(oh.lt)} · ${esc(oh.sw)}</p>
   <p class="muted">장투 매도 제한: 한 번 팔면 6개월(126거래일) 쉬기, 해외주식 실현이익 연 250만 공제 안을 우선(초과분 22%). 판 돈은 현금 풀에 넣어 QQQ 고점 대비 −10% 1차부터 다시 씁니다. 직투 자산 1억 이후에는 매도금의 절반을 배당 풀(SCHD)로.</p></div>
-  ${humanHTML()}
+  <p class="note">빚투·심리·여론 지표는 <a href="#people">인간지표 탭</a>에 모았습니다.</p>
   ${st? studyTable(st):""}
   <h2>장투 계좌 목표 밴드 · 거시 ${esc(bd.mode)}</h2>
   <div class="tbl"><table><tr><th>구분</th><th>목표 밴드</th><th>현재</th><th class="l">조치</th></tr>
@@ -1081,7 +1111,7 @@ function render(){
   const h = (location.hash||"#today").slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : "today";
   $("#nav").innerHTML = VIEWS.map(([k,t])=>`<a href="#${k}" ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
-  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
+  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
