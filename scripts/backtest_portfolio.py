@@ -704,6 +704,51 @@ def metrics(D, r, bq, bs):
     }
 
 
+def ddwin_study(D):
+    """낙폭 기준 고점 창 비교: 5년/7년/10년/사상 최고가. 채택 규칙(L)로 4대 위기 시작."""
+    from collections import deque
+    dates, c = D["dates"], D["c"]
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    def ddser(win):
+        dq, out = deque(), []
+        for k, x in enumerate(c):
+            while dq and c[dq[-1]] <= x: dq.pop()
+            dq.append(k)
+            while dq[0] <= k - win: dq.popleft()
+            out.append((x / c[dq[0]] - 1) * 100)
+        return out
+    def idx(d): return next((k for k, x in enumerate(dates) if x >= d), len(dates) - 1)
+    res = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "rows": []}
+    base_dd = D["dd"]
+    for wname, win in (("5년", 1260), ("7년", 1764), ("10년", 2520), ("사상 최고가", 10 ** 9)):
+        D["dd"] = ddser(win)
+        for name, a, b in SCEN:
+            ks = [k for k, d in enumerate(dates) if a <= d <= b]
+            if not ks: continue
+            i0 = max(ks, key=lambda k: c[k])
+            bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+            r = run(D, i0, cfg=L)
+            m = metrics(D, r, bq, bs)
+            row = {"window": wname, "scenario": name, "start": dates[i0], "irr_end": m["horizon"]["end"]["irr"],
+                   "worst": m["underwater"].get("worst_vs_principal_pct"), "uw_months": m["underwater"].get("months"), "mdd5": m["mdd_5y"][0],
+                   "y5": (m["horizon"]["5y"] or {}).get("ret_pct"), "y10": (m["horizon"]["10y"] or {}).get("ret_pct"),
+                   "days_dd20": sum(1 for k in range(i0, len(dates)) if D["dd"][k] <= -20),
+                   "days_dd30": sum(1 for k in range(i0, len(dates)) if D["dd"][k] <= -30)}
+            if name == "닷컴버블":   # 2008년 두 번째 폭락 직전 레버리지 비중과 그 구간 낙폭
+                k07, k09 = idx("2007-10-31"), idx("2009-03-09")
+                rr = run(D, i0, k07, cfg=L)
+                tot = sum(v.val(D["P"], k07, D["fx"][k07]) for v in rr["A"].values())
+                lev = sum(v.v("QLD", D["P"], k07, D["fx"][k07]) + v.v("TQQQ", D["P"], k07, D["fx"][k07]) for v in rr["A"].values())
+                row["lev_share_2007_10"] = round(lev / tot * 100, 1) if tot else None
+                cv = r["curve"]; s0, s1 = k07 - i0, k09 - i0
+                pk = max(cv[s0 - 60:s0 + 1]); row["drop_2008"] = round((min(cv[s0:s1 + 1]) / pk - 1) * 100, 1)
+                row["dd_2005_01"] = round(D["dd"][idx("2005-01-03")], 1); row["dd_2008_11"] = round(D["dd"][idx("2008-11-20")], 1)
+                row["dd_2012_01"] = round(D["dd"][idx("2012-01-03")], 1)
+            res["rows"].append(row); print("WIN", json.dumps(row, ensure_ascii=False), flush=True)
+    D["dd"] = base_dd
+    json.dump(res, open(os.path.join(B.DATA, "ddwin_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def margin_study(D):
     """빚투 극단 + 추세이탈 이하일 때 장투 QLD → QQQM, 효과 비교 → data/margin_bt.json"""
     dates = D["dates"]
@@ -736,6 +781,8 @@ def main():
     dates = D["dates"]
     if os.environ.get("ONLY_MARGIN"):
         margin_study(D); print("ok"); return
+    if os.environ.get("ONLY_DDWIN"):
+        ddwin_study(D); print("ok"); return
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dd_window_days": DD_WIN, "data_start": dates[0],
            "hy_fred_start": D["hy_start"], "notes": [
                "시작 잔고·월 적립은 현재(2026) 금액 그대로, 물가 조정 없음", "세금·수수료·환전 스프레드 제외",
