@@ -141,13 +141,13 @@ const RULES = {
     {min:-30,  label:"하락 -20%", alloc:{QQQM:60, SPYM:20, QLD:120}},
     {min:-999, label:"폭락 -30%", alloc:{QQQM:40, SPYM:0, QLD:120, TQQQ:40}},
   ],
-  // 현금 4차 (잔액 대비 %), QLD:QQQM 비율
+  // 현금 4차: pct=모은 돈(사이클 시작 기준) 대비, rem=집행 시점 남은 잔액 대비 (15/20/25/40 → 15/23.5/38.5/100)
   tranches: [
-    // 현금 계좌: 나스닥100(QQQ) -25%부터만. 잔액 대비 25→33→50→100% = 모아둔 돈의 약 1/4씩
-    {n:1, dd:-25, pct:25,  mix:{QQQM:70, QLD:30}},
-    {n:2, dd:-30, pct:33,  mix:{QQQM:60, QLD:40}},
-    {n:3, dd:-35, pct:50,  mix:{QLD:80, QQQM:20}},
-    {n:4, dd:-40, pct:100, mix:{QLD:80, TQQQ:20}},
+    // 현금 계좌(Ben 2026-11-08): QQQ 고점 대비 -30/-40/-60/-80%에서만. 선집행 없음
+    {n:1, dd:-30, pct:15, rem:15,   mix:{QQQM:70, QLD:30}},
+    {n:2, dd:-40, pct:20, rem:23.5, mix:{QQQM:60, QLD:40}},
+    {n:3, dd:-60, pct:25, rem:38.5, mix:{QLD:80, QQQM:20}},
+    {n:4, dd:-80, pct:40, rem:100,  mix:{QLD:80, TQQQ:20}},
   ],
   states: {
     1:{name:"상승", desc:"가격 > 50일선 > 200일선, 고점 대비 -10% 이내"},
@@ -471,7 +471,7 @@ function planAmmo(E){
   if(next){
     const pre = false;   // 보수적 계좌: 낙폭 도달 전 선집행 없음
     if(next.reached){
-      const pctUse = next.n===4 ? 100 : next.pct;
+      const pctUse = next.rem;
       const amt = bal * pctUse/100;
       action = {t:next, pre, ready: E.auxN>=2 || pre, amt, pctUse, split: next.n===4? "20~40거래일" : "3~5거래일"};
     }
@@ -557,7 +557,7 @@ function renderHero(){
   const stateColor = {1:"#9fe0b8",2:"#ffd88a",3:"#ffb38a",4:"#ff9b9b",5:"#b9d8ff"}[E.state];
   $("#hero").innerHTML = `
     <div class="state"><div class="k">QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${E.state}. ${st.name}</div><div class="s">${esc(st.desc)}</div></div>
-    <div><div class="k">고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">현금 ${E.dd<=-25? "투입 구간":"대기 (−25%부터)"}</div></div>
+    <div><div class="k">고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">현금 ${E.dd<=RULES.tranches[0].dd? "투입 구간":"대기 (−30%부터)"}</div></div>
     <div><div class="k">200일선 대비</div><div class="v">${pct(q.vs200,1)}</div><div class="s">RSI ${num(q.rsi,1)}</div></div>
     <div><div class="k">VIX</div><div class="v">${num(E.vix,1)}</div><div class="s">공포탐욕 ${E.fng!=null? num(E.fng,0) : `<a href="${RULES.fngLink}" style="color:#ffd8b8" target="_blank" rel="noopener">자산제곱</a>`}</div></div>
     <div><div class="k">거시 모드</div><div class="v">${esc(E.mode.name)}</div><div class="s">빨강 ${E.L.filter(l=>l.c==="r").length} · 노랑 ${E.L.filter(l=>l.c==="y").length}</div></div>
@@ -575,7 +575,7 @@ function vToday(){
   if(am.action){
     const a=am.action;
     todo.push(`현금 <b>${a.t.n}차</b>${a.pre?" (RSI 30 선도착, 절반 선집행)":""}: ${a.ready? "<b>집행일</b>" : "보조지표 2개 미충족 — 대기"} · 잔액의 ${a.pctUse}% = ${am.bal>0? won(a.amt) : "잔액 0원(이번 달 85만 적립 후 그 10%)"} · ${mixText(a.t.mix)} · ${a.split} 분할`);
-  } else if(true) todo.push("현금: QQQ 고점 대비 -25% 전이라 대기. 월 85만은 SGOV에 적립.");
+  } else if(true) todo.push("현금: QQQ 고점 대비 -30% 전이라 대기. 월 85만은 SGOV에 적립.");
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
   if(lt.below) todo.push("QQQ 200일선 아래: QLD는 -2% 날짜와 무관하게 주 1회 4분할.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
@@ -654,7 +654,7 @@ function vScenario(){
   </table></div>
   <h2>현금 투입 (모아둔 SGOV)</h2>
   <div class="tbl"><table style="min-width:520px"><tr><th class="l">QQQ 낙폭</th><th>투입량</th><th class="l">거시 공격·중립</th><th class="l">거시 수비 · HY 6%↑</th></tr>
-  ${RULES.tranches.map(t=>`<tr><td class="l">${t.n}차 · ${t.dd}%${t.n===4?" 이하":""}</td><td>${t.n===4?"남은 전부":"잔액의 "+t.pct+"%"}</td><td class="l">${mixText(t.mix)}</td><td class="l">QQQM 100%</td></tr>`).join("")}
+  ${RULES.tranches.map(t=>`<tr><td class="l">${t.n}차 · ${t.dd}%${t.n===4?" 이하":""}</td><td>${"모은 돈의 "+t.pct+"%"+(t.n===4?" (남은 전부)":" (잔액의 "+t.rem+"%)")}</td><td class="l">${mixText(t.mix)}</td><td class="l">QQQM 100%</td></tr>`).join("")}
   </table></div>
   <p class="note">보조지표(RSI ≤40, VIX ≥20, 공포탐욕 ≤45, 60·120·200일선 터치) 중 2개가 맞는 날 3~5거래일에 나눠 집행합니다. QQQ가 전고점을 되찾으면 차수를 처음으로 돌립니다.</p>
   <h2>다른 계좌</h2>
@@ -676,7 +676,7 @@ function vCrash(){
   <h2>현금 4차 투입 (잔액 ${won(am.bal)})</h2>
   <div class="panel"><ol class="steps">
     ${am.list.map(t=>{ const isNow = am.action && am.action.t.n===t.n; return `<li class="${t.done?"done":""} ${isNow?"now":""}">
-      <b>${t.n}차 · QQQ ${t.dd}%${t.n===4?" 이하":""}</b> — ${t.n===4? "남은 잔액 전부":"잔액의 "+t.pct+"% (모아둔 돈의 약 1/4)"} · ${mixText(t.mix)}
+      <b>${t.n}차 · QQQ ${t.dd}%${t.n===4?" 이하":""}</b> — ${"모아둔 돈의 "+t.pct+"%"+(t.n===4? " = 남은 잔액 전부":" = 그 시점 잔액의 "+t.rem+"%")} · ${mixText(t.mix)}
       <div class="muted">${t.done? "집행 완료" : t.reached? (isNow? (am.action.ready? "도달 · 보조지표 충족 → 이번 주 3~5거래일 분할 집행" : "도달 · 보조지표 2개 충족일까지 대기") : "도달") : (isNow && am.action.pre? "RSI 30 선도착 → 절반 선집행" : "미도달")}</div></li>`; }).join("")}
   </ol>
   <p class="note">집행 순서: ① 현금(SGOV) → ② IRP 안전자산 → ③ 마지막으로 기존 1배 일부 전환(직투는 양도세 22% 발생, 4단계에서만). 장투 1배·QLD는 가격 손절하지 않습니다. 대신 QLD 30% 상한, TQQQ 총자산 10% 상한, HY 6% 규칙으로 위험을 제한합니다. QQQ가 전고점을 회복하면 차수를 초기화하고 TQQQ는 전량 QLD·QQQM으로, 2층 QLD는 절반을 QQQM으로 옮깁니다.</p></div>
@@ -686,7 +686,7 @@ function vCrash(){
     <tr><th>상태</th><th class="l">1배 지수 (장투·연금)</th><th class="l">QLD (장투)</th><th class="l">스윙 (직투 700만·IRP)</th><th class="l">현금</th></tr>
     ${[[1,"평소 적립. IRP 위험 55~60%","−2% 음봉일 적립. 과열 2개↑면 보류→SGOV","지수 −2% 음봉·섹터 급락 소액 매수","대기·적립 (SGOV)"],
        [2,"적립 유지","적립 비중 확대 (낙폭표)","빅테크 200일선 −5% 이하 1차 사다리 시작","대기"],
-       [3,"계속 산다. IRP 62~65%","주 1회 4분할. 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−25%부터 1차 (보조지표 확인)"],
+       [3,"계속 산다. IRP 62~65%","주 1회 4분할. 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−30%부터 1차 15% (보조지표 확인)"],
        [4,"계속 산다. IRP 70%","적립금 대부분 QLD, TQQQ 소량","3배는 하루 −30%·고점 −80%에서만 관심","−30/−35/−40%에 2·3·4차"],
        [5,"평소 적립 복귀. IRP 55~60%","평소 규칙. 30% 초과분 QQQM","평소","전고점 회복 시 차수 초기화"]]
       .map(r=>`<tr${r[0]===stIdx?' style="background:var(--accent-soft)"':""}><td><b>${r[0]}. ${RULES.states[r[0]].name}</b></td>${r.slice(1).map(c=>`<td class="l">${c}</td>`).join("")}</tr>`).join("")}
