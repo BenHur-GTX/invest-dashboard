@@ -1,0 +1,618 @@
+{
+ "generated": "2026-11-08T02:37:18Z",
+ "data_start": "1999-03-10",
+ "hy_fred_start": "2023-11-07",
+ "notes": [
+  "시작 잔고·월 적립은 현재(2026) 금액 그대로, 물가 조정 없음",
+  "세금·수수료·환전 스프레드 제외",
+  "QLD·TQQQ 상장 전은 QQQ 일간 2·3배 − (보수 0.95% + 차입 T-bill) 합성",
+  "SCHD 2011 이전은 SPY, SOXX 2001 이전은 ^SOX(가격지수)",
+  "SGOV·머니마켓은 3개월 T-bill 이자",
+  "IRP·연금저축 국내상장 ETF는 미국 지수 × 원달러 환율로 근사",
+  "스윙은 QQQM·QLD·SOXX 규칙만(빅테크는 현재 종목 기준이라 생존 편향 → 제외, 3배 관심 규칙 제외)",
+  "IRP KODEX 200 음봉 매매 제외",
+  "공포탐욕 과거값 없음 → 과열 4개 신호, 보조지표 3개 중 2개",
+  "HY 스프레드 FRED 시작 전은 BAA10Y×2.3−1.0 근사",
+  "순유동성(2002년 12월 이전 자료 없음)은 '판정 불가'로 둠"
+ ],
+ "scenarios": [
+  {
+   "horizon": {
+    "1y": {
+     "date": "2001-03-27",
+     "value_man": 9928,
+     "principal_man": 11505,
+     "ret_pct": -13.7,
+     "irr": -16.74,
+     "qqq_all_ret_pct": -48.5,
+     "spy_all_ret_pct": -5.9
+    },
+    "3y": {
+     "date": "2003-04-02",
+     "value_man": 15486,
+     "principal_man": 19425,
+     "ret_pct": -20.3,
+     "irr": -10.64,
+     "qqq_all_ret_pct": -47.7,
+     "spy_all_ret_pct": -23.3
+    },
+    "5y": {
+     "date": "2005-04-04",
+     "value_man": 23071,
+     "principal_man": 27345,
+     "ret_pct": -15.6,
+     "irr": -5.33,
+     "qqq_all_ret_pct": -30.5,
+     "spy_all_ret_pct": -10.9
+    },
+    "10y": {
+     "date": "2010-04-06",
+     "value_man": 55373,
+     "principal_man": 47145,
+     "ret_pct": 17.5,
+     "irr": 2.75,
+     "qqq_all_ret_pct": 14.9,
+     "spy_all_ret_pct": 10.7
+    },
+    "end": {
+     "date": "2026-11-06",
+     "value_man": 1123478,
+     "principal_man": 112815,
+     "ret_pct": 895.9,
+     "irr": 13.65,
+     "qqq_all_ret_pct": 1161.9,
+     "spy_all_ret_pct": 600.0
+    }
+   },
+   "mdd_5y": [
+    -24.2,
+    "2002-07-23"
+   ],
+   "mdd_all": [
+    -31.5,
+    "2022-12-28"
+   ],
+   "qqq_all_mdd_5y": [
+    -42.1,
+    "2001-04-04"
+   ],
+   "spy_all_mdd_5y": [
+    -33.8,
+    "2002-07-23"
+   ],
+   "underwater": {
+    "from": "2000-09-08",
+    "to": "2007-05-30",
+    "months": 80,
+    "worst_vs_principal_pct": -37.2,
+    "worst_date": "2002-07-23",
+    "unrecovered": false
+   },
+   "qqq_all_underwater": {
+    "from": "2000-03-28",
+    "to": "2007-10-08",
+    "months": 90,
+    "worst_vs_principal_pct": -66.7,
+    "worst_date": "2002-07-23",
+    "unrecovered": false
+   },
+   "spy_all_underwater": {
+    "from": "2001-06-06",
+    "to": "2005-11-22",
+    "months": 53,
+    "worst_vs_principal_pct": -40.4,
+    "worst_date": "2002-07-23",
+    "unrecovered": false
+   },
+   "peak_recovery": {
+    "peak": "2021-12-27",
+    "trough": "2022-12-28",
+    "to": "2023-06-28",
+    "months": 18
+   },
+   "accounts_end_5y_man": {
+    "longterm": 10025,
+    "ammo": 5273,
+    "swing": 606,
+    "irp": 4504,
+    "pension": 2664
+   },
+   "holdings_5y": {
+    "longterm": {
+     "QQQ": 6160,
+     "SPY": 147,
+     "SCHD": 23,
+     "SGOV": 2589,
+     "QLD": 1106,
+     "TQQQ": 0
+    },
+    "ammo": {
+     "SGOV": 2504,
+     "QQQ": 2769,
+     "QLD": 0
+    },
+    "swing": {
+     "SGOV": 545,
+     "QQQ": 44,
+     "QLD": 1,
+     "SOXX": 16
+    },
+    "irp": {
+     "SGOV": 1855,
+     "SPY": 1704,
+     "QQQ": 944
+    },
+    "pension": {
+     "SPY": 1088,
+     "QQQ": 1526,
+     "SGOV": 51
+    }
+   },
+   "name": "닷컴버블",
+   "start": "2000-03-27",
+   "qqq_peak": 117.75,
+   "qqq_trough": "2002-10-09",
+   "qqq_trough_dd": -83.0,
+   "qqq_recover": "2016-09-06",
+   "fx_start": 1112.1,
+   "events": [
+    [
+     "2000-04-14",
+     "현금 1차 13만"
+    ],
+    [
+     "2000-11-20",
+     "현금 2차 165만"
+    ],
+    [
+     "2001-03-02",
+     "현금 3차 365만"
+    ],
+    [
+     "2002-07-22",
+     "현금 4차 1790만"
+    ]
+   ]
+  },
+  {
+   "horizon": {
+    "1y": {
+     "date": "2008-10-30",
+     "value_man": 12139,
+     "principal_man": 11175,
+     "ret_pct": 8.6,
+     "irr": 10.66,
+     "qqq_all_ret_pct": -14.8,
+     "spy_all_ret_pct": -10.8
+    },
+    "3y": {
+     "date": "2010-11-01",
+     "value_man": 21839,
+     "principal_man": 19095,
+     "ret_pct": 14.4,
+     "irr": 6.65,
+     "qqq_all_ret_pct": 21.7,
+     "spy_all_ret_pct": 4.9
+    },
+    "5y": {
+     "date": "2012-11-01",
+     "value_man": 33021,
+     "principal_man": 27015,
+     "ret_pct": 22.2,
+     "irr": 6.4,
+     "qqq_all_ret_pct": 39.7,
+     "spy_all_ret_pct": 22.6
+    },
+    "10y": {
+     "date": "2017-11-02",
+     "value_man": 88303,
+     "principal_man": 46815,
+     "ret_pct": 88.6,
+     "irr": 10.66,
+     "qqq_all_ret_pct": 169.0,
+     "spy_all_ret_pct": 103.0
+    },
+    "end": {
+     "date": "2026-11-06",
+     "value_man": 501571,
+     "principal_man": 82455,
+     "ret_pct": 508.3,
+     "irr": 15.39,
+     "qqq_all_ret_pct": 849.5,
+     "spy_all_ret_pct": 447.6
+    }
+   },
+   "mdd_5y": [
+    -15.4,
+    "2008-10-15"
+   ],
+   "mdd_all": [
+    -26.5,
+    "2022-12-28"
+   ],
+   "qqq_all_mdd_5y": [
+    -24.5,
+    "2008-10-15"
+   ],
+   "spy_all_mdd_5y": [
+    -21.3,
+    "2008-10-15"
+   ],
+   "underwater": {
+    "from": "2008-01-04",
+    "to": "2008-03-14",
+    "months": 2,
+    "worst_vs_principal_pct": -4.5,
+    "worst_date": "2008-02-06",
+    "unrecovered": false
+   },
+   "qqq_all_underwater": {
+    "from": "2008-09-22",
+    "to": "2009-07-15",
+    "months": 10,
+    "worst_vs_principal_pct": -23.3,
+    "worst_date": "2008-12-29",
+    "unrecovered": false
+   },
+   "spy_all_underwater": {
+    "from": "2008-10-29",
+    "to": "2009-08-25",
+    "months": 10,
+    "worst_vs_principal_pct": -20.5,
+    "worst_date": "2009-03-09",
+    "unrecovered": false
+   },
+   "peak_recovery": {
+    "peak": "2022-01-03",
+    "trough": "2022-12-28",
+    "to": "2023-05-26",
+    "months": 17
+   },
+   "accounts_end_5y_man": {
+    "longterm": 14577,
+    "ammo": 4912,
+    "swing": 891,
+    "irp": 8609,
+    "pension": 4031
+   },
+   "holdings_5y": {
+    "longterm": {
+     "QQQ": 9924,
+     "SGOV": 4179,
+     "QLD": 475
+    },
+    "ammo": {
+     "SGOV": 4801,
+     "QQQ": 111
+    },
+    "swing": {
+     "SGOV": 829,
+     "QQQ": 22,
+     "QLD": 22,
+     "SOXX": 17
+    },
+    "irp": {
+     "SGOV": 3497,
+     "SPY": 2594,
+     "QQQ": 2518
+    },
+    "pension": {
+     "SPY": 1453,
+     "QQQ": 2518,
+     "SGOV": 60
+    }
+   },
+   "name": "금융위기",
+   "start": "2007-10-31",
+   "qqq_peak": 55.03,
+   "qqq_trough": "2008-11-20",
+   "qqq_trough_dd": -53.6,
+   "qqq_recover": "2011-01-03",
+   "fx_start": 903.2,
+   "events": [
+    [
+     "2007-11-09",
+     "현금 1차 0만"
+    ],
+    [
+     "2007-11-12",
+     "현금 2차 0만"
+    ],
+    [
+     "2008-01-08",
+     "현금 3차 66만"
+    ],
+    [
+     "2010-04-15",
+     "장투 과열 QLD 20% 매도 37만"
+    ],
+    [
+     "2011-01-18",
+     "장투 과열 QLD 20% 매도 37만"
+    ]
+   ]
+  },
+  {
+   "horizon": {
+    "1y": {
+     "date": "2021-02-18",
+     "value_man": 12117,
+     "principal_man": 11175,
+     "ret_pct": 8.4,
+     "irr": 10.18,
+     "qqq_all_ret_pct": 28.6,
+     "spy_all_ret_pct": 11.6
+    },
+    "3y": {
+     "date": "2023-02-17",
+     "value_man": 22156,
+     "principal_man": 19095,
+     "ret_pct": 16.0,
+     "irr": 7.29,
+     "qqq_all_ret_pct": 21.9,
+     "spy_all_ret_pct": 26.0
+    },
+    "5y": {
+     "date": "2025-02-24",
+     "value_man": 46833,
+     "principal_man": 27015,
+     "ret_pct": 73.4,
+     "irr": 17.49,
+     "qqq_all_ret_pct": 106.2,
+     "spy_all_ret_pct": 86.8
+    },
+    "10y": null,
+    "end": {
+     "date": "2026-11-06",
+     "value_man": 60806,
+     "principal_man": 33945,
+     "ret_pct": 79.1,
+     "irr": 14.21,
+     "qqq_all_ret_pct": 115.7,
+     "spy_all_ret_pct": 95.2
+    }
+   },
+   "mdd_5y": [
+    -12.4,
+    "2022-12-28"
+   ],
+   "mdd_all": [
+    -18.8,
+    "2026-11-05"
+   ],
+   "qqq_all_mdd_5y": [
+    -22.9,
+    "2020-03-16"
+   ],
+   "spy_all_mdd_5y": [
+    -26.2,
+    "2020-03-23"
+   ],
+   "underwater": {
+    "from": "2020-02-24",
+    "to": "2020-05-11",
+    "months": 3,
+    "worst_vs_principal_pct": -13.9,
+    "worst_date": "2020-03-16",
+    "unrecovered": false
+   },
+   "qqq_all_underwater": {
+    "from": "2020-02-20",
+    "to": "2020-05-18",
+    "months": 3,
+    "worst_vs_principal_pct": -26.3,
+    "worst_date": "2020-03-16",
+    "unrecovered": false
+   },
+   "spy_all_underwater": {
+    "from": "2020-02-21",
+    "to": "2020-07-20",
+    "months": 5,
+    "worst_vs_principal_pct": -29.3,
+    "worst_date": "2020-03-23",
+    "unrecovered": false
+   },
+   "peak_recovery": {
+    "peak": "2026-06-30",
+    "trough": "2026-11-05",
+    "to": null
+   },
+   "accounts_end_5y_man": {
+    "longterm": 21360,
+    "ammo": 6269,
+    "swing": 1104,
+    "irp": 12435,
+    "pension": 5666
+   },
+   "holdings_5y": {
+    "longterm": {
+     "QQQ": 10662,
+     "SPY": 3378,
+     "QLD": 4788,
+     "SGOV": 927,
+     "SCHD": 1605
+    },
+    "ammo": {
+     "SGOV": 6269
+    },
+    "swing": {
+     "SGOV": 953,
+     "SOXX": 151
+    },
+    "irp": {
+     "SGOV": 5031,
+     "SPY": 3780,
+     "QQQ": 3624
+    },
+    "pension": {
+     "SPY": 2462,
+     "QQQ": 3137,
+     "SGOV": 67
+    }
+   },
+   "name": "코로나",
+   "start": "2020-02-19",
+   "qqq_peak": 236.98,
+   "qqq_trough": "2020-03-16",
+   "qqq_trough_dd": -28.6,
+   "qqq_recover": "2020-06-05",
+   "fx_start": 1191.1,
+   "events": [
+    [
+     "2020-08-31",
+     "장투 과열 QLD 20% 매도 13만"
+    ],
+    [
+     "2022-06-13",
+     "현금 1차 392만"
+    ],
+    [
+     "2023-06-20",
+     "장투 과열 QLD 20% 매도 509만"
+    ],
+    [
+     "2023-12-13",
+     "현금 회복 정산 642만"
+    ]
+   ]
+  },
+  {
+   "horizon": {
+    "1y": {
+     "date": "2022-11-21",
+     "value_man": 10986,
+     "principal_man": 11175,
+     "ret_pct": -1.7,
+     "irr": -2.02,
+     "qqq_all_ret_pct": -15.3,
+     "spy_all_ret_pct": -1.1
+    },
+    "3y": {
+     "date": "2024-11-22",
+     "value_man": 27933,
+     "principal_man": 19095,
+     "ret_pct": 46.3,
+     "irr": 19.12,
+     "qqq_all_ret_pct": 53.6,
+     "spy_all_ret_pct": 51.0
+    },
+    "5y": null,
+    "10y": null,
+    "end": {
+     "date": "2026-11-06",
+     "value_man": 41044,
+     "principal_man": 27015,
+     "ret_pct": 51.9,
+     "irr": 13.44,
+     "qqq_all_ret_pct": 65.5,
+     "spy_all_ret_pct": 58.8
+    }
+   },
+   "mdd_5y": [
+    -18.0,
+    "2026-11-05"
+   ],
+   "mdd_all": [
+    -18.0,
+    "2026-11-05"
+   ],
+   "qqq_all_mdd_5y": [
+    -22.2,
+    "2026-11-05"
+   ],
+   "spy_all_mdd_5y": [
+    -15.3,
+    "2025-04-21"
+   ],
+   "underwater": {
+    "from": "2022-11-14",
+    "to": "2023-03-16",
+    "months": 4,
+    "worst_vs_principal_pct": -11.7,
+    "worst_date": "2022-12-28",
+    "unrecovered": false
+   },
+   "qqq_all_underwater": {
+    "from": "2022-01-04",
+    "to": "2023-05-16",
+    "months": 16,
+    "worst_vs_principal_pct": -25.7,
+    "worst_date": "2022-12-28",
+    "unrecovered": false
+   },
+   "spy_all_underwater": {
+    "from": "2022-04-20",
+    "to": "2022-08-03",
+    "months": 3,
+    "worst_vs_principal_pct": -13.8,
+    "worst_date": "2022-06-16",
+    "unrecovered": false
+   },
+   "peak_recovery": {
+    "peak": "2026-06-30",
+    "trough": "2026-11-05",
+    "to": null
+   },
+   "accounts_end_5y_man": {
+    "longterm": 19212,
+    "ammo": 5576,
+    "swing": 1082,
+    "irp": 10333,
+    "pension": 4841
+   },
+   "holdings_5y": {
+    "longterm": {
+     "QQQ": 9618,
+     "SPY": 3495,
+     "QLD": 4069,
+     "SGOV": 1253,
+     "SCHD": 778
+    },
+    "ammo": {
+     "SGOV": 5576
+    },
+    "swing": {
+     "SGOV": 812,
+     "SOXX": 70,
+     "QQQ": 104,
+     "QLD": 97
+    },
+    "irp": {
+     "SGOV": 4356,
+     "SPY": 3253,
+     "QQQ": 2724
+    },
+    "pension": {
+     "SPY": 2072,
+     "QQQ": 2702,
+     "SGOV": 67
+    }
+   },
+   "name": "2022 금리인상·러우전쟁",
+   "start": "2021-11-19",
+   "qqq_peak": 403.99,
+   "qqq_trough": "2022-12-28",
+   "qqq_trough_dd": -35.6,
+   "qqq_recover": "2023-12-15",
+   "fx_start": 1184.9,
+   "events": [
+    [
+     "2022-06-13",
+     "현금 1차 94만"
+    ],
+    [
+     "2023-06-20",
+     "장투 과열 QLD 20% 매도 292만"
+    ],
+    [
+     "2023-12-13",
+     "현금 회복 정산 155만"
+    ],
+    [
+     "2026-05-08",
+     "장투 과열 QLD 20% 매도 1302만"
+    ]
+   ]
+  }
+ ]
+}
