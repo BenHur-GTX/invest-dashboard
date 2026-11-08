@@ -1207,7 +1207,7 @@ function vSettings(){
     ${f("swing","스윙 (선택)","매달 넣는 돈이 없으면 0")}
     ${f("longterm","장투 (직투)","나머지 전부 · 자동 계산",true)}
     <p id="c_sum" class="note"></p>
-    <div class="kvrow"><label for="c_irp">IRP 올해 납입<span class="muted"> 세액공제 한도 계산용</span></label><div class="inline"><input id="c_irp" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(irpAnnual()/1e4)}"><span>만원</span></div></div>
+    <div class="kvrow"><label for="c_irp">IRP 올해 누적 납입<span class="muted"> 넣을 때마다 합계로 고쳐 주세요</span></label><div class="inline"><input id="c_irp" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(irpAnnual()/1e4)}"><span>만원</span></div></div>
     <div id="c_pen"></div>
     <label class="check"><input id="c_frac" type="checkbox" ${c.fractional?"checked":""}> 미국주식 소수점 매수 사용 (끄면 1주 단위로 계산)</label>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="c_save">저장하고 이번 달 매수 보기</button><button class="ghost" id="c_reset">기본값으로</button></div>
