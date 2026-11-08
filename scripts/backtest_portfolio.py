@@ -567,6 +567,55 @@ def bench(D, i0, t, end=None):
     return curve
 
 
+def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None):
+    """단순안: 1배 지수 고정 적립(매도 없음) + IRP 위험 70%(연 1회 리밸런싱) + 현금 계좌 6단계(ammo=False면 현금 몫도 지수 적립)."""
+    P, fx_, dates = D["P"], D["fx"], D["dates"]
+    end = end or len(dates) - 1
+    core, irp, am = Acct(), Acct(), Acct()
+    fx = fx_[i0]
+    principal = sum(INIT.values())
+    def buymix(acct, amt, i, fx):
+        for t, w in mix.items(): acct.buy(t, amt * w / 100, P, i, fx)
+    buymix(core, INIT["pension"] + INIT["swing"], i0, fx)
+    buymix(irp, INIT["irp"] * irp_risk / 100, i0, fx); irp.buy("SGOV", INIT["irp"] * (100 - irp_risk) / 100, P, i0, fx)
+    flows = [(dates[i0], -principal)]
+    ammo_done = set(); last_month = None; last_year = dates[i0][:4]; curve, prin, log = [], [], []
+    for i in range(i0, end + 1):
+        d = dates[i]; fx = fx_[i]; dd = D["dd"][i]
+        mode, hy, _ = macro(D, i)
+        nolev = mode == "수비" or (hy is not None and hy >= 6)
+        rsi, vix = D["rsi"][i], D["vix"][i]; c, m200, m60 = D["c"][i], D["ma200"][i], D["ma60"][i]
+        aux = sum([rsi is not None and rsi <= 40, vix is not None and vix >= 20,
+                   (m200 is not None and c <= m200 * 1.01) or (m60 is not None and c <= m60 * 1.01)])
+        if i > i0 and int(d[8:]) >= 25 and d[:7] != last_month:
+            last_month = d[:7]
+            add = sum(MONTHLY.values()); principal += add; flows.append((d, -add))
+            buymix(core, MONTHLY["longterm"] + MONTHLY["pension"], i, fx)
+            if ammo: am.buy("SGOV", MONTHLY["ammo"], P, i, fx)
+            else: buymix(core, MONTHLY["ammo"], i, fx)
+        if d[:4] != last_year:   # IRP 연 1회 위험 70% 리밸런싱
+            last_year = d[:4]; tot = irp.val(P, i, fx); risk = tot - irp.v("SGOV", P, i, fx); tgt = tot * irp_risk / 100
+            if risk > tgt:
+                for t in mix: irp.buy("SGOV", irp.sell(t, (risk - tgt) * mix[t] / 100, P, i, fx), P, i, fx)
+            elif risk < tgt:
+                buymix(irp, irp.sell("SGOV", tgt - risk, P, i, fx), i, fx)
+        if ammo:
+            for n, (lvl, rem, amix) in enumerate(AMMO_T, 1):
+                if n in ammo_done: continue
+                if dd <= lvl and aux >= 2:
+                    amt = am.sell("SGOV", am.v("SGOV", P, i, fx) * rem / 100, P, i, fx)
+                    for t, w in ({"QQQ": 100} if nolev else amix).items(): am.buy(t, amt * w / 100, P, i, fx)
+                    ammo_done.add(n); log.append((d, f"현금 {n}차"))
+                break
+            if dd > -1 and ammo_done:
+                for t in [t for t in am.u if t != "SGOV" and am.u[t] > 1e-12]:
+                    v = am.v(t, P, i, fx); am.buy("SGOV", am.sell(t, v / 2, P, i, fx), P, i, fx)
+                    v2 = am.v(t, P, i, fx); buymix(core, am.sell(t, v2, P, i, fx), i, fx)
+                ammo_done.clear()
+        curve.append(core.val(P, i, fx) + irp.val(P, i, fx) + am.val(P, i, fx)); prin.append(principal)
+    return dict(curve=curve, prin=prin, flows=flows, i0=i0, end=end, log=log, A={"core": core, "irp": irp, "ammo": am})
+
+
 def xirr(flows, final_d, final_v):
     fl = flows + [(final_d, final_v)]
     t0 = datetime.strptime(fl[0][0], "%Y-%m-%d")
@@ -762,6 +811,21 @@ def main():
                    "spy": {"worst": m["spy_all_underwater"].get("worst_vs_principal_pct"), "uw": m["spy_all_underwater"].get("months"), "y3": (h["3y"] or {}).get("spy_all_ret_pct"), "y5": (h["5y"] or {}).get("spy_all_ret_pct"), "end": h["end"]["spy_all_ret_pct"]}}
             out["unified"].append(row)
             print("UNI", name, label, row["worst"], row["uw_months"], row["y3"], row["y5"], row["end"], row["irr_end"], flush=True)
+    out["simple"] = []
+    SIMPLE = [("S1 S&P500 적립 + 현금 6단계", {"SPY": 100}, True), ("S2 S&P500 60·QQQ 40 적립 + 현금 6단계", {"SPY": 60, "QQQ": 40}, True),
+              ("S3 S&P500만 (현금 몫도 적립, IRP 70%)", {"SPY": 100}, False), ("S4 S&P500 60·QQQ 40만 (IRP 70%)", {"SPY": 60, "QQQ": 40}, False)]
+    for name, a, b in SCEN:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k])
+        bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+        for sname, mix, ammo in SIMPLE:
+            r = run_simple(D, i0, mix, ammo)
+            m = metrics(D, r, bq, bs); h = m["horizon"]
+            out["simple"].append({"scenario": name, "strategy": sname, "start": dates[i0], "worst": m["underwater"].get("worst_vs_principal_pct"),
+                                  "uw_months": m["underwater"].get("months"), "mdd5": m["mdd_5y"][0], "y3": (h["3y"] or {}).get("ret_pct"),
+                                  "y5": (h["5y"] or {}).get("ret_pct"), "end": h["end"]["ret_pct"], "irr_end": h["end"]["irr"], "events": r["log"][:12]})
+            print("SIMPLE", name, sname, out["simple"][-1]["worst"], out["simple"][-1]["uw_months"], out["simple"][-1]["irr_end"], flush=True)
     json.dump(out, open(os.path.join(B.DATA, "portfolio_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("ok")
 
