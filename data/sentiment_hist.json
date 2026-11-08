@@ -1,11 +1,11 @@
 {
 "weeks": {
 "2026-W45": {
-"yt_neg_ratio": 25.7,
-"yt_comments": 384,
-"news_fear_ratio": 89.5,
-"news_fear": 154,
-"news_greed": 18
+"yt_neg_ratio": 25.4,
+"yt_comments": 387,
+"news_fear_ratio": 90.6,
+"news_fear": 155,
+"news_greed": 16
 }
 },
 "cache": {
