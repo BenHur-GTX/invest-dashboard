@@ -53,7 +53,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "SOXX", "^SOX", "^VIX", "^IRX"]:
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "SOXX", "^SOX", "^VIX", "^IRX"]:
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -81,12 +81,15 @@ def prep(y, f):
     sox = dict((r[0], r[4]) for r in y["^SOX"])
     soxv = ff(list(sox.items()), dates)
     soxret = [0] + [(soxv[i] / soxv[i - 1] - 1) if soxv[i - 1] else 0 for i in range(1, n)]
+    dvy_map = dict((r[0], r[5]) for r in y.get("DVY", []))
+    dvy = [dvy_map.get(d) for d in dates]
     P = {
         "QQQ": [a / adj[0] * 100 for a in adj],
         "SPY": [s / spy[0] * 100 for s in spy],
         "QLD": splice(dates, qret, [(r[0], r[5]) for r in y["QLD"]], 2, [(0.0095 + rf[i]) / 252 for i in range(n)]),
         "TQQQ": splice(dates, qret, [(r[0], r[5]) for r in y["TQQQ"]], 3, [(0.0095 + 2 * rf[i]) / 252 for i in range(n)]),
-        "SCHD": splice(dates, sret, [(r[0], r[5]) for r in y["SCHD"]]),
+        # SCHD: 실제(2011-10~) → DVY(2003-11~, 배당 ETF 대용) → SPY
+        "SCHD": splice(dates, [0] + [(lambda a, b: (b / a - 1) if a and b else sret[k])(dvy[k - 1], dvy[k]) for k in range(1, n)], [(r[0], r[5]) for r in y["SCHD"]]),
         "SOXX": splice(dates, soxret, [(r[0], r[5]) for r in y["SOXX"]]),
     }
     sg = [100.0]
@@ -396,9 +399,15 @@ UNI = {
     "U0": {"base": (33, 33, 34, 0), "signals": False},
     "U1": {"base": (33, 33, 34, 0), "hot2": (30, 30, 40, 0), "hot3": (25, 25, 50, 0),
            "dd10": (30, 35, 20, 15), "dd20": (25, 35, 10, 30), "dd30": (20, 35, 0, 45), "recov": (25, 35, 10, 30), "signals": True},
+    "U0S": {"base": (33, 33, 34, 0), "signals": False, "eq": "SCHD"},
     "U2": {"base": (30, 35, 30, 5), "hot2": (30, 30, 40, 0), "hot3": (25, 25, 50, 0),
            "dd10": (25, 35, 15, 25), "dd20": (20, 30, 5, 45), "dd30": (15, 25, 0, 60), "recov": (20, 35, 5, 40), "signals": True},
 }
+
+
+UNI["U1S"] = {**UNI["U1"], "eq": "SCHD"}
+UNI["QS"] = {"base": (50, 50, 0, 0), "signals": False, "eq": "SCHD"}
+UNI["QP"] = {"base": (50, 50, 0, 0), "signals": False}
 
 
 def uni_target(cfg, dd, oh, mode, hy, recov):
@@ -429,7 +438,8 @@ def run_unified(D, i0, key, end=None):
     fx = fx_[i0]
     principal = sum(INIT.values())
     tw = cfg["base"]
-    for t, w in zip(("SPY", "QQQ", "SGOV", "QLD"), tw):
+    AS = (cfg.get("eq", "SPY"), "QQQ", "SGOV", "QLD")
+    for t, w in zip(AS, tw):
         core.buy(t, principal * w / 100, P, i0, fx)
     flows = [(dates[i0], -principal)]
     ammo_done = set(); last_month = None; curve, prin, log = [], [], []
@@ -456,12 +466,12 @@ def run_unified(D, i0, key, end=None):
         if rebal:
             tw = uni_target(cfg, dd, oh, mode, hy, recov)
             tot = core.val(P, i, fx)
-            cur = {t: core.v(t, P, i, fx) for t in ("SPY", "QQQ", "SGOV", "QLD")}
-            for t, w in zip(("SPY", "QQQ", "SGOV", "QLD"), tw):   # 매도 먼저 → SGOV
+            cur = {t: core.v(t, P, i, fx) for t in AS}
+            for t, w in zip(AS, tw):   # 매도 먼저 → SGOV
                 tgt = tot * w / 100
                 if t != "SGOV" and cur[t] > tgt * 1.02:
                     core.buy("SGOV", core.sell(t, cur[t] - tgt, P, i, fx), P, i, fx); trades += 1
-            for t, w in zip(("SPY", "QQQ", "SGOV", "QLD"), tw):
+            for t, w in zip(AS, tw):
                 tgt = tot * w / 100
                 if t != "SGOV" and cur[t] < tgt * 0.98:
                     core.buy(t, core.sell("SGOV", tgt - cur[t], P, i, fx), P, i, fx); trades += 1
@@ -636,7 +646,7 @@ def main():
         if not ks: continue
         i0 = max(ks, key=lambda k: D["c"][k])
         bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
-        for key, label in (("CUR", "기존 5계좌 규칙"), ("U0", "3분할 고정 리밸런싱(신호 없음)"), ("U1", "통합 4종목 신호 리밸런싱"), ("U2", "통합 4종목 공격형")):
+        for key, label in (("CUR", "기존 5계좌 규칙"), ("U0", "3분할 고정 리밸런싱(신호 없음)"), ("U1", "통합 4종목 신호 리밸런싱"), ("U2", "통합 4종목 공격형"), ("U0S", "3분할 고정 SCHD판"), ("U1S", "통합 4종목 SCHD판"), ("QP", "QQQ·SPY 반반 고정"), ("QS", "QQQ·SCHD 반반 고정")):
             r = run(D, i0) if key == "CUR" else run_unified(D, i0, key)
             m = metrics(D, r, bq, bs)
             h = m["horizon"]
