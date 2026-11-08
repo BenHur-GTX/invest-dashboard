@@ -756,7 +756,7 @@ function buyWindow(day=25){
 /* ============================================================
    렌더
    ============================================================ */
-const VIEWS = [["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["people","인간지표"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"],["settings","내 설정"]];
+const VIEWS = [["settings","적립 시뮬레이터"],["today","오늘"],["plan","이번 달 매수"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["people","인간지표"],["accounts","계좌·수익률"],["market","시세"],["macro","거시 점검"],["rules","규칙"]];
 let E = null, DATA = null;
 
 /* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
@@ -817,7 +817,7 @@ function vToday(){
   const alerts = E.alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join("");
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
-  ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#settings">내 설정</a>에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
+  ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#settings">적립 시뮬레이터</a>에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
   <div class="alerts">${alerts}</div>
   ${humanSummary()}
   <h2>오늘 할 일</h2>
@@ -1180,7 +1180,7 @@ function vSettings(){
   const P = {ammo:Math.round(c.pct.ammo||0), pension:Math.round(c.pct.pension||0), swing:Math.round(c.pct.swing||0)};
   P.longterm = Math.max(0, 100-P.ammo-P.pension-P.swing);
   const f = (k,n,d,ro)=>`<div class="kvrow"><label for="p_${k}">${n}<span class="muted"> ${d}</span></label><div class="inline"><input id="p_${k}" type="number" inputmode="numeric" min="0" max="100" step="1" value="${P[k]}"${ro?" readonly tabindex=\"-1\" class=\"ro\"":""}><span>%</span><output id="o_${k}" class="muted"></output></div></div>`;
-  return `<h2>내 설정</h2>
+  return `<h2>적립 시뮬레이터 <span class="muted" style="font-size:13px;font-weight:400">월 저축액과 계좌 비율을 넣으면 이번 달 계좌별 매수안이 나옵니다</span></h2>
   <div class="panel">
     <label for="c_total"><b>이번 달 저축액</b></label>
     <div class="inline" style="margin:6px 0 4px"><input id="c_total" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(c.total/1e4)}" style="width:120px"><span>만원</span></div>
@@ -1253,8 +1253,9 @@ function vRules(){
 }
 
 function render(){
-  const h = (location.hash||"#today").slice(1);
-  const view = VIEWS.find(v=>v[0]===h) ? h : "today";
+  const home = DATA.owner ? "today" : "settings";   // 첫 화면: 보유 키 있으면 오늘, 방문자는 적립 시뮬레이터
+  const h = (location.hash||"#"+home).slice(1);
+  const view = VIEWS.find(v=>v[0]===h) ? h : home;
   $("#nav").innerHTML = VIEWS.map(([k,t])=>`<a href="#${k}" ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
   const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules, settings:vSettings}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
