@@ -45,6 +45,10 @@ nav a{color:#cfe0e0;text-decoration:none;padding:12px 12px 10px;font-size:14px;f
 nav a:hover{color:#fff}
 nav a:focus-visible{outline:2px solid #fff;outline-offset:-2px}
 nav a[aria-current="page"]{color:#fff;border-bottom-color:#f4b37a}
+nav a.key{color:#f8d3ae;font-weight:700}
+nav a.key:hover,nav a.key[aria-current="page"]{color:#fff}
+nav a.key-last{margin-right:10px;position:relative}
+nav a.key-last::after{content:"";position:absolute;right:-6px;top:12px;bottom:12px;width:1px;background:rgba(255,255,255,.28)}
 main{padding-top:18px}
 h2{font-size:17px;margin:26px 0 10px;letter-spacing:-.2px}
 h2:first-child{margin-top:4px}
@@ -1256,7 +1260,7 @@ function render(){
   const home = DATA.owner ? "today" : "settings";   // 첫 화면: 보유 키 있으면 오늘, 방문자는 적립 계산기
   const h = (location.hash||"#"+home).slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : home;
-  $("#nav").innerHTML = VIEWS.map(([k,t])=>`<a href="#${k}" ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
+  $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<3?` class="key${i===2?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
   const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules, settings:vSettings}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   if(view==="settings") bindSettings();
