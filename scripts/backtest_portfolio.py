@@ -818,7 +818,11 @@ def main():
             print("UNI", name, label, row["worst"], row["uw_months"], row["y3"], row["y5"], row["end"], row["irr_end"], flush=True)
     out["simple"] = []
     SIMPLE = [("S1 S&P500 적립 + 현금 6단계", {"SPY": 100}, True), ("S2 S&P500 60·QQQ 40 적립 + 현금 6단계", {"SPY": 60, "QQQ": 40}, True),
-              ("S3 S&P500만 (현금 몫도 적립, IRP 70%)", {"SPY": 100}, False), ("S4 S&P500 60·QQQ 40만 (IRP 70%)", {"SPY": 60, "QQQ": 40}, False)]
+              ("S3 S&P500만 (현금 몫도 적립, IRP 70%)", {"SPY": 100}, False), ("S4 S&P500 60·QQQ 40만 (IRP 70%)", {"SPY": 60, "QQQ": 40}, False),
+              ("S5 QQQ 100 + 현금 6단계", {"QQQ": 100}, True), ("S6 S&P500 50·QQQ 50 + 현금 6단계", {"SPY": 50, "QQQ": 50}, True),
+              ("S7 S&P500 40·QQQ 40·배당 20 + 현금 6단계", {"SPY": 40, "QQQ": 40, "SCHD": 20}, True),
+              ("S8 S&P500 30·QQQ 50·QLD 20 고정 + 현금 6단계", {"SPY": 30, "QQQ": 50, "QLD": 20}, True),
+              ("S9 S&P500 40·QQQ 40·QLD 20 고정 + 현금 6단계", {"SPY": 40, "QQQ": 40, "QLD": 20}, True)]
     for name, a, b in SCEN:
         ks = [k for k, d in enumerate(dates) if a <= d <= b]
         if not ks: continue
