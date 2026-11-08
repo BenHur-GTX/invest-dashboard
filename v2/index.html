@@ -396,7 +396,11 @@ function planLongterm(E){
     else { const l=lev()/2; mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",Math.max(0,l-(alloc.TQQQ||0))); notes.push("거시 중립 + 낙폭 구간: 1배는 그대로, 레버리지 절반만 QQQM으로."); }
   } else if(E.mode.name==="수비" || (E.hy!=null && E.hy>=6)){
     const why = E.hy>=6 ? "HY 스프레드 6% 이상" : "거시 수비(빨강 2개 이상)";
-    if(E.stage===0 || !priceFirst){
+    if(E.stage===4 && !priceFirst){
+      const l=(alloc.QLD||0)+(alloc.TQQQ||0);
+      mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",alloc.QLD||0); mv("QQQM","SGOV",l/2);
+      notes.push(`${why} + 폭락(-30% 이하): 레버리지 몫 절반은 QQQM, 절반은 SGOV. 반등을 완전히 놓치지 않기 위한 완화 규칙입니다.`);
+    } else if(E.stage===0 || !priceFirst){
       mv("QLD","SGOV",alloc.QLD||0); mv("TQQQ","SGOV",alloc.TQQQ||0);
       mv("QQQM","SGOV",20*k200); mv("SPYM","SCHD",30*k200);
       notes.push(`${why} + ${priceFirst?"평상 구간(싸지 않음)":"거시 우선 설정"}: 레버리지 전액과 QQQM 20만 → SGOV, SPYM 30만 → SCHD. 1배 적립은 줄이되 끊지 않습니다.`);
