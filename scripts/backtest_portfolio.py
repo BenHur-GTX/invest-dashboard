@@ -131,6 +131,8 @@ def prep(y, f):
     # SOXX 지표
     sx = P["SOXX"]; srsi = B.rsi_series(sx)
     sdd52 = [(sx[i] / max(sx[max(0, i - 251):i + 1]) - 1) * 100 for i in range(n)]
+    dv = P["SCHD"]; divdd52 = [(dv[i] / max(dv[max(0, i - 251):i + 1]) - 1) * 100 for i in range(n)]
+    qdd52 = [(c[i] / max(c[max(0, i - 251):i + 1]) - 1) * 100 for i in range(n)]
     # 거시
     ft = sorted(f["ft_old"] + f["ft_new"])
     ft_d = ff(ft, dates)
@@ -158,7 +160,7 @@ def prep(y, f):
         nl_info.append((nl[i][0], (down, chg4)))
     nl_d = ff(nl_info, dates)
     return dict(dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
-                states=states, dd=dd, srsi=srsi, sdd52=sdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
+                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
                 hy=hy, hy_start=hy_start, baa=baa, nl=nl_d)
 
 
@@ -231,6 +233,7 @@ def run(D, i0, end=None, cfg=None):
     ammo_done, lt_done = set(), set()
     cyc_min = 0; boost = {'ammo': {}, 'longterm': {}}; boosts_in_cycle = 0; prev_st = None; armed_low = None
     lt_last_sell = -10 ** 9
+    div_last = -10 ** 9
     sw_pos = {}  # t: {"avg":px, "half":bool, "lots":n, "last":i}
     sw_last_oh = -10 ** 9
     last_month = None
@@ -254,6 +257,8 @@ def run(D, i0, end=None, cfg=None):
             # 장투
             row = next(r for r in MONTHLY_RULES if dd > r[0])
             al = {"QQQ": row[1], "SPY": row[2], "QLD": row[3], "TQQQ": row[4]}
+            if cfg.get("div") and stage == 0:   # 평상 구간: 1배 일부를 배당 ETF로
+                b = cfg["div"]; al["QQQ"] -= b[0]; al["SPY"] -= b[1]; al["SCHD"] = b[0] + b[1]
 
             def mv(a, b, x):
                 x = min(al.get(a, 0), x)
@@ -267,7 +272,10 @@ def run(D, i0, end=None, cfg=None):
                     l = al["QLD"] + al["TQQQ"]; mv("TQQQ", "QQQ", al["TQQQ"]); mv("QLD", "QQQ", al["QLD"]); mv("QQQ", "SGOV", l / 2)
                 else:
                     mv("QLD", "SGOV", al["QLD"]); mv("TQQQ", "SGOV", al["TQQQ"]); mv("QQQ", "SGOV", 20); mv("SPY", "SCHD", 30)
-            if oh >= 2: mv("QLD", "SGOV", al.get("QLD", 0))
+            if oh >= 2 and cfg.get("div"):   # 과열: QLD 몫 절반은 배당, 절반은 SGOV / 3개+면 QQQM 20도 배당
+                q = al.get("QLD", 0); mv("QLD", "SCHD", q / 2); mv("QLD", "SGOV", q / 2)
+                if oh >= 3: mv("QQQ", "SCHD", 20)
+            elif oh >= 2: mv("QLD", "SGOV", al.get("QLD", 0))
             lt = A["longterm"]; ltv = lt.val(P, i, fx) / MAN
             curlev = (lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)) / MAN
             maxlev = max(0, 0.30 * (ltv + 200) - curlev); newlev = al.get("QLD", 0) + al.get("TQQQ", 0)
@@ -328,6 +336,12 @@ def run(D, i0, end=None, cfg=None):
             lt_done.clear()
             if lt.u.get("TQQQ", 0) > 0:
                 got = lt.sell("TQQQ", lt.v("TQQQ", P, i, fx), P, i, fx); lt.buy("QQQ", got, P, i, fx)
+        # 배당 → 성장 교체: QQQ 1년 고점 -15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30% 매도 → QQQM(폭락이면 QLD 절반)
+        if cfg.get("div_sell") and D["qdd52"][i] <= -15 and D["divdd52"][i] - D["qdd52"][i] >= 10 and i - div_last >= 126 and lt.u.get("SCHD", 0) > 0:
+            got = lt.sell("SCHD", lt.v("SCHD", P, i, fx) * 0.3, P, i, fx)
+            mx = {"QQQ": 50, "QLD": 50} if (stage == 4 and not nolev) else {"QQQ": 100}
+            for t, w in mx.items(): lt.buy(t, got * w / 100, P, i, fx)
+            div_last = i; log.append((d, f"배당→성장 교체 {round(got / MAN)}만"))
         # 장투 과열 3개+: QLD 20% → SGOV (126일 쿨다운)
         if oh >= 3 and i - lt_last_sell >= 126 and lt.u.get("QLD", 0) > 0:
             got = lt.sell("QLD", lt.v("QLD", P, i, fx) * 0.2, P, i, fx); lt.buy("SGOV", got, P, i, fx); lt_last_sell = i
@@ -624,6 +638,9 @@ def main():
         ("E = B + IRP 회복기 위험자산 65~70%", {"trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True, "irp5": (65, 70)}),
         ("F = B에서 손절 없음", {"trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": False}),
         ("G IRP 회복기 65~70%만", {"irp5": (65, 70)}),
+        ("H 배당 15%(QQQM5·SPYM25) + 과열 시 배당, 하락 시 교체", {"div": (5, 25), "div_sell": True}),
+        ("I = H에서 교체 매도 없음", {"div": (5, 25)}),
+        ("J 배당 20%(QQQM10·SPYM30) + 과열·교체", {"div": (10, 30), "div_sell": True}),
     ]
     out["variants"] = []
     for name, a, b in SCEN:
