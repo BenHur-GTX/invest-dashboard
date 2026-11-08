@@ -1,5 +1,6 @@
 {
- "generated": "2026-11-08T02:37:18Z",
+ "generated": "2026-11-08T02:38:27Z",
+ "dd_window_days": 1260,
  "data_start": "1999-03-10",
  "hy_fred_start": "2023-11-07",
  "notes": [
@@ -47,19 +48,19 @@
     },
     "10y": {
      "date": "2010-04-06",
-     "value_man": 55373,
+     "value_man": 56963,
      "principal_man": 47145,
-     "ret_pct": 17.5,
-     "irr": 2.75,
+     "ret_pct": 20.8,
+     "irr": 3.23,
      "qqq_all_ret_pct": 14.9,
      "spy_all_ret_pct": 10.7
     },
     "end": {
      "date": "2026-11-06",
-     "value_man": 1123478,
+     "value_man": 1129095,
      "principal_man": 112815,
-     "ret_pct": 895.9,
-     "irr": 13.65,
+     "ret_pct": 900.8,
+     "irr": 13.68,
      "qqq_all_ret_pct": 1161.9,
      "spy_all_ret_pct": 600.0
     }
@@ -69,7 +70,7 @@
     "2002-07-23"
    ],
    "mdd_all": [
-    -31.5,
+    -28.8,
     "2022-12-28"
    ],
    "qqq_all_mdd_5y": [
@@ -82,14 +83,14 @@
    ],
    "underwater": {
     "from": "2000-09-08",
-    "to": "2007-05-30",
-    "months": 80,
+    "to": "2007-07-05",
+    "months": 82,
     "worst_vs_principal_pct": -37.2,
     "worst_date": "2002-07-23",
     "unrecovered": false
    },
    "qqq_all_underwater": {
-    "from": "2000-03-28",
+    "from": "2000-03-27",
     "to": "2007-10-08",
     "months": 90,
     "worst_vs_principal_pct": -66.7,
@@ -107,7 +108,7 @@
    "peak_recovery": {
     "peak": "2021-12-27",
     "trough": "2022-12-28",
-    "to": "2023-06-28",
+    "to": "2023-06-15",
     "months": 18
    },
    "accounts_end_5y_man": {
@@ -178,56 +179,56 @@
    "horizon": {
     "1y": {
      "date": "2008-10-30",
-     "value_man": 12139,
+     "value_man": 12028,
      "principal_man": 11175,
-     "ret_pct": 8.6,
-     "irr": 10.66,
+     "ret_pct": 7.6,
+     "irr": 9.43,
      "qqq_all_ret_pct": -14.8,
      "spy_all_ret_pct": -10.8
     },
     "3y": {
      "date": "2010-11-01",
-     "value_man": 21839,
+     "value_man": 22109,
      "principal_man": 19095,
-     "ret_pct": 14.4,
-     "irr": 6.65,
+     "ret_pct": 15.8,
+     "irr": 7.27,
      "qqq_all_ret_pct": 21.7,
      "spy_all_ret_pct": 4.9
     },
     "5y": {
      "date": "2012-11-01",
-     "value_man": 33021,
+     "value_man": 33281,
      "principal_man": 27015,
-     "ret_pct": 22.2,
-     "irr": 6.4,
+     "ret_pct": 23.2,
+     "irr": 6.65,
      "qqq_all_ret_pct": 39.7,
      "spy_all_ret_pct": 22.6
     },
     "10y": {
      "date": "2017-11-02",
-     "value_man": 88303,
+     "value_man": 88707,
      "principal_man": 46815,
-     "ret_pct": 88.6,
-     "irr": 10.66,
+     "ret_pct": 89.5,
+     "irr": 10.74,
      "qqq_all_ret_pct": 169.0,
      "spy_all_ret_pct": 103.0
     },
     "end": {
      "date": "2026-11-06",
-     "value_man": 501571,
+     "value_man": 473835,
      "principal_man": 82455,
-     "ret_pct": 508.3,
-     "irr": 15.39,
+     "ret_pct": 474.7,
+     "irr": 14.94,
      "qqq_all_ret_pct": 849.5,
      "spy_all_ret_pct": 447.6
     }
    },
    "mdd_5y": [
-    -15.4,
+    -16.0,
     "2008-10-15"
    ],
    "mdd_all": [
-    -26.5,
+    -22.8,
     "2022-12-28"
    ],
    "qqq_all_mdd_5y": [
@@ -269,21 +270,22 @@
     "months": 17
    },
    "accounts_end_5y_man": {
-    "longterm": 14577,
-    "ammo": 4912,
+    "longterm": 14948,
+    "ammo": 4805,
     "swing": 891,
     "irp": 8609,
-    "pension": 4031
+    "pension": 4029
    },
    "holdings_5y": {
     "longterm": {
-     "QQQ": 9924,
-     "SGOV": 4179,
-     "QLD": 475
+     "QQQ": 9516,
+     "SPY": 1469,
+     "SGOV": 2212,
+     "SCHD": 1615,
+     "QLD": 136
     },
     "ammo": {
-     "SGOV": 4801,
-     "QQQ": 111
+     "SGOV": 4805
     },
     "swing": {
      "SGOV": 829,
@@ -297,8 +299,8 @@
      "QQQ": 2518
     },
     "pension": {
-     "SPY": 1453,
-     "QQQ": 2518,
+     "SPY": 1575,
+     "QQQ": 2393,
      "SGOV": 60
     }
    },
@@ -311,24 +313,24 @@
    "fx_start": 903.2,
    "events": [
     [
-     "2007-11-09",
-     "현금 1차 0만"
+     "2008-09-29",
+     "현금 1차 168만"
     ],
     [
-     "2007-11-12",
-     "현금 2차 0만"
-    ],
-    [
-     "2008-01-08",
-     "현금 3차 66만"
+     "2008-10-07",
+     "현금 2차 250만"
     ],
     [
      "2010-04-15",
-     "장투 과열 QLD 20% 매도 37만"
+     "장투 과열 QLD 20% 매도 13만"
+    ],
+    [
+     "2010-12-10",
+     "현금 회복 정산 600만"
     ],
     [
      "2011-01-18",
-     "장투 과열 QLD 20% 매도 37만"
+     "장투 과열 QLD 20% 매도 13만"
     ]
    ]
   },
