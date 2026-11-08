@@ -61,6 +61,14 @@ td.l,th.l{text-align:left;white-space:normal}
 .tbl table tr:last-child td{border-bottom:0}
 .tbl td.l:first-child{min-width:150px}
 tr.total td{font-weight:700;background:#faf9f6}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.kpis>div{background:var(--surface);padding:12px 14px}
+.kpis .k{font-size:12px;color:var(--ink2)}
+.kpis .v{font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpis .s{font-size:12px;color:var(--ink2)}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line);margin:4px 0 0}
+.bar>i{display:block;height:100%}
+@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}}
 .up{color:var(--up)} .dn{color:var(--down)}
 .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:500;line-height:20px;border:1px solid currentColor}
 .g{color:var(--ok)} .y{color:var(--warn)} .r{color:var(--bad)} .n{color:var(--ink2)}
@@ -921,6 +929,45 @@ function accountsTable(compact){
   return `<div class="tbl"><table><tr><th>계좌</th><th>원금</th><th>평가액</th><th>손익</th><th>수익률</th>${compact?"":"<th>현금성</th><th>위험자산</th>"}</tr>${rows}
   <tr class="total"><td>합계</td><td>${won(A.cost)}</td><td>${won(A.total)}</td><td class="${cls(A.total-A.cost)}">${won(A.total-A.cost)}</td><td>${cpct(tr,2)}</td>${compact?"":"<td></td><td></td>"}</tr></table></div>`;
 }
+/* ---------- 전체 합계 (Ben 2026-11-08) ---------- */
+const ASSET_CLASS = [
+  ["나스닥100", "#0f3d3e", ["QQQM","QQQ","426030"]],
+  ["S&P500", "#3f7f7f", ["SPYM","SPY","VOO","360750","0137W0"]],
+  ["배당", "#8a9a5b", ["SCHD","JEPI","JEPQ","DIVO","FDVV","DGRO","VIG","O","MO","458730"]],
+  ["레버리지", "#b54708", ["QLD","TQQQ","SOXL"]],
+  ["국내 지수", "#7a6a9a", ["069500"]],
+  ["현금·채권", "#a8a59c", ["SGOV","TLT","0048J0","0046A0"]],
+];
+function assetClassOf(t){ for(const [n,,ts] of ASSET_CLASS) if(ts.includes(t)) return n; return "섹터·개별주"; }
+function totalHTML(){
+  const A=E.acc; if(!A.list.length) return "";
+  const pnl=A.total-A.cost, ret=A.cost? (pnl/A.cost)*100 : null;
+  const cls_ = {}; const add=(k,v)=>{ cls_[k]=(cls_[k]||0)+v; };
+  let cashLike=0;
+  for(const a of A.list){
+    add("현금·채권", a.cash); cashLike+=a.cash;
+    for(const p of a.pos){ const c=assetClassOf(p.t); add(c,p.v); if(c==="현금·채권") cashLike+=p.v; }
+  }
+  const colors = Object.fromEntries([...ASSET_CLASS.map(r=>[r[0],r[1]]),["섹터·개별주","#c98a4b"]]);
+  const order = [...ASSET_CLASS.map(r=>r[0]).slice(0,5),"섹터·개별주","현금·채권"].filter(k=>cls_[k]>0);
+  const T=A.total||1;
+  const risky=T-cashLike;
+  const rows = order.map(k=>`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${colors[k]};margin-right:6px"></span>${k}</td><td>${won(cls_[k])}</td><td>${pct(cls_[k]/T*100,1,false)}</td><td>${risky>0&&k!=="현금·채권"? pct(cls_[k]/risky*100,1,false):""}</td></tr>`).join("");
+  const accRows = A.list.map(a=>`<tr><td>${esc(a.name)}</td><td>${won(a.val)}</td><td>${pct(a.val/T*100,1,false)}</td></tr>`).join("");
+  const nas = (cls_["나스닥100"]||0)+(cls_["레버리지"]||0);
+  return `<h2>전체 합계</h2>
+  <div class="kpis">
+    <div><div class="k">총 평가액</div><div class="v">${won(A.total)}</div><div class="s">원금 ${won(A.cost)}</div></div>
+    <div><div class="k">총 손익</div><div class="v ${cls(pnl)}">${won(pnl)}</div><div class="s">수익률 ${cpct(ret,2)}</div></div>
+    <div><div class="k">위험자산</div><div class="v">${pct(risky/T*100,0,false)}</div><div class="s">${won(risky)}</div></div>
+    <div><div class="k">현금·채권</div><div class="v">${pct(cashLike/T*100,0,false)}</div><div class="s">${won(cashLike)}</div></div>
+  </div>
+  <div class="panel"><h3 style="margin-top:0">자산군 구성 (5계좌 합산)</h3>
+  <div class="bar" role="img" aria-label="자산군 비중">${order.map(k=>`<i style="width:${(cls_[k]/T*100).toFixed(2)}%;background:${colors[k]}" title="${k}"></i>`).join("")}</div>
+  <div class="tbl" style="margin-top:10px"><table><tr><th>자산군</th><th>평가액</th><th>전체 비중</th><th>위험자산 중</th></tr>${rows}</table></div>
+  <p class="note">나스닥 노출(나스닥100+레버리지) ${pct(nas/T*100,1,false)}. 레버리지는 대부분 나스닥 2·3배라 나스닥 쏠림 판단 시 합쳐 봅니다. KIWOOM S&P500&GOLD는 S&P500으로, O·MO는 배당으로 분류했습니다.</p></div>
+  <div class="tbl"><table><tr><th>계좌</th><th>평가액</th><th>전체 비중</th></tr>${accRows}</table></div>`;
+}
 function vAccounts(){
   if(!E.H) return `<div class="panel">보유 데이터가 없습니다.</div>`;
   const parts = E.acc.list.map(a=>`
@@ -929,7 +976,7 @@ function vAccounts(){
     ${a.pos.map(p=>`<tr><td>${esc(p.name)}${p.priced?"":'<span class="tag">가격 대기</span>'}</td><td>${num(p.q,0)}</td><td>${["irp","pension"].includes(a.id)? num(p.avg,0) : usd(p.avg)}</td><td>${["irp","pension"].includes(a.id)? num(p.px,0) : usd(p.px)}</td><td>${won(p.v)}</td><td>${cpct(p.ret,2)}</td></tr>`).join("")}
     ${a.cash? `<tr><td>현금</td><td></td><td></td><td></td><td>${won(a.cash)}</td><td></td></tr>`:""}
     </table></div>` : `<div class="panel muted">보유 종목 없음 ${a.cash? "· 현금 "+won(a.cash):""}</div>`}`).join("");
-  return `<h2>원금 대비 수익률</h2>${accountsTable(false)}
+  return `${totalHTML()}<h2>계좌별 수익률</h2>${accountsTable(false)}
   <p class="note">해외 종목 원가는 현재 환율로 환산했습니다(환차손익 제외 근사). IRP·연금저축은 납입원금 대신 매입가 합계를 원금으로 씁니다. 실제 납입원금을 알려주면 바꿉니다. 기준일 ${esc(E.H.updated)}.</p>
   ${parts}
   <h2>체결 반영</h2>
