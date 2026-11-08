@@ -570,7 +570,7 @@ def bench(D, i0, t, end=None):
     return curve
 
 
-def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None):
+def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None, delever=False, lad_pension=False):
     """단순안: 1배 지수 고정 적립(매도 없음) + IRP 위험 70%(연 1회 리밸런싱) + 현금 계좌 6단계(ammo=False면 현금 몫도 지수 적립)."""
     P, fx_, dates = D["P"], D["fx"], D["dates"]
     end = end or len(dates) - 1
@@ -596,7 +596,10 @@ def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None):
             if ladder:   # 하락 단계별 레버리지 사다리: 장투 몫만 적용, 연금은 1배
                 lm = next((m for lvl, m in ladder if dd <= lvl), mix)
                 for t, w in lm.items(): core.buy(t, MONTHLY["longterm"] * w / 100, P, i, fx)
-                buymix(core, MONTHLY["pension"], i, fx)
+                if lad_pension:   # 연금은 레버리지 불가 → QLD 몫은 QQQ
+                    for t, w in lm.items(): core.buy("QQQ" if t == "QLD" else t, MONTHLY["pension"] * w / 100, P, i, fx)
+                else:
+                    buymix(core, MONTHLY["pension"], i, fx)
             else:
                 buymix(core, MONTHLY["longterm"] + MONTHLY["pension"], i, fx)
             if ammo: am.buy("SGOV", MONTHLY["ammo"], P, i, fx)
@@ -620,6 +623,8 @@ def run_simple(D, i0, mix, ammo=True, irp_risk=70, end=None, ladder=None):
                     v = am.v(t, P, i, fx); am.buy("SGOV", am.sell(t, v / 2, P, i, fx), P, i, fx)
                     v2 = am.v(t, P, i, fx); buymix(core, am.sell(t, v2, P, i, fx), i, fx)
                 ammo_done.clear()
+        if delever and dd > -1 and core.u.get("QLD", 0) > 1e-12:   # 전고점 회복 시 QLD → QQQ
+            got = core.sell("QLD", core.v("QLD", P, i, fx), P, i, fx); core.buy("QQQ", got, P, i, fx); log.append((d, f"QLD {round(got / MAN)}만 → QQQ"))
         curve.append(core.val(P, i, fx) + irp.val(P, i, fx) + am.val(P, i, fx)); prin.append(principal)
     return dict(curve=curve, prin=prin, flows=flows, i0=i0, end=end, log=log, A={"core": core, "irp": irp, "ammo": am})
 
@@ -834,8 +839,14 @@ def main():
         i0 = max(ks, key=lambda k: D["c"][k])
         bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
         LAD = [(-30, {"SPY": 20, "QQQ": 20, "QLD": 60}), (-20, {"SPY": 30, "QQQ": 30, "QLD": 40}), (-10, {"SPY": 40, "QQQ": 40, "QLD": 20})]
-        for sname, mix, ammo, *lad in SIMPLE + [("R1 S&P500 50·QQQ 50 + 하락 시 QLD 사다리(-10/-20/-30%→20/40/60) + 현금 6단계", {"SPY": 50, "QQQ": 50}, True, LAD)]:
-            r = run_simple(D, i0, mix, ammo, ladder=(lad[0] if lad else None))
+        BEN = [(-30, {"QQQ": 40, "QLD": 60}), (-20, {"SPY": 10, "QQQ": 50, "QLD": 40}), (-15, {"SCHD": 10, "SPY": 20, "QQQ": 50, "QLD": 20}), (-10, {"SCHD": 20, "SPY": 30, "QQQ": 40, "QLD": 10})]
+        BEN_M = {"SCHD": 40, "SPY": 40, "QQQ": 20}
+        EXTRA = [("R1 S&P500 50·QQQ 50 + 하락 시 QLD 사다리(-10/-20/-30%→20/40/60) + 현금 6단계", {"SPY": 50, "QQQ": 50}, True, LAD, False, False),
+                 ("P1 배당40·SPY40·QQQ20 + 하락 단계별 QQQ·QLD (보유 유지) + 현금 6단계", BEN_M, True, BEN, False, True),
+                 ("P2 = P1 + 전고점 회복 시 QLD→QQQ", BEN_M, True, BEN, True, True),
+                 ("P0 배당40·SPY40·QQQ20 고정 + 현금 6단계", BEN_M, True, None, False, False)]
+        for sname, mix, ammo, *lad in [x + (None, False, False) for x in SIMPLE] + EXTRA:
+            r = run_simple(D, i0, mix, ammo, ladder=lad[0], delever=lad[1], lad_pension=lad[2])
             m = metrics(D, r, bq, bs); h = m["horizon"]
             out["simple"].append({"scenario": name, "strategy": sname, "start": dates[i0], "worst": m["underwater"].get("worst_vs_principal_pct"),
                                   "uw_months": m["underwater"].get("months"), "mdd5": m["mdd_5y"][0], "y3": (h["3y"] or {}).get("ret_pct"),
