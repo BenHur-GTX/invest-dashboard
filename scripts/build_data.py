@@ -204,6 +204,8 @@ def summarize(sym, name, group, cur, rows):
     last, prev = c[-1], c[-2] if len(c) > 1 else c[-1]
     ath = max(c)
     hi52 = max(c[-252:])
+    k5 = len(c) - min(1260, len(c)); seg = c[k5:]; pk_i = k5 + seg.index(max(seg))
+    cyc_min = (min(c[pk_i:]) / c[pk_i] - 1) * 100   # 5년 고점 이후 최저 낙폭 (반등 가속 판정용)
     hi5y = max(c[-1260:])  # 낙폭 기준: 최근 5년 고점 (초대형 폭락 뒤 수년간 '폭락' 고정 방지)
     rs = rsi_series(c)
     ma = {n: sma(c, n) for n in (5, 20, 50, 60, 120, 200)}
@@ -226,7 +228,7 @@ def summarize(sym, name, group, cur, rows):
         "price": r2(last, 4), "prev": r2(prev, 4), "chg": r2((last / prev - 1) * 100),
         "ath": r2(ath, 4), "dd_ath": r2((last / ath - 1) * 100),
         "high52": r2(hi52, 4), "dd52": r2((last / hi52 - 1) * 100),
-        "high5y": r2(hi5y, 4), "dd5y": r2((last / hi5y - 1) * 100),
+        "high5y": r2(hi5y, 4), "dd5y": r2((last / hi5y - 1) * 100), "cyc_min": r2(cyc_min),
         "ma": {str(k): r2(v, 4) for k, v in ma.items()},
         "vs200": r2((last / ma[200] - 1) * 100) if ma[200] else None,
         "vs50": r2((last / ma[50] - 1) * 100) if ma[50] else None,
