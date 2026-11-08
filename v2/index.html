@@ -68,6 +68,10 @@ td.l,th.l{text-align:left;white-space:normal}
 .tbl table tr:last-child td{border-bottom:0}
 .tbl td.l:first-child{min-width:150px}
 tr.total td{font-weight:700;background:#faf9f6}
+.sigrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.sigrow:last-child{border-bottom:0}
+.sigrow .sk{flex:1;min-width:0}
+.sigrow .sv{text-align:right;font-variant-numeric:tabular-nums;max-width:48%}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
 .kpis>div{background:var(--surface);padding:12px 14px}
 .kpis .k{font-size:12px;color:var(--ink2)}
@@ -525,7 +529,7 @@ function overheat(E){
   ];
   const ref={k:"참고: 경기 과열 (연준 인상기 또는 HY ≤ 2.75%)", on: hikes || (hy!=null && hy<=2.75), show: hy!=null? `HY ${num(hy,2)}%${hikes?" · 인상기":""}`:"–"};
   const hh = humanHeat(E.M), base = sig.filter(x=>x.on).length;
-  const human = {k:"인간지표 과열 (미국 빚투·AAII 낙관 상위 10%) — 가격 신호 1개 이상일 때만 +1", on: hh.on && base>=1, show: hh.text + (hh.on && base<1? " · 가격 신호 없어 미가산":"")};
+  const human = {k:"인간지표 과열 (빚투·AAII 상위 10%, 가격 신호 있을 때만 +1)", on: hh.on && base>=1, show: hh.text + (hh.on && base<1? " · 미가산":"")};
   const score = E._oh!=null ? E._oh : base + (human.on?1:0);
   const lt = score>=3 ? "장투: QLD 보유분 20% 매도 → 현금 풀(SGOV). 1배는 매도 없음" :
              score>=2 ? "장투: 매도 없음, QLD 몫 절반은 배당 ETF·절반은 SGOV (3개↑면 QQQM 20만도 배당으로)" : "장투: 평소대로";
@@ -675,7 +679,7 @@ function ordersHTML(){
   ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
   </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
     const swT = so? `<h3>⑤ 직투 스윙 — 오늘 기준 (예수금 ${won(so.cash0)})</h3>
-  <div class="tbl"><table><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
+  <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
   ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
   </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 종목당 12%, 반도체 합계 30%, 3배 합계 10% 한도 적용. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>` : "";
     return irpT + swT;
@@ -958,9 +962,9 @@ function vHeat(){
   const oh=overheat(E), bd=bands(E), st=DATA.study;
   const lvl = oh.score>=4?4: oh.score>=3?3: oh.score>=2?2: 0;
   return `<h2>과열 점수 ${oh.score} / 6</h2>
-  <div class="panel"><table>${oh.sig.map(x=>`<tr><td class="l"><span class="dot ${x.on===null?"n":x.on?"r":"g"}"></span>${esc(x.k)}</td><td>${esc(x.show)}</td></tr>`).join("")}
-  <tr><td class="l"><span class="dot ${oh.human.on?"r":"n"}"></span>${esc(oh.human.k)}</td><td>${esc(oh.human.show)}</td></tr>
-  <tr><td class="l muted"><span class="dot n"></span>${esc(oh.ref.k)}</td><td class="muted">${esc(oh.ref.show)}${oh.ref.on?" · 해당":""}</td></tr></table>
+  <div class="panel sigs">${oh.sig.map(x=>`<div class="sigrow"><span class="sk"><span class="dot ${x.on===null?"n":x.on?"r":"g"}"></span>${esc(x.k)}</span><span class="sv">${esc(x.show)}</span></div>`).join("")}
+  <div class="sigrow"><span class="sk"><span class="dot ${oh.human.on?"r":"n"}"></span>${esc(oh.human.k)}</span><span class="sv">${esc(oh.human.show)}</span></div>
+  <div class="sigrow muted"><span class="sk"><span class="dot n"></span>${esc(oh.ref.k)}</span><span class="sv">${esc(oh.ref.show)}${oh.ref.on?" · 해당":""}</span></div>
   <p class="note">신호는 2000~2026년 QQQ 일봉 검증으로 골랐습니다. 경기 과열은 긴 무료 데이터가 없어 검증하지 못해 점수에 넣지 않고 참고만 합니다.</p></div>
   <h2>점수별 행동</h2>
   <div class="tbl"><table><tr><th>신호 수</th><th class="l">장투 (보수적)</th><th class="l">스윙 (적극적)</th></tr>
