@@ -223,8 +223,14 @@ def summarize(sym, name, group, cur, rows):
             if rows[-k][3] <= m * 1.005:
                 t = True
         touch[f"ma{n}"] = t
+    # 볼린저 밴드(20, 2σ): 하단 이탈 = 분할매수 날짜 보조 신호 (data/indicator_study.json 검증)
+    bb_lo = pctb = None
+    if len(c) >= 20:
+        wv = c[-20:]; mu = sum(wv) / 20; sd = (sum((x - mu) ** 2 for x in wv) / 20) ** 0.5
+        bb_lo = mu - 2 * sd; pctb = (last - bb_lo) / (4 * sd) * 100 if sd else 50
     return {
         "name": name, "group": group, "cur": cur, "date": rows[-1][0],
+        "bb_lo": r2(bb_lo, 4), "bb_pctb": r2(pctb, 0), "bb_break": bool(bb_lo is not None and last < bb_lo),
         "price": r2(last, 4), "prev": r2(prev, 4), "chg": r2((last / prev - 1) * 100),
         "ath": r2(ath, 4), "dd_ath": r2((last / ath - 1) * 100),
         "high52": r2(hi52, 4), "dd52": r2((last / hi52 - 1) * 100),

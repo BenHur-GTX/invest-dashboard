@@ -630,10 +630,10 @@ function swingOrders(E){
     if(sh<1 && pxw<=target*1.7 && pxw<=cash) sh = 1;   // 배정액의 1.7배 이내면 1주로 반올림
     if(sh<1){ skip.push(`${t}: 1주(${won(pxw)}) ${cash<pxw? "예수금 부족":"배정 금액보다 비쌈"}`); continue; }
     const amt = sh*pxw; cash -= amt; if(SEMIS.includes(t)) semis += amt; if(s.group==="섹터 ETF") sectorDone = true;
-    let next = "5거래일 뒤 신호가 다시 켜지면 2회차 (최대 3회)";
-    if(s.group==="빅테크"){ const m=x.ma?.["200"]; const step = x.vs200<=-15?3: x.vs200<=-10?2: 1; next = step>=3? "3차까지 도달 — 추가 없음(종목당 12%)" : (m? `${step+1}차: ${usd(m*(1-0.05*(step+1)))} 이하(200일선 −${5*(step+1)}%) + RSI ≤ 40` : "다음 차수 −5%p 아래"); }
+    let next = "5거래일 이상 지난 뒤 RSI ≤ 30 또는 볼린저 하단 이탈한 날 2회차 (최대 3회)";
+    if(s.group==="빅테크"){ const m=x.ma?.["200"]; const step = x.vs200<=-15?3: x.vs200<=-10?2: 1; next = step>=3? "3차까지 도달 — 추가 없음(종목당 12%)" : (m? `${step+1}차: ${usd(m*(1-0.05*(step+1)))} 이하(200일선 −${5*(step+1)}%) + RSI ≤ 40 또는 볼린저 하단 이탈` : "다음 차수 −5%p 아래"); }
     if(s.group.startsWith("3배")) next = "하루 −30% 또는 고점 −80% 조건에서 1회 3%씩, 3배 합계 10%까지";
-    out.push({t, group:s.group, sh, px:x.price, amt, why:s.now, sell:s.sell, next});
+    out.push({t, group:s.group, sh, px:x.price, amt, why:s.now+(x.bb_break? " · 볼린저 하단 이탈":""), sell:s.sell, next});
   }
   return {sw, out, skip, cashLeft:cash, cash0:a.cash};
 }
@@ -989,10 +989,10 @@ function vMarket(){
   for(const [t,s] of Object.entries(S)){ (groups[s.group]=groups[s.group]||[]).push([t,s]); }
   const order=["지수","1배 지수","섹터","레버리지","빅테크","배당","현금·채권","국내","기타"];
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑.</p>
+  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈, 분할매수 날짜 보조 신호).</p>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table>
-    <tr><th>종목</th><th>현재가</th><th>일간</th><th>고점 대비</th><th>200일선</th><th>RSI</th><th class="l">6개월</th></tr>
-    ${groups[g].map(([t,s])=>`<tr><td><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td>${num(s.rsi,0)}</td><td class="l">${spark(s.spark)}</td></tr>`).join("")}
+    <tr><th>종목</th><th>현재가</th><th>일간</th><th>고점 대비</th><th>200일선</th><th>RSI</th><th>볼린저 %B</th><th class="l">6개월</th></tr>
+    ${groups[g].map(([t,s])=>`<tr><td><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`).join("")}
   </table></div>`).join("")}
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
 }
@@ -1085,6 +1085,7 @@ function vRules(){
   <div class="panel"><ol class="steps">
     <li><b>낙폭 기준</b>: "고점 대비"는 최근 5년 최고가 기준입니다. 사상 최고가 기준이면 2000년 같은 폭락 뒤 수년간 계속 '폭락'으로 판정되는 문제가 있어 바꿨습니다(백테스트 검증).</li>
     <li><b>장투 배당 몫</b>: 평상 구간 월 200만 중 30만(15%)은 배당 ETF(SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 것). 과열이면 QLD 몫 절반과(3개↑) QQQM 20만을 배당으로 돌리고, QQQ가 1년 고점 −15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30%를 QQQM으로 교체(6개월 1회).</li>
+    <li><b>보조지표 검증 (2026-11-08)</b>: QQQ·SPY·SOXX·코스피 전 기간. 볼린저 하단 이탈은 이후 21일 수익률이 평소의 약 2배(QQQ 하락 국면 +2.0% vs +0.4%, SOXX +3.2% vs +1.3%)라 스윙 분할매수 날짜 신호로 추가. 슬로우 스토캐스틱은 평소와 차이가 없어 제외. '바닥 확인 후 매수'(스토캐스틱 골든크로스·볼린저 재진입 대기)는 회차 도달일 즉시 매수보다 평균 0.7~2.9% 비싸게 사서 채택 안 함 — 회차 가격에 닿으면 바로 삽니다.</li>
     <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV 50% → QLD(현금 계좌 제외), 추세이탈 재발 시 그 몫만 SGOV로 손절. 백테스트상 장기 연 +0.3~1.1%p, 닷컴형 최대 손실 약 +2%p.</li>
     <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −30/−40/−60/−80%에만 모은 돈의 15/20/25/40% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
