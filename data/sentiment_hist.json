@@ -1,4 +1,10 @@
 {
-"weeks": {},
+"weeks": {
+"2026-W45": {
+"news_fear_ratio": 89.6,
+"news_fear": 155,
+"news_greed": 18
+}
+},
 "cache": {}
 }
