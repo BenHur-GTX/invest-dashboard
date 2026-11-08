@@ -204,6 +204,7 @@ def summarize(sym, name, group, cur, rows):
     last, prev = c[-1], c[-2] if len(c) > 1 else c[-1]
     ath = max(c)
     hi52 = max(c[-252:])
+    hi5y = max(c[-1260:])  # 낙폭 기준: 최근 5년 고점 (초대형 폭락 뒤 수년간 '폭락' 고정 방지)
     rs = rsi_series(c)
     ma = {n: sma(c, n) for n in (5, 20, 50, 60, 120, 200)}
     w = weekly(rows)
@@ -225,6 +226,7 @@ def summarize(sym, name, group, cur, rows):
         "price": r2(last, 4), "prev": r2(prev, 4), "chg": r2((last / prev - 1) * 100),
         "ath": r2(ath, 4), "dd_ath": r2((last / ath - 1) * 100),
         "high52": r2(hi52, 4), "dd52": r2((last / hi52 - 1) * 100),
+        "high5y": r2(hi5y, 4), "dd5y": r2((last / hi5y - 1) * 100),
         "ma": {str(k): r2(v, 4) for k, v in ma.items()},
         "vs200": r2((last / ma[200] - 1) * 100) if ma[200] else None,
         "vs50": r2((last / ma[50] - 1) * 100) if ma[50] else None,
@@ -243,7 +245,7 @@ def qqq_state_series(rows, vix_by_date):
     st = 2
     below = above = 0
     for i in range(len(c)):
-        peak = max(peak, c[i])
+        peak = max(c[max(0, i - 1259):i + 1])  # 최근 5년 고점
         m200, m50 = sma(c, 200, i), sma(c, 50, i)
         if m200 is None:
             states.append(None); continue

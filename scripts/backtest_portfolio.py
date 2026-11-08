@@ -209,7 +209,8 @@ class Acct:
     def v(s, t, P, i, fx): return s.u.get(t, 0) * P[t][i] * fx
 
 
-def run(D, i0, end=None):
+def run(D, i0, end=None, cfg=None):
+    cfg = cfg or {}
     P, fx_, dates = D["P"], D["fx"], D["dates"]
     end = end or len(dates) - 1
     A = {k: Acct() for k in ("longterm", "ammo", "swing", "irp", "pension")}
@@ -225,6 +226,7 @@ def run(D, i0, end=None):
     principal = sum(INIT.values())
     flows = [(dates[i0], -principal)]
     ammo_done, lt_done = set(), set()
+    cyc_min = 0; boost = {'ammo': {}, 'longterm': {}}; boosts_in_cycle = 0; prev_st = None; armed_low = None
     lt_last_sell = -10 ** 9
     sw_pos = {}  # t: {"avg":px, "half":bool, "lots":n, "last":i}
     sw_last_oh = -10 ** 9
@@ -284,7 +286,7 @@ def run(D, i0, end=None):
             A["pension"].buy("SPY", MONTHLY["pension"] * w[1] / 100, P, i, fx)
             # IRP 위험자산 목표
             irp = A["irp"]; iv = irp.val(P, i, fx); risk = irp.v("SPY", P, i, fx) + irp.v("QQQ", P, i, fx)
-            lo, hi = IRP_T.get(st, (55, 60)); rp = risk / iv * 100
+            lo, hi = (cfg.get('irp5') if st == 5 and cfg.get('irp5') else IRP_T.get(st, (55, 60))); rp = risk / iv * 100
             if rp < lo:
                 x = (lo - rp) / 100 * iv; got = irp.sell("SGOV", x, P, i, fx); irp.buy("SPY", got * 0.55, P, i, fx); irp.buy("QQQ", got * 0.45, P, i, fx)
             elif rp > hi:
@@ -327,6 +329,31 @@ def run(D, i0, end=None):
         if oh >= 3 and i - lt_last_sell >= 126 and lt.u.get("QLD", 0) > 0:
             got = lt.sell("QLD", lt.v("QLD", P, i, fx) * 0.2, P, i, fx); lt.buy("SGOV", got, P, i, fx); lt_last_sell = i
             log.append((d, f"장투 과열 QLD 20% 매도 {round(got / MAN)}만"))
+        # ---------- 반등 가속 (시나리오 검증용) ----------
+        cyc_min = min(cyc_min, dd)
+        if cfg.get("trigger") and dd > -1:
+            cyc_min = 0; boosts_in_cycle = 0; boost = {"ammo": {}, "longterm": {}}
+        if cfg.get("trigger"):
+            if cfg["trigger"] == "ma200":
+                fire = st == 5 and prev_st in (3, 4) and cyc_min <= cfg.get("min_dd", -20)
+            else:  # 저점 대비 +N% 반등
+                lowpx = min(D["c"][max(0, i - 252):i + 1])
+                fire = cyc_min <= cfg.get("min_dd", -20) and c >= lowpx * (1 + cfg["trigger"] / 100) and not any(boost[k] for k in boost)
+            if fire and boosts_in_cycle < cfg.get("max_boosts", 2):
+                for k in ("ammo", "longterm"):
+                    acc = A[k]; amt = acc.sell("SGOV", acc.v("SGOV", P, i, fx) * cfg.get("frac", 0.5), P, i, fx)
+                    for t, w in cfg.get("mix", {"QLD": 100}).items():
+                        q0 = acc.u.get(t, 0); acc.buy(t, amt * w / 100, P, i, fx); boost[k][t] = boost[k].get(t, 0) + acc.u.get(t, 0) - q0
+                boosts_in_cycle += 1; log.append((d, f"반등 가속 {boosts_in_cycle}회"))
+            # 손절: 다시 추세이탈(200일선 -3% 2일)이면 가속분만 SGOV로
+            if cfg.get("stop") and st in (3, 4) and prev_st not in (3, 4) and any(boost[k] for k in boost):
+                for k in ("ammo", "longterm"):
+                    acc = A[k]
+                    for t, q in boost[k].items():
+                        q = min(q, acc.u.get(t, 0)); got = q * P[t][i] * fx; acc.u[t] = acc.u.get(t, 0) - q; acc.buy("SGOV", got, P, i, fx)
+                    boost[k] = {}
+                log.append((d, "반등 가속 손절"))
+        prev_st = st
         # ---------- 스윙 ----------
         sw = A["swing"]; swv = sw.val(P, i, fx); unit = swv * 0.05 * (0.5 if mode == "수비" else 1)
         qchg = (D["c"][i] / D["c"][i - 1] - 1) * 100 if i else 0
@@ -481,6 +508,31 @@ def main():
                   "events": r5["log"][:40]})
         out["scenarios"].append(m)
         print(json.dumps({k: m[k] for k in ("name", "start", "mdd_5y", "underwater", "qqq_all_underwater")}, ensure_ascii=False), flush=True)
+    VARIANTS = [
+        ("현재 규칙", {}),
+        ("A 200일선 회복 시 현금 50%→QQQ, 손절", {"trigger": "ma200", "frac": 0.5, "mix": {"QQQ": 100}, "stop": True}),
+        ("B 200일선 회복 시 현금 50%→QLD, 손절", {"trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}),
+        ("C 200일선 회복 시 현금 100%→QQQ·QLD 반반, 손절", {"trigger": "ma200", "frac": 1.0, "mix": {"QQQ": 50, "QLD": 50}, "stop": True}),
+        ("D 저점 +20% 반등 시 현금 50%→QLD, 손절", {"trigger": 20, "frac": 0.5, "mix": {"QLD": 100}, "stop": True}),
+        ("E = B + IRP 회복기 위험자산 65~70%", {"trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True, "irp5": (65, 70)}),
+        ("F = B에서 손절 없음", {"trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": False}),
+        ("G IRP 회복기 65~70%만", {"irp5": (65, 70)}),
+    ]
+    out["variants"] = []
+    for name, a, b in SCEN:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k])
+        bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+        for vname, cfg in VARIANTS:
+            r = run(D, i0, cfg=cfg)
+            m = metrics(D, r, bq, bs)
+            out["variants"].append({"scenario": name, "variant": vname, "start": dates[i0],
+                                    "worst": m["underwater"].get("worst_vs_principal_pct"), "uw_months": m["underwater"].get("months"),
+                                    "mdd5": m["mdd_5y"][0], "y1": (m["horizon"]["1y"] or {}).get("ret_pct"), "y3": (m["horizon"]["3y"] or {}).get("ret_pct"),
+                                    "y5": (m["horizon"]["5y"] or {}).get("ret_pct"), "end": m["horizon"]["end"]["ret_pct"], "irr_end": m["horizon"]["end"]["irr"],
+                                    "events": [e for e in r["log"] if "반등" in e[1]][:12]})
+            print(name, vname, out["variants"][-1]["worst"], out["variants"][-1]["uw_months"], out["variants"][-1]["y3"], out["variants"][-1]["y5"], out["variants"][-1]["end"], flush=True)
     json.dump(out, open(os.path.join(B.DATA, "portfolio_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("ok")
 
