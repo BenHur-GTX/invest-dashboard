@@ -73,6 +73,14 @@ td.l,th.l{text-align:left;white-space:normal}
 .tbl td.l:first-child{min-width:150px}
 tr.total td{font-weight:700;background:#faf9f6}
 body.simple nav,body.simple #stages{display:none}
+.qtbl .tk{font-weight:600}
+.qtbl .why{display:inline-block;font-size:12px;line-height:1.4;color:var(--brand);background:var(--brand-soft);border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap}
+.qtbl tr.acct td{background:#faf9f6;border-top:2px solid var(--line)}
+.qtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.qtiles>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.qtiles .k{font-size:12px;color:var(--ink2)}.qtiles .v{font-size:20px;font-weight:700;margin:2px 0}.qtiles .m{font-size:12.5px;color:var(--ink2)}
+@media (max-width:640px){.qtiles{grid-template-columns:1fr 1fr}}
+
 .sumtbl tr.acct td{background:var(--brand-soft);border-top:2px solid var(--line)}
 .sumtbl td:not(.l),.sumtbl th:not(.l){white-space:nowrap}
 @media (max-width:520px){.sumtbl td,.sumtbl th{padding:7px 6px;font-size:13px}.sumtbl td.l .muted{display:block;font-size:12px}}
@@ -1246,15 +1254,35 @@ function quickBody(total){
   Object.assign(s, {monthly_longterm_krw:total*c.pct.longterm/100, monthly_ammo_krw:total*c.pct.ammo/100, monthly_pension_krw:total*c.pct.pension/100, monthly_swing_krw:total*(c.pct.swing||0)/100});
   try{
     const lt = planLongterm(E), pn = planPension(E), am = planAmmo(E), oh = overheat(E);
-    const why = [
-      `장투: ${lt.row.label} 구간(QQQ 5년 고점 대비 ${pct(E.dd)}) 비율을 씁니다. 거시 ${E.mode.name}, 과열 점수 ${oh.score}/6.`,
-      ...lt.notes,
-      ...(lt.rows.some(r=>r.key==="SCHD"&&r.man>0.05)? [`배당 몫은 SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 ${divPick(E.S)}.`] : []),
-      `연금저축: 배당다우존스 : 나스닥100 = ${pn.tilt? "50 : 50 (QQQ −10% 이하라 나스닥 비중↑)":"60 : 40"}. 나스닥100은 ${nasdaqPick(E)==="426030"? "QQQ −20% 이하라 TIME 액티브(고베타)":"평상시라 TIGER 지수형"}.`,
-      am.action? `현금: ${am.action.t.n}차 투입 대상입니다. 모아 둔 SGOV의 ${am.action.t.pct}%를 ${mixText(am.action.t.mix)}로, 보조지표 2개가 맞는 날 3~5거래일 분할.` : `현금: QQQ ${RULES.tranches[0].dd}%부터 6단계로 투입합니다. 지금은 SGOV에 모읍니다.`,
+    const st0 = E.stage===0;
+    const ltWhy = r => r.key==="SCHD" ? "200일선 대비 가장 쌈"
+      : r.t==="QQQM" ? "핵심 · 나스닥100"
+      : r.t==="SPYM" ? "분산 · S&P500"
+      : r.t==="QLD" ? (lt.below ? "200일선 아래 · 주 1회 4분할" : st0 ? "−2% 하락일 매수" : "하락 구간 · 싸게 2배")
+      : r.t==="TQQQ" ? "폭락 · 20일 분할"
+      : r.t==="SGOV" ? (oh.score>=2 ? "과열 · 대기 현금" : E.mode.name!=="공격" ? `거시 ${E.mode.name} · 대기 현금` : "대기 현금")
+      : "";
+    const pnWhy = t => t==="458730" ? "월배당 · 과세이연" : t==="426030" ? "−20%↓ 고베타" : t==="133690" ? (pn.tilt ? "−10%↓ 비중 50%" : "나스닥100 지수") : "";
+    const accts = [
+      {n:"장투", sub:"미국 ETF", tot:lt.rows.filter(r=>r.man>0.05).reduce((a,r)=>a+r.man*1e4,0), items:lt.rows.filter(r=>r.man>0.05).map(r=>({t:r.t, amt:r.man*1e4, why:ltWhy(r)}))},
+      {n:"현금", sub:"SGOV에 모으기", tot:s.monthly_ammo_krw, items:[{t:"SGOV", amt:s.monthly_ammo_krw, why: am.action? `${am.action.t.n}차 투입 대상` : `QQQ ${RULES.tranches[0].dd}%부터 투입`}]},
+      {n:"연금저축", sub:"국내상장", tot:pn.amt, items:pn.rows.map(r=>({t:r.name, amt:r.won, why:pnWhy(r.t)}))},
     ];
-    return planSummaryHTML(lt, pn, am).replace(/^\s*<h3>[^<]*<\/h3>/,"").replace("종목별 매수 방법과 주수는 아래 계좌별 표에 있습니다.","매수 방법·주수는 <a href=\"#plan\">이번 달 매수</a> 탭에 있습니다.")
-      + `<h3>왜 이렇게 나눴나</h3><div class="panel"><ol class="steps">${why.map(w=>`<li>${esc(w)}</li>`).join("")}</ol></div>`;
+    if(s.monthly_swing_krw>0) accts.push({n:"스윙", sub:"예수금", tot:s.monthly_swing_krw, items:[{t:"예수금", amt:s.monthly_swing_krw, why:"음봉·과대낙폭 대기"}]});
+    const G = accts.reduce((a,x)=>a+x.tot,0)||1, w0 = v=>won(Math.round(v/1e3)*1e3);
+    const table = `<div class="tbl"><table class="qtbl"><tr><th class="l">종목 · 근거</th><th>비중</th><th>금액</th></tr>
+      ${accts.map(a=>`<tr class="acct"><td class="l"><b>${a.n}</b> <span class="muted">${a.sub}</span></td><td>${num(a.tot/G*100,0)}%</td><td><b>${w0(a.tot)}</b></td></tr>
+      ${a.items.map(i=>`<tr><td class="l"><span class="tk">${esc(i.t)}</span>${i.why? ` <span class="why">${esc(i.why)}</span>`:""}</td><td>${num(a.tot? i.amt/a.tot*100:0,0)}%</td><td>${w0(i.amt)}</td></tr>`).join("")}`).join("")}
+      <tr class="total"><td class="l">합계</td><td>100%</td><td>${w0(G)}</td></tr></table></div>
+      <p class="note">비중은 계좌 안 비율, 계좌 줄의 %는 전체 대비. 주수·매수 방법은 <a href="#plan">이번 달 매수</a> 탭.</p>`;
+    const modeTxt = {공격:"레버리지 정상", 중립:"레버리지 절반만", 수비:"레버리지 멈춤"}[E.mode.name] || "";
+    const tiles = [
+      ["QQQ 낙폭", pct(E.dd), `${lt.row.label} 구간 비율`],
+      ["거시", E.mode.name, modeTxt],
+      ["과열", `${oh.score} / 6`, oh.score>=2? "QLD 매수 보류":"매수 정상"],
+      ["현금", am.action? `${am.action.t.n}차`:"대기", am.action? "지표 2개 맞는 날 분할":`QQQ ${RULES.tranches[0].dd}%부터`],
+    ];
+    return table + `<h3>지금 판단</h3><div class="qtiles">${tiles.map(([k,v,m])=>`<div><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="m">${esc(m)}</div></div>`).join("")}</div>`;
   } finally { Object.keys(s).forEach(k=>delete s[k]); Object.assign(s, keep); }
 }
 const QUICK_DEFAULT = 1000000;   // 간편 보기 기본 100만원 (Ben 11-08). 계좌 비율만 적립 계산기·보유 설정을 따름
@@ -1263,7 +1291,7 @@ function vQuick(){
   const c = quickPct(); c.total = quickTotal();
   return `<h2>이번 달 얼마 넣나요?</h2>
   <div class="panel"><div class="inline"><input id="q_total" type="number" inputmode="numeric" min="1" step="1" value="${Math.round(c.total/1e4)}" style="width:140px;font-size:20px;font-weight:700"><span style="font-size:17px">만원</span></div>
-  <p class="note">기본 100만원이고, 입력값은 이 기기에만 저장됩니다(메인 화면 금액과는 따로). 계좌 비율(현금 ${c.pct.ammo}% · 연금저축 ${c.pct.pension}% · 장투 ${c.pct.longterm}%${c.pct.swing? " · 스윙 "+c.pct.swing+"%":""})은 <a href="#settings">적립 계산기</a>에서 바꿉니다. 종목·비중은 메인 규칙(하락 단계, 거시, 과열, 현금 6단계)이 정합니다.</p></div>
+  <p class="note">계좌 비율 현금 ${c.pct.ammo} · 연금 ${c.pct.pension} · 장투 ${c.pct.longterm}%${c.pct.swing? " · 스윙 "+c.pct.swing+"%":""} (<a href="#settings">바꾸기</a>). 종목·비중은 메인 규칙이 정합니다.</p></div>
   <div id="q_out" style="margin-top:12px">${quickBody(c.total)}</div>
   <p class="note"><a href="./?#today">전체 대시보드 보기</a></p>`;
 }
