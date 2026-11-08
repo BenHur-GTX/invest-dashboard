@@ -646,6 +646,8 @@ function ordersHTML(){
     return irpT + swT;
 }
 
+/* 연금·IRP 나스닥100 (Ben 2026-11-08): 평상시 TIGER 지수형, QQQ 5년 고점 −20% 이하 폭락장에서는 고베타 TIME 액티브(레버리지 대용, 매도 없음) */
+function nasdaqPick(E){ return (E.dd!=null && E.dd<=-20) ? "426030" : "133690"; }
 /* ---------- IRP ---------- */
 function planIRP(E){
   const a = E.acc.list.find(x=>x.id==="irp"); if(!a) return null;
@@ -658,10 +660,10 @@ function planIRP(E){
   const kodexOn = (ksDD!=null && ksDD<=-10) || (ks.rsi!=null && ks.rsi<=30);
   const sleeve = a.val*0.20, tick = sleeve*0.10*(ks.rsi!=null && ks.rsi<=25 ? 2 : 1);
   // 위험자산 구성(Ben 2026-11-08): S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 부족분은 이 비율로, 모자란 종목부터.
-  const MIX = {"360750":40, "133690":30, "458730":30};   // 나스닥100: 신규는 TIGER 지수형(11-08), 기존 TIME 액티브 보유분도 같은 칸으로 계산
+  const NQ = nasdaqPick(E); const MIX = {"360750":40, [NQ]:30, "458730":30};   // 나스닥100: 신규는 TIGER 지수형(11-08), 기존 TIME 액티브 보유분도 같은 칸으로 계산
   const riskPos = (a.pos||[]).filter(p=>p.risk); const riskV = riskPos.reduce((x,p)=>x+p.v,0);
   const after = riskV + Math.max(0,gapLo);
-  const buys = Object.entries(MIX).map(([t,w])=>{ const have=riskPos.filter(p=>p.t===t || (t==="133690" && p.t==="426030")).reduce((x,p)=>x+p.v,0); return {t, w, name:KR_NAMES[t], have, need: Math.max(0, after*w/100 - have)}; });
+  const buys = Object.entries(MIX).map(([t,w])=>{ const have=riskPos.filter(p=>p.t===t || (t===NQ && (p.t==="426030"||p.t==="133690"))).reduce((x,p)=>x+p.v,0); return {t, w, name:KR_NAMES[t], have, need: Math.max(0, after*w/100 - have)}; });
   const needSum = buys.reduce((x,b)=>x+b.need,0); if(needSum>0 && gapLo>0) buys.forEach(b=>b.buy = gapLo*b.need/needSum); else buys.forEach(b=>b.buy=0);
   return {a, lo, hi, max, cur, gapLo, gapHi, ks, ksDD, kodexOn, sleeve, tick, todayBuy: kodexOn && ks.chg!=null && ks.chg<=-1.5, MIX, buys};
 }
@@ -672,7 +674,8 @@ function planPension(E){
   // Ben 2026-11-08: 연금저축 = 배당(미국배당다우존스) 60 + 나스닥100 40. 나스닥 쏠림 분산 + 배당 과세이연.
   // QQQ 고점 대비 -10% 이하면 싸진 나스닥100을 50:50까지 더 삼(싸게 사기). 매도 없음.
   const tilt = E.stage>=1;
-  let rows = tilt ? [{t:"458730",w:50},{t:"133690",w:50}] : [{t:"458730",w:60},{t:"133690",w:40}];   // 11-08: TIME 액티브 → TIGER 나스닥100 지수형(변동성 1.8배 문제)
+  const NQ = nasdaqPick(E);
+  let rows = tilt ? [{t:"458730",w:50},{t:NQ,w:50}] : [{t:"458730",w:60},{t:NQ,w:40}];   // 11-08: TIME 액티브 → TIGER 나스닥100 지수형(변동성 1.8배 문제)
   const by = E.H?.settings?.birth_year, sa = E.H?.settings?.pension_start_age||55;
   const glide = by? {age:new Date().getFullYear()-by, sa} : null;
   return {amt, tilt, glide, rows: rows.map(r=>{ const px=priceOf(r.t,E.S); const won_=amt*r.w/100; return {...r, name:KR_NAMES[r.t], won:won_, px, sh: px? Math.floor(won_/px): null}; })};
@@ -1088,6 +1091,7 @@ function vRules(){
   <div class="panel"><ol class="steps">
     <li><b>낙폭 기준</b>: "고점 대비"는 최근 5년 최고가 기준입니다. 사상 최고가 기준이면 2000년 같은 폭락 뒤 수년간 계속 '폭락'으로 판정되는 문제가 있어 바꿨습니다(백테스트 검증).</li>
     <li><b>장투 배당 몫</b>: 평상 구간 월 200만 중 30만(15%)은 배당 ETF(SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 것). 과열이면 QLD 몫 절반과(3개↑) QQQM 20만을 배당으로 돌리고, QQQ가 1년 고점 −15% 이하인데 배당 ETF가 10%p 이상 덜 빠졌으면 배당 보유분 30%를 QQQM으로 교체(6개월 1회).</li>
+    <li><b>연금·IRP 나스닥100 종목</b>: 평상시 TIGER 미국나스닥100(지수형). QQQ가 5년 고점 대비 −20% 이하인 폭락장에서는 TIME 미국나스닥100액티브(최근 6개월 변동성 QQQ의 약 1.8배)로 모읍니다. 연금 계좌는 레버리지 ETF를 못 사서 고베타 1배를 대신 쓰는 것이고, 매도 없이 보유합니다.</li>
     <li><b>새 지표가 규칙에 들어간 곳</b>: ① 볼린저 하단 이탈 → 현금 투입 보조지표 1개 + 스윙 2·3회차 매수일 신호. ② 인간지표 공포(한국 반대매매 2년 상위 10% 또는 AAII 하위 10%) → 현금 투입 보조지표 1개 + 스윙 분할 매수일 신호. ③ 인간지표 과열(미국 빚투 또는 AAII 상위 10%) → 과열 점수 +1, 단 가격 과열 신호가 1개 이상 있을 때만(지표 단독으로는 매도 안 함). ④ 오늘 탭 RSI·공포탐욕·VIX 단계 라벨은 현재 위치 안내이고, 실제 금액은 주문표·현금 차수표를 따릅니다.</li>
     <li><b>보조지표 검증 (2026-11-08)</b>: QQQ·SPY·SOXX·코스피 전 기간. 볼린저 하단 이탈은 이후 21일 수익률이 평소의 약 2배(QQQ 하락 국면 +2.0% vs +0.4%, SOXX +3.2% vs +1.3%)라 스윙 분할매수 날짜 신호로 추가. 슬로우 스토캐스틱은 평소와 차이가 없어 제외. '바닥 확인 후 매수'(스토캐스틱 골든크로스·볼린저 재진입 대기)는 회차 도달일 즉시 매수보다 평균 0.7~2.9% 비싸게 사서 채택 안 함 — 회차 가격에 닿으면 바로 삽니다.</li>
     <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV 50% → QLD(현금 계좌 제외), 추세이탈 재발 시 그 몫만 SGOV로 손절. 백테스트상 장기 연 +0.3~1.1%p, 닷컴형 최대 손실 약 +2%p.</li>
