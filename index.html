@@ -136,15 +136,15 @@ const RULES = {
   // 장투 월 200만 배분 (만원) — QQQ 고점 대비 낙폭 단계별
   monthly: [
     {min:-10,  label:"평상",      alloc:{QQQM:80, SPYM:60, QLD:40}},
-    {min:-15,  label:"조정 -10%", alloc:{QQQM:80, SPYM:40, QLD:80}},
-    {min:-20,  label:"하락 -15%", alloc:{QQQM:70, SPYM:30, QLD:100}},
+    {min:-15,  label:"조정 -10%", alloc:{QQQM:90, SPYM:60, QLD:50}},
+    {min:-20,  label:"하락 -15%", alloc:{QQQM:90, SPYM:50, QLD:60}},
     {min:-30,  label:"하락 -20%", alloc:{QQQM:60, SPYM:20, QLD:120}},
     {min:-999, label:"폭락 -30%", alloc:{QQQM:40, SPYM:0, QLD:120, TQQQ:40}},
   ],
   // 실탄 4차 (잔액 대비 %), QLD:QQQM 비율
   tranches: [
-    {n:1, dd:-10, pct:10, mix:{QLD:50, QQQM:50}},
-    {n:2, dd:-15, pct:20, mix:{QLD:60, QQQM:40}},
+    {n:1, dd:-10, pct:10, mix:{QQQM:70, QLD:30}},
+    {n:2, dd:-15, pct:20, mix:{QQQM:60, QLD:40}},
     {n:3, dd:-20, pct:30, mix:{QLD:80, QQQM:20}},
     {n:4, dd:-30, pct:100, mix:{QLD:80, TQQQ:20}},
   ],
@@ -778,7 +778,7 @@ function vRules(){
   return `<h2>운용 원칙 요약</h2>
   <div class="panel"><ol class="steps">
     <li><b>계좌 역할</b>: 장투(직투, 월 200만) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음 · 실탄(월 85만, SGOV) = 폭락 4차 투입 · 스윙(직투 700만 + IRP) = 단기 음봉 매매, 추가 투입 없음 · 연금저축(월 45만) = 국내상장 나스닥100·S&P500.</li>
-    <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 실탄 10/20/30/나머지 · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 실탄 풀(연 2회).</li>
+    <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 실탄 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 실탄 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개 이상 또는 HY ≥ 6% → 신규 레버리지 중단.</li>
     <li><b>나스닥 −3%</b>(조던 룰)은 장투 매도 신호로 쓰지 않음. 경보 + 스윙 신규 비중 절반, 23일 내 4회면 스윙 신규 중단.</li>
