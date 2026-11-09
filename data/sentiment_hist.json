@@ -6,6 +6,13 @@
 "news_fear_ratio": 90.6,
 "news_fear": 155,
 "news_greed": 16
+},
+"2026-W46": {
+"yt_neg_ratio": 24.7,
+"yt_comments": 420,
+"news_fear_ratio": 89.1,
+"news_fear": 164,
+"news_greed": 20
 }
 },
 "cache": {
