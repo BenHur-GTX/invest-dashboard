@@ -119,7 +119,47 @@ th.sortable.on .sortbtn{color:var(--brand);font-weight:700}
 .g{color:var(--ok)} .y{color:var(--warn)} .r{color:var(--bad)} .n{color:var(--ink2)}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
 .dot.g{background:var(--ok)} .dot.y{background:#d99a00} .dot.r{background:var(--bad)} .dot.n{background:#b9b6ae}
-.lights{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.lights{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+/* 금리 한눈에 */
+.rates{display:grid;grid-template-columns:1fr 1fr 2fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.rates>div{background:var(--surface);padding:12px 14px}
+.rates .k{font-size:12px;color:var(--ink2)} .rates .v{font-size:24px;font-weight:700;line-height:1.25} .rates .s{font-size:12.5px;color:var(--ink2)}
+.grade{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin:8px 0 4px;position:relative}
+.grade span{height:10px;display:block}
+.grade span:nth-child(1){background:#2e8b57;border-radius:99px 0 0 99px}.grade span:nth-child(2){background:#8cbf5a}.grade span:nth-child(3){background:#e0b028}.grade span:nth-child(4){background:#e07a28}.grade span:nth-child(5){background:#b42318;border-radius:0 99px 99px 0}
+.grade i{position:absolute;top:-4px;width:3px;height:18px;background:var(--ink);border-radius:2px;transform:translateX(-1px)}
+.gradelbl{display:grid;grid-template-columns:repeat(5,1fr);font-size:11.5px;color:var(--ink2);text-align:center}
+.gradelbl b{color:var(--ink)}
+/* 매수 후보 하이라이트 */
+tr.buy2 td{background:#e6f2eb} tr.buy2 td:first-child{box-shadow:inset 4px 0 0 var(--ok)}
+tr.buy1 td{background:#f3f8f4} tr.buy1 td:first-child{box-shadow:inset 4px 0 0 #8cbf5a}
+tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
+.sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
+.sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
+.cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cands button{all:unset;cursor:pointer;font-size:13.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s ease,background-color .15s ease}
+.cands button:hover{border-color:var(--brand)} .cands button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
+.symbtn{all:unset;cursor:pointer;border-radius:4px;transition:color .15s ease}
+.symbtn:hover b{color:var(--brand);text-decoration:underline;text-underline-offset:3px} .symbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+td.l .symbtn{display:block}
+/* 차트 팝업 */
+dialog.chartdlg{border:0;border-radius:14px;padding:0;width:min(760px,94vw);max-height:92vh;box-shadow:0 20px 60px rgba(0,0,0,.25);color:var(--ink)}
+dialog.chartdlg::backdrop{background:rgba(20,22,20,.45)}
+.dlghead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 6px}
+.dlghead h3{margin:0;font-size:17px} .dlghead .muted{margin-top:2px}
+.dlgbody{padding:0 16px 16px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:4px 0 8px}
+.seg button{background:transparent;color:var(--ink2);border:0;border-radius:0;padding:5px 12px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+.seg button:hover{background:var(--brand-soft)} .seg button[aria-pressed="true"]:hover{background:var(--brand)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-bottom:4px}
+.legend i{display:inline-block;width:16px;height:3px;vertical-align:3px;margin-right:4px}
+.pchart{width:100%;display:block;touch-action:none}
+.tip{font-size:12.5px;color:var(--ink2);min-height:18px}
+.dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;font-size:13px}
+.dstats div{background:#f7f6f2;border-radius:8px;padding:7px 9px} .dstats b{display:block;font-size:15px}
+@media (max-width:860px){.rates{grid-template-columns:1fr 1fr}.rates>div:last-child{grid-column:1/-1}.dstats{grid-template-columns:1fr 1fr}}
 .light{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
 .light .t{font-size:13px;color:var(--ink2)}
 .light .st{font-size:17px;font-weight:700;margin:2px 0 4px}
@@ -327,7 +367,8 @@ function engine(D){
   // 거시 신호등
   const mac = M.macro || {};
   const L = macroLights(mac);
-  const reds = L.filter(l=>l.c==="r").length, yel = L.filter(l=>l.c==="y").length, known = L.filter(l=>l.c!=="n").length;
+  const lc = l => l.mode ?? l.c;   // 10년물은 빨강만 모드에 반영 (노랑은 표시만)
+  const reds = L.filter(l=>lc(l)==="r").length, yel = L.filter(l=>lc(l)==="y").length, known = L.filter(l=>l.c!=="n").length;
   const mode = known===0 ? {name:"판정 대기", c:"n"} : reds>=2 ? {name:"수비", c:"r"} : (reds===1||yel>=2) ? {name:"중립", c:"y"} : {name:"공격", c:"g"};
   const hy = mac.hy?.v;
   const noLev = mode.name==="수비" || (hy!=null && hy>=6);
@@ -348,6 +389,8 @@ function engine(D){
   const ks = S["^KS11"];
   if(ks?.chg!=null && ks.chg<=-3) alerts.push({c:"", t:`코스피 <b>${pct(ks.chg)}</b> — IRP KODEX 200 음봉 매수 규칙 확인.`});
   if(state===3||state===4) alerts.push({c:"info", t:`QQQ ${RULES.states[state].name} 상태: 장투 계좌 QLD는 −2% 하락일 매수를 끄고, 월 QLD 몫을 매주 1번씩 4번 나눠 삽니다. 1배 지수는 계속 삽니다.`});
+  const bc = bigCut(mac);
+  if(bc) alerts.push({c:"bad", t:`<b>연준 빅컷</b> ${esc(bc.date)} ${num(bc.delta*100,0)}bp 인하 후 <b>${bc.days}일째</b> (45일 경보 구간). 과거 2001·2007·2020년 빅컷 뒤 큰 하락이 이어졌고, 2024년은 헛경보였습니다. 첫 반등에 현금 투입 금지, 안전장치 규칙은 확정 대기.`});
   if(acc.directTotal >= (H?.settings?.cash_trigger_krw||1e8)) alerts.push({c:"info", t:`직투 자산 1억 도달 — 스윙 계좌 현금 50% 규칙 적용.`});
 
   return {M,S,H,fx,q,vix,fng,dd,state,stage,aux,auxN,L,mode,noLev,hy,acc,alerts};
@@ -372,6 +415,11 @@ function macroLights(m){
       d = `기준금리 ${num(f.v,2)}% · 2년물 ${num(d2,2)}% (시장 기대 ${d2!=null? (d2<f.v?"인하":"동결·인상"):"–"})`;
     }
     out.push({t:"금리 사이클", c, st, d});
+  }
+  // 장기금리 (11-13 Ben): 미 10년물. 빨강(5.5%↑)만 모드 판정에 반영
+  {
+    const t = m.dgs10?.v, g = rateGrade(t), f = m.fedu?.v;
+    out.push({t:"장기금리 (미 10년물)", c:g.c, st:g.st, d: t!=null? `10년물 ${num(t,2)}% · 기준금리 상단 ${num(f,2)}% · 차이 ${f!=null? (t-f>=0?"+":"")+num(t-f,2)+"%p":"–"}` : "10년물(DGS10) 데이터 대기 — 다음 갱신부터 표시", mode: g.c==="r"? "r" : "g"});
   }
   { const e = empLight(m); out.push({t:"고용", ...e}); }
   // 유동성
@@ -400,6 +448,16 @@ function macroLights(m){
     out.push({t:"신용", c, st, d});
   }
   return out;
+}
+const RATE_GRADES = [[4.0,"안정","g"],[4.5,"보통","g"],[5.0,"주의","y"],[5.5,"경계 (5%대)","y"],[99,"위험 (5.5%↑)","r"]];
+function rateGrade(v){
+  if(v==null) return {c:"n", st:"데이터 대기", i:-1};
+  const i = RATE_GRADES.findIndex(g=>v<g[0]); return {c:RATE_GRADES[i][2], st:RATE_GRADES[i][1], i};
+}
+function bigCut(m){   // 0.5%p 이상 한 번에 인하한 지 45일 이내
+  const ch = (m.fedu?.changes||[]).filter(x=>x.delta<=-0.5).slice(-1)[0]; if(!ch) return null;
+  const days = Math.floor((Date.now()-new Date(ch.date+"T00:00:00Z"))/864e5);
+  return days>=0 && days<=45 ? {...ch, days} : null;
 }
 function empLight(m){
   const s = m.sahm?.v, ic = m.icsa?.avg4 ?? m.icsa?.v;
@@ -1152,10 +1210,93 @@ const MSORT = {};   // 시세 탭 정렬 상태 {그룹: {k, dir}} — 1회 내�
 const MSORT_GROUPS = ["섹터","빅테크","배당"];
 const MSORT_KEYS = {dd:s=>s.dd_ath ?? s.dd52, v200:s=>s.vs200, rsi:s=>s.rsi, bb:s=>s.bb_pctb};
 function rsiCls(v){ return v==null? "" : v<=30? "dn" : v>=70? "up" : ""; }
+// 매수 후보 하이라이트 (11-13 Ben). 장투·적립 후보 ETF는 4개 신호 중 개수, 개별 빅테크는 큰 낙폭 + 과매도일 때만
+const BUY_ETF = ["QQQM","SPYM","MGK","SCHD","JEPI","JEPQ","DIVO","FDVV","VIG","DGRO","O","MO","GLD","BITO"];
+function buySig(t, s){
+  if(!s) return null;
+  const hot = s.rsi!=null && s.rsi>=70 && s.vs200!=null && s.vs200>=10;
+  if(s.group==="빅테크" && t!=="MAGS"){
+    const d=s.dd52, r=s.rsi;
+    if(d!=null && r!=null && d<=-30 && r<=30) return {lv:2, label:"드문 매수 기회", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
+    if(d!=null && r!=null && d<=-20 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
+    return hot? {lv:-1, label:"과열·보류", why:`RSI ${num(s.rsi,0)} · 200일선 ${pct(s.vs200,0)}`} : null;
+  }
+  if(!BUY_ETF.includes(t) && !(t==="MAGS")) return null;
+  const hits = [];
+  if(s.rsi!=null && s.rsi<=35) hits.push(`RSI ${num(s.rsi,0)}`);
+  if(s.vs200!=null && s.vs200<=0) hits.push("200일선 아래");
+  if(s.bb_break || (s.bb_pctb!=null && s.bb_pctb<=5)) hits.push("볼린저 하단");
+  if(s.dd52!=null && s.dd52<=-10) hits.push(`1년 고점 ${pct(s.dd52,0)}`);
+  if(hits.length>=3) return {lv:2, label:"매수 적기", why:hits.join(" · ")};
+  if(hits.length===2) return {lv:1, label:"분할 매수 고려", why:hits.join(" · ")};
+  if(hot) return {lv:-1, label:"과열·보류", why:`RSI ${num(s.rsi,0)} · 200일선 ${pct(s.vs200,0)}`};
+  return null;
+}
+const sigCls = b => !b? "" : b.lv===2? "buy2" : b.lv===1? "buy1" : "hot";
+const sigTag = b => !b? "" : `<span class="sig ${b.lv===2?"s2":b.lv===1?"s1":"sh"}">${esc(b.label)}</span>`;
+function candidatesHTML(S){
+  const list = Object.entries(S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || (a[1].rsi??99)-(b[1].rsi??99));
+  return `<div class="panel"><b>지금 매수 후보</b> <span class="muted">· 누르면 차트</span>
+    ${list.length? `<div class="cands">${list.map(([t,s,b])=>`<button type="button" class="s${b.lv}" data-chart="${esc(t)}" title="${esc(b.why)}"><b>${esc(t)}</b> ${esc(b.label)} <span class="muted">${esc(b.why)}</span></button>`).join("")}</div>`
+      : `<p class="muted" style="margin:6px 0 0">조건을 채운 종목이 없습니다. 이번 달은 기존 적립 규칙대로 사면 됩니다.</p>`}
+    <p class="note">기준 · ETF(QQQM·SPYM·MGK·배당·O·금·BITO): RSI ≤ 35, 200일선 아래, 볼린저 하단, 1년 고점 −10% 이하 중 <b>3개↑ 매수 적기</b>, 2개 분할 매수 고려. 개별 빅테크: 1년 고점 −30% 이하 + RSI ≤ 30이면 <b>드문 매수 기회</b>(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰. RSI ≥ 70이면서 200일선 +10% 이상은 과열·보류. 레버리지·섹터는 기존 규칙(오늘·폭락 대응 탭)을 따릅니다. 표시 기준은 아직 백테스트 전 초안입니다.</p></div>`;
+}
+let CHARTS = null;
+async function chartData(){
+  if(CHARTS) return CHARTS;
+  if(window.__EMBED__) return CHARTS = window.__EMBED__.charts || {s:{}};
+  CHARTS = await getJSON("data/charts.json").catch(()=>({s:{}}));
+  return CHARTS;
+}
+function decodeSeries(x){ const out=[]; let t=new Date(x.d0+"T00:00:00Z").getTime(); x.dd.forEach((d,i)=>{ t+=d*864e5; out.push([new Date(t).toISOString().slice(0,10), x.c[i]]); }); return out; }
+function smaArr(c, n){ const o=new Array(c.length).fill(null); let sum=0; for(let i=0;i<c.length;i++){ sum+=c[i]; if(i>=n) sum-=c[i-n]; if(i>=n-1) o[i]=sum/n; } return o; }
+let DLG_STATE = null;
+async function openChart(t){
+  const s = E.S[t]; if(!s) return;
+  let dlg = document.getElementById("chartdlg");
+  if(!dlg){ dlg=document.createElement("dialog"); dlg.id="chartdlg"; dlg.className="chartdlg"; dlg.setAttribute("aria-labelledby","dlgttl"); document.body.appendChild(dlg);
+    dlg.addEventListener("click", e=>{ if(e.target===dlg) dlg.close(); }); }
+  const b = buySig(t,s);
+  dlg.innerHTML = `<div class="dlghead"><div><h3 id="dlgttl">${esc(t.replace("^",""))} <span class="muted" style="font-weight:400">${esc(s.name!==t? s.name:"")}</span> ${sigTag(b)}</h3><div class="muted">${b? esc(b.why)+" · ":""}${esc(s.date||"")} 종가 기준</div></div><button type="button" class="ghost" id="dlgclose" aria-label="닫기">닫기</button></div>
+  <div class="dlgbody"><div class="seg" role="group" aria-label="기간">${[["6m","6개월",126],["1y","1년",252],["2y","2년",504]].map(([k,l,n],i)=>`<button type="button" data-n="${n}" aria-pressed="${i===1}">${l}</button>`).join("")}</div>
+  <div class="legend"><span><i style="background:var(--brand)"></i>종가</span><span><i style="background:#e07a28"></i>50일선</span><span><i style="background:#8a1c12"></i>200일선</span></div>
+  <div id="dlgchart"><p class="muted">차트 불러오는 중…</p></div><div class="tip" id="dlgtip" aria-live="polite"></div>
+  <div class="dstats"><div>현재가<b>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</b></div><div>고점 대비<b>${cpct(s.dd_ath ?? s.dd52,1)}</b></div><div>200일선 대비<b>${cpct(s.vs200,1)}</b></div><div>RSI (일·주)<b><span class="${rsiCls(s.rsi)}">${num(s.rsi,0)}</span> · ${num(s.rsi_w,0)}</b></div></div></div>`;
+  dlg.querySelector("#dlgclose").onclick=()=>dlg.close();
+  if(!dlg.open) dlg.showModal();
+  const C = await chartData();
+  const x = C.s?.[t];
+  let ser = x? decodeSeries(x) : (s.spark||[]).map((v,i)=>[i===0? (s.spark_dates?.[0]||"") : i===s.spark.length-1? (s.spark_dates?.[1]||"") : "", v]);
+  const ma50 = smaArr(ser.map(r=>r[1]),50), ma200 = smaArr(ser.map(r=>r[1]),200);
+  DLG_STATE = {ser, ma50, ma200, cur:s.cur, fallback:!x};
+  const draw = n => { drawPopup(n); dlg.querySelectorAll(".seg button").forEach(bt=>bt.setAttribute("aria-pressed", String(+bt.dataset.n===n))); };
+  dlg.querySelectorAll(".seg button").forEach(bt=>bt.onclick=()=>draw(+bt.dataset.n));
+  draw(252);
+}
+function drawPopup(n){
+  const {ser, ma50, ma200, cur, fallback} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
+  const k0 = Math.max(0, ser.length-n), S2=ser.slice(k0), m5=ma50.slice(k0), m2=ma200.slice(k0);
+  if(S2.length<2){ box.innerHTML='<p class="muted">차트 데이터가 없습니다.</p>'; return; }
+  const W=Math.max(300, Math.round(box.clientWidth||720)), H=W<500? 220 : 280, PL=6, PR=W<500? 48 : 58, PT=10, PB=22;
+  const vals=[...S2.map(r=>r[1]), ...m5.filter(v=>v!=null), ...m2.filter(v=>v!=null)]; const mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
+  const X=i=>PL+i/(S2.length-1)*(W-PL-PR), Y=v=>PT+(1-(v-mn)/rg)*(H-PT-PB);
+  const line=(arr,col,w)=>{ const pts=arr.map((v,i)=>v==null?null:`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(" "); return pts? `<polyline fill="none" stroke="${col}" stroke-width="${w}" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${pts}"/>`:""; };
+  const fmt=v=> cur==="KRW"? num(v, v<100?2:0) : num(v, v<10?2:v<1000?2:0);
+  const ticks=[mx, mn+rg/2, mn].map(v=>`<line x1="${PL}" x2="${W-PR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#ebe9e3"/><text x="${W-PR+6}" y="${(Y(v)+4).toFixed(1)}" font-size="11" fill="#55534e">${fmt(v)}</text>`).join("");
+  box.innerHTML = `<svg class="pchart" viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="${n<=126?"6개월":n<=252?"1년":"2년"} 가격 차트">${ticks}
+    ${line(m2,"#8a1c12",1.5)}${line(m5,"#e07a28",1.5)}${line(S2.map(r=>r[1]),"var(--brand)",2)}
+    <text x="${PL}" y="${H-6}" font-size="11" fill="#55534e">${esc(S2[0][0])}</text><text x="${W-PR}" y="${H-6}" font-size="11" fill="#55534e" text-anchor="end">${esc(S2[S2.length-1][0])}</text>
+    <line id="xh" x1="0" x2="0" y1="${PT}" y2="${H-PB}" stroke="#55534e" stroke-dasharray="3 3" visibility="hidden"/></svg>${fallback? '<p class="note">상세 차트 데이터가 아직 없어 최근 6개월 흐름만 보여 줍니다(다음 데이터 갱신 후 2년 차트).</p>':""}`;
+  const svg=box.querySelector("svg"), xh=svg.querySelector("#xh"), tip=document.getElementById("dlgtip");
+  const move=e=>{ const r=svg.getBoundingClientRect(); const fx=(e.clientX-r.left)/r.width*W; const i=Math.max(0,Math.min(S2.length-1,Math.round((fx-PL)/(W-PL-PR)*(S2.length-1))));
+    xh.setAttribute("x1",X(i)); xh.setAttribute("x2",X(i)); xh.setAttribute("visibility","visible");
+    const last=S2[S2.length-1][1]; tip.textContent=`${S2[i][0]} · ${fmt(S2[i][1])}${m2[i]!=null? " · 200일선 "+fmt(m2[i]):""} · 현재가 대비 ${pct((last/S2[i][1]-1)*100,1)}`; };
+  svg.onpointermove=move; svg.onpointerdown=move; svg.onpointerleave=()=>{ xh.setAttribute("visibility","hidden"); tip.textContent=""; };
+}
 function vMarket(){
   const S=E.S; const groups={};
   for(const [t,s] of Object.entries(S)){ (groups[s.group]=groups[s.group]||[]).push([t,s]); }
-  const order=["지수","1배 지수","섹터","레버리지","빅테크","배당","현금·채권","국내","기타"];
+  const order=["지수","1배 지수","섹터","레버리지","빅테크","배당","금·비트코인","현금·채권","국내","기타"];
   const th=(g,k,label)=>{ if(!MSORT_GROUPS.includes(g)) return `<th>${label}</th>`;
     const st=MSORT[g]; const on=st&&st.k===k; const arrow=on? (st.dir<0?" ▼":" ▲") : "";
     return `<th class="sortable${on?" on":""}"><button type="button" class="sortbtn" data-g="${g}" data-k="${k}" aria-label="${label} 정렬">${label}${arrow||'<span class="hint"> ↕</span>'}</button></th>`; };
@@ -1163,14 +1304,16 @@ function vMarket(){
     if(st){ const f=MSORT_KEYS[st.k]; r.sort((a,b)=>{ const x=f(a[1]), y=f(b[1]); if(x==null) return 1; if(y==null) return -1; return st.dir<0 ? y-x : x-y; }); }
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다.</p>
+  ${candidatesHTML(S)}
+  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다.</p>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table>
     <tr><th>종목</th><th>현재가</th><th>일간</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
-    ${rows(g).map(([t,s])=>`<tr><td><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`).join("")}
+    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
 }
 function bindMarket(){
+  document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart));
   document.querySelectorAll(".sortbtn").forEach(b=>b.onclick=()=>{
     const g=b.dataset.g, k=b.dataset.k, st=MSORT[g];
     if(!st || st.k!==k) MSORT[g]={k, dir:-1}; else if(st.dir===-1) st.dir=1; else delete MSORT[g];
@@ -1180,14 +1323,29 @@ function bindMarket(){
 function vMacro(){
   const m=E.M.macro||{};
   const cards = E.L.map(l=>`<div class="light"><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
-  const series = [["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
-  return `<h2>거시 신호등 · 현재 모드: ${pill(E.mode.name,E.mode.c)}</h2>
+  const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
+  return `<h2>금리 한눈에</h2>${ratesHTML(m)}
+  <h2>거시 신호등 · 현재 모드: ${pill(E.mode.name,E.mode.c)}</h2>
   <div class="lights">${cards}</div>
-  <p class="note">거시 지표는 매수 시점이 아니라 공격·수비 모드를 정합니다. 빨강 2개 이상 → 수비(신규 레버리지 중단, 현금 1배로만). 데이터: FRED(무료). PMI·EPS 전망은 무료 소스가 없어 수동 확인 항목입니다.</p>
+  <p class="note">거시 지표는 매수 시점이 아니라 공격·수비 모드를 정합니다. 빨강 2개 이상 → 수비(신규 레버리지 중단, 현금 1배로만), 빨강 1개 또는 노랑 2개 이상 → 중립. 장기금리(10년물)는 5.5% 이상 빨강일 때만 모드에 들어가고, 노랑은 표시만 합니다(아직 백테스트로 검증하지 않은 지표라서). 데이터: FRED(무료). PMI·EPS 전망은 무료 소스가 없어 수동 확인 항목입니다.</p>
   <h2>공포탐욕</h2>
   <div class="panel"><p>${E.fng? `CNN 공포탐욕 <b>${num(E.fng,0)}</b> (${esc(E.M.fng.rating)}, ${esc(E.M.fng.date)}) · ` : ""}기준 값은 <a href="${RULES.fngLink}" target="_blank" rel="noopener">자산제곱 모니터링 대시보드</a>에서 확인합니다. ≤ 45 공포(현금 보조지표), ≤ 20 극단적 공포(폭락 판정), ≥ 80 과열(QLD 신규 보류).</p></div>
   <h2>추이 (2년)</h2>
   <div class="grid2">${series.map(([k,t,th])=>{ const s=m[k]?.spark; return `<div class="panel"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
+}
+function ratesHTML(m){
+  const t=m.dgs10?.v, f=m.fedu?.v, d2=m.dgs2?.v, g=rateGrade(t);
+  const lo=3.5, hi=6.0, posPct = t==null? null : Math.max(0,Math.min(100,(t-lo)/(hi-lo)*100));
+  // 눈금 5칸: <4.0 / 4.0~4.5 / 4.5~5.0 / 5.0~5.5 / ≥5.5 → 표시 범위 3.5~6.0을 0.5씩
+  const bc=bigCut(m); const lastCh=(m.fedu?.changes||[]).slice(-1)[0];
+  return `<div class="rates">
+    <div><div class="k">연준 기준금리 (상단)</div><div class="v">${num(f,2)}%</div><div class="s">${lastCh? `최근 변경 ${esc(lastCh.date)} ${lastCh.delta>0?"+":""}${num(lastCh.delta*100,0)}bp`:"–"}${bc? ` · <b class="r">빅컷 ${bc.days}일째</b>`:""}</div></div>
+    <div><div class="k">미 10년물 국채금리</div><div class="v ${g.c}">${num(t,2)}%</div><div class="s">${esc(m.dgs10?.date||"")} · 2년물 ${num(d2,2)}% · 10Y−2Y ${num(m.t10y2y?.v,2)}%p</div></div>
+    <div><div class="k">10년물 등급: <b class="${g.c}">${esc(g.st)}</b></div>
+      <div class="grade" role="img" aria-label="10년물 금리 등급 ${esc(g.st)}"><span></span><span></span><span></span><span></span><span></span>${posPct!=null? `<i style="left:${posPct.toFixed(1)}%"></i>`:""}</div>
+      <div class="gradelbl">${["~4.0","4.0~4.5","4.5~5.0","5.0~5.5","5.5~"].map((x,i)=>i===g.i?`<b>${x}</b>`:`<span>${x}</span>`).join("")}</div>
+      <div class="s" style="margin-top:6px">5.5%는 박종훈 소장이 "돌파 직후 미국 자산이 다 같이 내렸다"고 짚은 선입니다(매매 규칙 아님). 장기채는 금리와 관계없이 사지 않는다는 것이 화자의 입장입니다.</div></div>
+  </div>`;
 }
 function lineChart(arr, th=[], h=140){
   const W=520, P=4; const a=arr.filter(x=>x!=null); const mn=Math.min(...a, ...th), mx=Math.max(...a, ...th), rg=(mx-mn)||1;
