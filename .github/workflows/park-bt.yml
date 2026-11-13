@@ -1,6 +1,9 @@
 name: park-backtest
 on:
   workflow_dispatch:
+  push:
+    branches: [claude/project-thread-dtaczx]
+    paths: [scripts/backtest_portfolio.py, .github/workflows/park-bt.yml]
 permissions:
   contents: write
 jobs:
