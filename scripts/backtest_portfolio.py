@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if os.environ.get("ONLY_DIV") else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -418,6 +418,9 @@ def run(D, i0, end=None, cfg=None):
                 if cfg.get("normal") and stage == 0 and useB:   # 평상: 장투 몫을 SGOV:주식 비율로 (과열 2개+면 두 번째 비율)
                     sg = cfg["normal"][1] if oh >= 2 else cfg["normal"][0]; stk = LT_AMT * (1 - sg)
                     al = {"SGOV": LT_AMT * sg, "QQQ": stk * 0.4, "SPY": stk * 0.3, "SCHD": stk * 0.3, "QLD": 0, "TQQQ": 0}
+                if cfg.get("n2") and stage == 0 and useB and oh < 2:   # 11-14 Ben 질문: 평상을 0~−5 / −5~−10 두 단계로, SGOV 일부 → SPYM·JEPI
+                    sg, sp, jp = cfg["n2"][0 if dd > -5 else 1]; stk = LT_AMT * (1 - sg - sp - jp)
+                    al = {"SGOV": LT_AMT * sg, "QQQ": stk * 0.4, "SPY": stk * 0.3 + LT_AMT * sp, "SCHD": stk * 0.3, "JEPI_X": LT_AMT * jp, "QLD": 0, "TQQQ": 0}
                 if W == "ben":   # 40주선 우선: 위면 평상에도 −10% 구간 비율(전액 주식), 아래면 낙폭과 관계없이 SGOV 7:3
                     if up and stage == 0: al = {"QQQ": 85 * LT_AMT / 200, "SPY": 85 * LT_AMT / 200, "QLD": 30 * LT_AMT / 200, "TQQQ": 0}
                     elif not up:
@@ -1178,6 +1181,46 @@ def w40_study(D):
     json.dump(out, open(os.path.join(B.DATA, "w40c_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def n2_study(D):
+    """평상 2단계(0~−5 / −5~−10) SGOV 일부 → SPYM·JEPI 비교 → data/n2_bt.json"""
+    D.setdefault("w40c", None)
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    CUR = {**L, "gold": 17, "normal": (0.7, 0.7), "m10": (85, 85, 30, 0), "bigcut": "stage_ma"}
+    V = [("A 현행 7:3", CUR),
+         ("N1 0~−5: SGOV50·SPYM10·JEPI10·주식30 / −5~−10: SGOV30·SPYM15·JEPI15·주식40", {**CUR, "n2": ((0.5, 0.1, 0.1), (0.3, 0.15, 0.15))}),
+         ("N2 N1과 같은 비율, 배당칸 전부 SPYM", {**CUR, "n2": ((0.5, 0.2, 0.0), (0.3, 0.3, 0.0))}),
+         ("N3 N1과 같은 비율, 배당칸 전부 JEPI", {**CUR, "n2": ((0.5, 0.0, 0.2), (0.3, 0.0, 0.3))}),
+         ("N4 완만: 0~−5 SGOV60·SPYM5·JEPI5 / −5~−10 SGOV50·SPYM10·JEPI10", {**CUR, "n2": ((0.6, 0.05, 0.05), (0.5, 0.1, 0.1))})]
+    win = [(n, a, b, None) for n, a, b in SCEN] + [("2010~", "2010-01-04", "2010-01-31", None), ("2016~", "2016-01-04", "2016-01-31", None),
+           ("상승장 2016-01~2018-09", "2016-01-04", "2016-01-31", "2018-09-28"), ("상승장 2019-01~2021-12", "2019-01-02", "2019-01-31", "2021-12-31"),
+           ("상승장 2023-01~2024-12", "2023-01-03", "2023-01-31", "2024-12-31"), ("2018년 4분기 급락 2018-09~2019-12", "2018-09-04", "2018-09-30", "2019-12-31")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "proxy": D.get("proxy"),
+           "notes": ["전체 = 5계좌 합산, 장투 = 장투 계좌 단독", "worst = 평가액/누적 원금 최저", "JEPI 상장(2020-05) 전은 S&P500 BuyWrite(^BXM) 대용",
+                     "배당 재투자 가정(수정주가), 배당세·수수료 제외", "과열 2개+ 달은 현행 7:3 유지"], "rows": []}
+    for name, a, b, e in win:
+        ks = [k for k, d in enumerate(D["dates"]) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [x[0] for x in SCEN] else ks[0]
+        end = next((k for k, d in enumerate(D["dates"]) if d >= e), len(D["dates"]) - 1) if e else len(D["dates"]) - 1
+        for vn, cfg in V:
+            r = run(D, i0, end=end, cfg=cfg); ltf, ltc = r["ltf"], r["ltc"]; dates = D["dates"]
+            fmap = {}
+            for d, v in ltf: fmap[d] = fmap.get(d, 0) - v
+            cum = 0; worst = 0; lpk = 0; lmdd = 0
+            for k, (v, s_, stg) in enumerate(ltc):
+                cum += fmap.get(dates[i0 + k], 0)
+                if cum > 0: worst = min(worst, v / cum - 1)
+            cv = r["curve"]; pk = cv[0]; mdd = 0
+            for x in cv: pk = max(pk, x); mdd = min(mdd, x / pk - 1)
+            lt = r["A"]["longterm"]; hv = {t: round(lt.v(t, D["P"], end, D["fx"][end]) / MAN) for t in lt.u}
+            row = {"window": name, "strategy": vn, "start": dates[i0], "end": dates[end],
+                   "total_irr": xirr(r["flows"], dates[end], cv[-1]), "total_worst": round(min(min(x / p - 1 for x, p in zip(cv, r["prin"])), 0) * 100, 1),
+                   "total_mdd": round(mdd * 100, 1), "end_man": round(cv[-1] / MAN),
+                   "lt_irr": xirr(ltf, dates[end], ltc[-1][0]) if ltf else None, "lt_worst": round(worst * 100, 1), "lt_hold_man": hv}
+            out["rows"].append(row); print("N2R", json.dumps(row, ensure_ascii=False), flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "n2_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def swing_study(D):
     """단기 급락 스윙(짧게 사고 나오기) 규칙 비교 → data/swing_bt.json. 스윙 계좌 단독, 쉬는 돈은 SGOV"""
     dates, P, c, rsi = D["dates"], D["P"], D["c"], D["rsi"]
@@ -1339,6 +1382,8 @@ def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_N2"):
+        n2_study(D); print("ok"); return
     if os.environ.get("ONLY_W40"):
         w40_study(D); print("ok"); return
     if os.environ.get("ONLY_MARGIN"):
