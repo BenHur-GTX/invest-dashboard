@@ -216,6 +216,28 @@ def weekly(rows):
     return [wk[k] for k in sorted(wk)]
 
 
+def week40(rows):
+    """주봉 종가 vs 40주 이동평균 (11-14 Ben: 경보 표시용, 매매 규칙 아님). 마감한 주 기준 + 이번 주 진행 중 값"""
+    wk = {}
+    for r in rows:
+        k = datetime.strptime(r[0], "%Y-%m-%d").isocalendar()[:2]
+        wk[k] = (r[0], r[4])
+    items = [wk[k] for k in sorted(wk)]
+    done = items if datetime.strptime(rows[-1][0], "%Y-%m-%d").weekday() == 4 else items[:-1]
+    if len(done) < 41:
+        return None
+    c = [x[1] for x in done]
+    up = [None] * len(c)
+    for k in range(39, len(c)):
+        up[k] = c[k] > sum(c[k - 39:k + 1]) / 40
+    ma = sum(c[-40:]) / 40
+    kx = next((k for k in range(len(c) - 1, 39, -1) if up[k] != up[k - 1]), None)
+    live = items[-1][1]; lma = sum([x[1] for x in (done[-40:-1] if items[-1] is done[-1] else done[-39:])] + [live]) / 40
+    return {"week_end": done[-1][0], "close": r2(c[-1], 2), "ma": r2(ma, 2), "up": up[-1], "gap": r2((c[-1] / ma - 1) * 100),
+            "cross": None if kx is None else ("golden" if up[kx] else "dead"), "cross_date": None if kx is None else done[kx][0],
+            "weeks": None if kx is None else len(c) - 1 - kx, "live_up": live > lma, "live_gap": r2((live / lma - 1) * 100)}
+
+
 def r2(x, n=2):
     return None if x is None else round(x, n)
 
@@ -249,8 +271,9 @@ def summarize(sym, name, group, cur, rows):
     if len(c) >= 20:
         wv = c[-20:]; mu = sum(wv) / 20; sd = (sum((x - mu) ** 2 for x in wv) / 20) ** 0.5
         bb_lo = mu - 2 * sd; pctb = (last - bb_lo) / (4 * sd) * 100 if sd else 50
+    w40 = week40(rows) if sym in ("QQQ", "^NDX") else None
     return {
-        "name": name, "group": group, "cur": cur, "date": rows[-1][0],
+        "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40,
         "bb_lo": r2(bb_lo, 4), "bb_pctb": r2(pctb, 0), "bb_break": bool(bb_lo is not None and last < bb_lo),
         "price": r2(last, 4), "prev": r2(prev, 4), "chg": r2((last / prev - 1) * 100),
         "ath": r2(ath, 4), "dd_ath": r2((last / ath - 1) * 100),
