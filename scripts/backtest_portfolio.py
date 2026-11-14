@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -1221,6 +1221,96 @@ def n2_study(D):
     json.dump(out, open(os.path.join(B.DATA, "n2_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def btc_study(D, y):
+    """11-14 Ben: BITO 상한을 비트코인 현물 낙폭에 연동 (−50% 5 / −70% 8 / −80% 12). → data/btc_bt.json
+    모형: 현행 5계좌 규칙(run)의 일별 시간가중수익률을 '나머지 포트폴리오'로 쓰고, 그 위에 BITO 칸을 얹는다.
+    BITO 몫은 매달 330만 안에서 먼저 떼고(현행 규칙), 상한이 올라간 달에는 부족분을 3개월에 나눠 나머지 포트폴리오에서 옮긴다."""
+    dates = D["dates"]; n = len(dates)
+    btc_raw = [(r[0], r[4]) for r in y.get("BTC-USD", []) if r[4]]
+    if len(btc_raw) < 500: print("BTC 데이터 없음"); return
+    btc = ff(btc_raw, dates)
+    k_btc0 = next(k for k in range(n) if btc[k])
+    # 낙폭: 2013-12 고점(약 1,150달러)부터 누적 최고가 기준 (야후 BTC-USD는 2014-09부터)
+    pk = 1150.0; dd = [None] * n
+    for k in range(k_btc0, n):
+        pk = max(pk, btc[k]); dd[k] = (btc[k] / pk - 1) * 100
+    DRAG = 0.06 / 252   # BITO 선물 롤오버 비용 가정 연 6%
+    # 실제 BITO가 있으면 같은 구간 BTC 대비 연 괴리 출력
+    bito = dict((r[0], r[5]) for r in y.get("BITO", []) if r[5])
+    gap_note = None
+    if len(bito) > 500:
+        bd = sorted(bito); a, b = bd[0], bd[-1]
+        ka = next(k for k in range(n) if dates[k] >= a); kb = next((k for k in range(n) if dates[k] >= b), n - 1)
+        yrs = (datetime.strptime(dates[kb], "%Y-%m-%d") - datetime.strptime(dates[ka], "%Y-%m-%d")).days / 365.25
+        rb = (bito[b] / bito[a]) ** (1 / yrs) - 1; rc = (btc[kb] / btc[ka]) ** (1 / yrs) - 1
+        gap_note = {"from": a, "to": b, "bito_cagr": round(rb * 100, 1), "btc_cagr": round(rc * 100, 1)}
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    CUR = {**L, "gold": 17, "normal": (0.7, 0.7), "m10": (85, 85, 30, 0), "bigcut": "stage_ma"}
+    V = [("c 현행 3% 고정", {"tiers": [], "base": 3, "trim": None}),
+         ("b 보수 −50% 3 / −70% 5 / −80% 8", {"tiers": [(-80, 8), (-70, 5), (-50, 3)], "base": 3, "trim": None}),
+         ("a Ben안 −50% 5 / −70% 8 / −80% 12", {"tiers": [(-80, 12), (-70, 8), (-50, 5)], "base": 3, "trim": None}),
+         ("b + 차익: 비중이 지금 상한의 2배 넘으면 상한까지 매도", {"tiers": [(-80, 8), (-70, 5), (-50, 3)], "base": 3, "trim": 2.0}),
+         ("a + 차익: 비중이 지금 상한의 2배 넘으면 상한까지 매도", {"tiers": [(-80, 12), (-70, 8), (-50, 5)], "base": 3, "trim": 2.0}),
+         ("c + 차익: 3% 고정, 6% 넘으면 3%까지 매도", {"tiers": [], "base": 3, "trim": 2.0}),
+         ("0 비트코인 없음", None)]
+    def idx(d): return next((k for k, x in enumerate(dates) if x >= d), n - 1)
+    win = [("2014 사이클 2014-09~2017-12", "2014-09-17", "2017-12-15"), ("2018 사이클 2017-12~2021-11", "2017-12-15", "2021-11-08"),
+           ("2022 사이클 2021-11~", "2021-11-08", None), ("2014-09~현재 전체", "2014-09-17", None), ("2018-01~현재", "2017-12-15", None)]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "bito_vs_btc": gap_note,
+           "notes": ["전체 = 5계좌 + BITO, 월 330만 (BITO 몫은 장투 적립에서 차감)", "BITO = 비트코인 현물 일간수익 − 연 6% 롤오버 비용 가정",
+                     "상한 판정 = 비트코인 현물 고점 대비 낙폭(2013-12 고점 1,150달러 포함)", "상한이 오르면 부족분을 3개월 분할로 나머지 포트폴리오에서 옮김",
+                     "세금(해외 ETF 양도세 22%, 250만 공제)·수수료 제외", "매수 후보 달 24만 규칙은 생략"],
+           "rows": []}
+    for wn, a, b in win:
+        i0 = idx(a); end = idx(b) if b else n - 1
+        base = run(D, i0, end=end, cfg=CUR); cv = base["curve"]; inflow = {}
+        for d, v in base["flows"]: inflow[d] = inflow.get(d, 0) - v
+        for vn, vc in V:
+            core = 0.0; bt = 0.0; prin = 0.0; flows = []; worst = 0; pkv = 0; mdd = 0; months = 0; fill = 0.0; fill_left = 0
+            maxw = 0; tr_n = 0; buy_extra = 0.0; sold = 0.0
+            for k in range(i0, end + 1):
+                j = k - i0
+                if j > 0:
+                    prev = cv[j - 1]; add = inflow.get(dates[k], 0)
+                    rc = (cv[j] - add) / prev - 1 if prev else 0
+                    core *= 1 + rc
+                    if btc[k] and btc[k - 1]: bt *= (btc[k] / btc[k - 1]) * (1 - DRAG)
+                add = inflow.get(dates[k], 0)
+                if add:
+                    prin += add; flows.append((dates[k], -add)); months += 1
+                    if vc is None:
+                        core += add
+                    else:
+                        tot = core + bt + add; capp = vc["base"]
+                        for th, cp in vc["tiers"]:
+                            if dd[k] is not None and dd[k] <= th: capp = cp; break
+                        cap = tot * capp / 100
+                        base_amt = (12 if months <= 6 else 3) * MAN
+                        x = min(base_amt, max(0.0, cap - bt)) if btc[k] else 0
+                        bt += x; core += add - x
+                        # 상한 상향분: 부족분을 3개월 분할로 나머지에서 이동
+                        gap = cap - bt
+                        if gap > 0 and capp > vc["base"] and btc[k]:
+                            if fill_left <= 0: fill = gap / 3; fill_left = 3
+                            y_ = min(fill, gap, core); bt += y_; core -= y_; buy_extra += y_; fill_left -= 1
+                        else:
+                            fill_left = 0
+                        if vc["trim"] and btc[k] and bt > cap * vc["trim"]:
+                            z = bt - cap; bt -= z; core += z; sold += z; tr_n += 1
+                tv = core + bt
+                if prin > 0: worst = min(worst, tv / prin - 1)
+                pkv = max(pkv, tv); mdd = min(mdd, tv / pkv - 1) if pkv else 0
+                if tv: maxw = max(maxw, bt / tv)
+            tv = core + bt
+            row = {"window": wn, "strategy": vn, "start": dates[i0], "end": dates[end], "irr": xirr(flows, dates[end], tv),
+                   "worst": round(worst * 100, 1), "mdd": round(mdd * 100, 1), "end_man": round(tv / MAN), "prin_man": round(prin / MAN),
+                   "btc_w_end": round(bt / tv * 100, 1) if tv else 0, "btc_w_max": round(maxw * 100, 1),
+                   "extra_buy_man": round(buy_extra / MAN), "trim_n": tr_n, "trim_man": round(sold / MAN),
+                   "btc_dd_min": round(min(x for x in dd[i0:end + 1] if x is not None), 1)}
+            out["rows"].append(row); print("BTCR", json.dumps(row, ensure_ascii=False), flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "btc_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def swing_study(D):
     """단기 급락 스윙(짧게 사고 나오기) 규칙 비교 → data/swing_bt.json. 스윙 계좌 단독, 쉬는 돈은 SGOV"""
     dates, P, c, rsi = D["dates"], D["P"], D["c"], D["rsi"]
@@ -1382,6 +1472,8 @@ def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_BTC"):
+        btc_study(D, y); print("ok"); return
     if os.environ.get("ONLY_N2"):
         n2_study(D); print("ok"); return
     if os.environ.get("ONLY_W40"):
