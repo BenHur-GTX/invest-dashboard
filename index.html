@@ -459,29 +459,36 @@ function bigCut(m){   // 0.5%p 이상 한 번에 인하한 지 45일 이내
   const days = Math.floor((Date.now()-new Date(ch.date+"T00:00:00Z"))/864e5);
   return days>=0 && days<=45 ? {...ch, days} : null;
 }
-// 빅컷 안전장치 (11-14 Ben): 0.5%p↑ 인하 후 1~2주에 걸쳐 계좌 역할별 주식 비중 축소, 45일 뒤 같은 단계로 복귀
+// 빅컷 안전장치 (11-14 Ben): 0.5%p↑ 인하 후 1~2주에 걸쳐 계좌 역할별 주식 비중 축소.
+// 복귀: 45일이 지나고 QQQ가 200일선 위일 때만 같은 순서 거꾸로 (Ben: 날짜만으로 복귀하면 위험). 대기 중에도 낙폭 사다리는 재개
+function bigCutWait(m){
+  const ch = (m.fedu?.changes||[]).filter(x=>x.delta<=-0.5).slice(-1)[0]; if(!ch) return null;
+  const days = Math.floor((Date.now()-new Date(ch.date+"T00:00:00Z"))/864e5);
+  const v = E?.S?.QQQ?.vs200 ?? null;
+  return days>45 && days<=365 ? {...ch, days, below: v!=null && v<0, vs200:v} : null;
+}
 const BIGCUT_PLAN = [
   {id:"irp", n:"IRP", tgt:30, steps:"1일차에 한 번에 위험자산 → 머니마켓", why:"계좌 안 매매는 세금이 없어 비용이 가장 작습니다. 가장 먼저."},
   {id:"swing", n:"직투 스윙", tgt:10, steps:"1일차 레버리지·3배 전량 → 3~5일차 개별주·섹터 절반 → 7~10일차 남은 것 정리", why:"단기 계좌라 가장 많이 줄입니다. 손실 종목부터 팔아 양도세(22%, 연 250만 공제)를 줄입니다."},
   {id:"longterm", n:"장투 직투", tgt:30, steps:"1일차 QLD·TQQQ 전량 → 5일차 배당 ETF·O 절반 → 10일차 1배 지수로 합계 30%", why:"매도 대금은 SGOV. 수익이 큰 종목은 마지막에, 연 250만 공제 안에서 먼저 실현."},
-  {id:"pension", n:"연금저축", tgt:null, steps:"매도 없음. 45일 동안 신규 적립만 TIGER 미국초단기국채로", why:"'매도 없이 초장기' 원칙과 충돌하는 지점입니다. 줄이고 싶으면 IRP처럼 세금 없이 30%까지 낮출 수 있지만 기본값은 유지."},
+  {id:"pension", n:"연금저축", tgt:null, steps:"매도 없음, 적립도 평소대로", why:"초장기 계좌라 빅컷과 무관하게 그대로 둡니다(Ben 11-14)."},
   {id:"ammo", n:"현금 계좌 (SGOV)", tgt:0, steps:"그대로. 45일 동안 낙폭 사다리 투입 금지", why:"빅컷 직후 첫 반등에 투입하지 않습니다(박종훈: 한 달 반등 후 폭락 사례)."},
   {id:"gold", n:"금현물", tgt:null, steps:"그대로, 매달 1g 계속", why:"금은 위기 때 3~4개월 먼저 반응하는 닻입니다."},
 ];
 const SAFE_T = ["SGOV","0048J0","0046A0"];
 function bigCutHTML(onlyActive){
-  const bc = bigCut(E.M.macro||{});
-  if(onlyActive && !bc) return "";
+  const bc = bigCut(E.M.macro||{}), bw = bigCutWait(E.M.macro||{});
+  if(onlyActive && !bc && !(bw && bw.below)) return "";
   const accs = Object.fromEntries((E.acc?.list||[]).map(a=>[a.id,a]));
   const rows = BIGCUT_PLAN.map(r=>{
     const a = accs[r.id]; let now="–", sell="–";
     if(a && a.val>0){ const stk = a.pos.filter(p=>!SAFE_T.includes(p.t)).reduce((x,p)=>x+p.v,0); now = pct(stk/a.val*100,0,false);
       if(r.tgt!=null) sell = stk > a.val*r.tgt/100 ? won(stk - a.val*r.tgt/100) : "없음"; }
     return `<tr><td class="l"><b>${esc(r.n)}</b></td><td>${now}</td><td>${r.tgt==null? "유지" : r.tgt+"%"}</td><td>${sell}</td><td class="l" style="white-space:normal;min-width:240px">${esc(r.steps)}<div class="muted">${esc(r.why)}</div></td></tr>`; }).join("");
-  return `<h2>빅컷 안전장치${bc? ` · <span class="r">${esc(bc.date)} ${num(bc.delta*100,0)}bp 인하 후 ${bc.days}일째</span>` : " (대기)"}</h2>
-  <div class="panel"><p style="margin-top:0">연준이 한 번에 0.5%p 이상 내리면(빅컷) <b>1~2주에 걸쳐</b> 계좌별 주식 비중을 아래 목표까지 낮추고, <b>45일 뒤 같은 순서를 거꾸로</b> 원래 비중으로 돌아갑니다. 그사이 QQQ가 5년 고점 대비 −25% 아래로 빠지면 복귀분은 현금 사다리 규칙을 따릅니다.</p>
+  return `<h2>빅컷 안전장치${bc? ` · <span class="r">${esc(bc.date)} ${num(bc.delta*100,0)}bp 인하 후 ${bc.days}일째</span>` : bw? ` · ${bw.below? `<span class="y">${bw.days}일 경과, QQQ 200일선 아래(${pct(bw.vs200,1)}) — 복귀 대기</span>` : `<span class="g">${bw.days}일 경과, QQQ 200일선 위 — 복귀 가능</span>`}` : " (대기)"}</h2>
+  <div class="panel"><p style="margin-top:0">연준이 한 번에 0.5%p 이상 내리면(빅컷) <b>1~2주에 걸쳐</b> 계좌별 주식 비중을 아래 목표까지 낮추고, <b>45일이 지나고 QQQ가 200일선 위에 있을 때</b> 같은 순서를 거꾸로 밟아 원래 비중으로 돌아갑니다. 45일이 지나도 200일선 아래면 복귀하지 않고 기다리되, 그동안 하락 사다리(장투 SGOV·현금 계좌)는 평소대로 낙폭에 따라 투입합니다. 박종훈 소장이 말한 '빅컷 뒤 한 달쯤 반등했다가 폭락'에 대비한 조건입니다.</p>
   <div class="tbl"><table><tr><th class="l">계좌</th><th>지금 주식 비중</th><th>목표</th><th>줄일 금액</th><th class="l">단계</th></tr>${rows}</table></div>
-  <p class="note">근거: 2001·2007·2008·2020년 빅컷 뒤 45~90일 안에 QQQ가 5~45% 더 빠졌고, 2024년 9월은 헛경보였습니다. 백테스트(장투 주식 20%까지 즉시 매도, 45일 뒤 재매수)는 세전 연 +0.0~+0.8%p, 닷컴 최악 손실 −38.5% → −36.4%. 단계형·세금 반영 검증은 진행 중입니다. 주식 비중은 SGOV·머니마켓·초단기국채를 뺀 나머지입니다.</p></div>`;
+  <p class="note">근거: 2001·2007·2008·2020년 빅컷 뒤 45~90일 안에 QQQ가 5~45% 더 빠졌고, 2024년 9월은 헛경보였습니다. 장투 백테스트(세전, B안 대비): 2주 3단계 축소 + 45일 뒤 200일선 위에서 복귀 = 연 −0.0~+0.1%p, 닷컴 최악 손실 −38.5% → −35.6%(가장 작음). 45일 뒤 무조건 복귀는 연 +0.0~+0.5%p지만 최악 손실 −36.0%. '덜 먹더라도 덜 잃기' 원칙에 맞춰 추세 조건을 씁니다. 세금 반영 검증은 남아 있습니다. 주식 비중은 SGOV·머니마켓·초단기국채를 뺀 나머지입니다.</p></div>`;
 }
 function empLight(m){
   const s = m.sahm?.v, ic = m.icsa?.avg4 ?? m.icsa?.v;
