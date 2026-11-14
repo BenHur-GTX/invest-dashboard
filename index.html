@@ -1054,18 +1054,42 @@ function vPlan(){
 }
 
 
+/* 시나리오 × 계좌 한눈에 (11-14 확정안). 요약 아티팩트와 같은 내용. 현재 국면 줄 강조 */
+const SCEN_SUMMARY = [
+  {id:"normal", n:"평상", c:"QQQ 5년 고점 −10% 이내", pen:"배당다우존스 60 / 나스닥100 40", irp:"위험 55~60% (S&P 40·나스닥 30·배당 30)", lt:"SGOV 70 : 주식 30 (QQQM 40·SPYM 30·배당 30)", am:"SGOV 적립만", sw:"신호 때만 1회 4%, 개별주 3종목 이하", gb:"금 1g · BITO 월 3만(1%까지는 월 ≤24만)"},
+  {id:"hot", n:"과열", c:"과열 신호 2개↑", pen:"평상과 같음", irp:"60% 초과분 → 머니마켓", lt:"7:3 유지. 3개↑면 보유 QLD 20% → SGOV(6개월 1회)", am:"평상과 같음", sw:"레버리지 2개 30% · 3개 50% · 4개↑ 전량 매도", gb:"금: 주봉 RSI≥75 + 200일선 +20%면 10% → SGOV"},
+  {id:"s1", n:"−10% 구간", c:"−10 ~ −15%", pen:"배당 50 / 나스닥100 50", irp:"추세이탈 62~65%, −5%마다 부족분 1/3", lt:"신규 전액 주식: QQQM 45·SPYM 30·QLD 25 (중립이면 QLD 절반 → QQQM) + 모은 SGOV 10% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
+  {id:"s2", n:"−15% 구간", c:"−15 ~ −20%", pen:"배당 50 / 나스닥100 50", irp:"62~65%", lt:"QQQM 45·SPYM 25·QLD 30 + 남은 SGOV 22% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
+  {id:"s3", n:"−20% 구간", c:"−20 ~ −30%", pen:"50:50, 나스닥100 신규는 TIME 426030", irp:"62~65% → 폭락 시 68~70%", lt:"QQQM 30·SPYM 10·QLD 60 + 남은 SGOV 43% 투입. 배당 매수 중단", am:"−25%에서 5% 투입", sw:"신호 매수 계속", gb:"금 1g · BITO"},
+  {id:"s4", n:"−30% 이하", c:"폭락", pen:"50:50, TIME 426030", irp:"68~70%", lt:"QQQM 20·QLD 60·TQQQ 20 + 남은 SGOV 전부(QLD 80·TQQQ 20). QLD 30% 상한", am:"−30/−35/−40/−50/−60%에 10/15/15/25/30%", sw:"3배는 극단에서만 1회 3%, 합계 10%", gb:"금은 팔지 않음"},
+  {id:"def", n:"거시 수비", c:"신호등 빨강 2개↑", pen:"변경 없음", irp:"변경 없음", lt:"레버리지·QQQM 일부 → SGOV, SPYM → 배당. −30%↓면 QQQM 60 / SGOV 40", am:"투입은 레버리지 대신 QQQM", sw:"1회 금액 절반", gb:"변경 없음"},
+  {id:"cut", n:"빅컷", c:"0.5%p↑ 인하 후", pen:"매도·적립 변경 없음", irp:"1일차 위험자산 30%로", lt:"2주 3단계로 주식 70→50→30%. 45일 지나고 QQQ 200일선 위일 때 복귀", am:"45일 동안 투입 금지", sw:"주식 10%까지", gb:"그대로"},
+  {id:"rec", n:"회복", c:"−20%↑ 하락 뒤 200일선 회복", pen:"평상 비율", irp:"55~60%", lt:"반등 가속: SGOV 50% → QLD(재이탈 시 그 몫만 손절). 전고점이면 평상 7:3", am:"전고점 회복 시 절반 매도 → SGOV, 절반 장투 이관", sw:"평상", gb:"평상"},
+];
+function scenSummaryHTML(){
+  const cur = new Set([E.stage===0? (overheat(E).score>=2?"hot":"normal") : ["","s1","s2","s3","s4"][E.stage]]);
+  if(E.mode.name==="수비") cur.add("def");
+  if(bigCut(E.M.macro||{})) cur.add("cut");
+  return `<h2>시나리오 × 계좌 한눈에</h2>
+  <p class="muted">지금: QQQ 5년 고점 대비 <b>${pct(E.dd)}</b> · 거시 <b>${esc(E.mode.name)}</b> · 과열 ${overheat(E).score}개 → 주황 줄. 장투 비중은 장투 월 적립(금 1g·BITO를 뺀 몫) = 100 기준.</p>
+  <div class="tbl"><table style="min-width:1100px"><tr><th class="l">시나리오</th><th class="l">연금저축</th><th class="l">IRP</th><th class="l">장투 직투</th><th class="l">현금 계좌 (SGOV)</th><th class="l">스윙</th><th class="l">금현물 · BITO</th></tr>
+  ${SCEN_SUMMARY.map(r=>`<tr${cur.has(r.id)?' style="background:var(--accent-soft)"':""}><td class="l"><b>${r.n}</b><br><span class="muted">${r.c}</span></td>${[r.pen,r.irp,r.lt,r.am,r.sw,r.gb].map(x=>`<td class="l" style="white-space:normal;min-width:150px">${esc(x)}</td>`).join("")}</tr>`).join("")}
+  </table></div>
+  <p class="note">장투는 B안(11-14 확정): 평상엔 SGOV를 모아 두고, −10%부터 신규 적립 전액 주식 + 모은 SGOV를 단계별로 투입합니다. 이번 달 실제 주문 금액은 '이번 달 매수' 탭에 있습니다.</p>`;
+}
 function vScenario(){
   const stages=[[-5,1,"평상 (고점 -10% 이내)"],[-12,2,"조정 -10~-15%"],[-17,3,"하락 -15~-20%"],[-25,3,"하락 -20~-30%"],[-33,4,"폭락 -30% 이하"]];
   const modes=[["공격","g"],["중립","y"],["수비","r"]];
   const cell=(dd,st,mode,oh)=>{
     const E2={...E, dd, state:st, stage: dd<=-30?4: dd<=-20?3: dd<=-15?2: dd<=-10?1:0, mode:{name:mode}, hy:null, _oh:oh??0, _noCap:true};
     const lt=planLongterm(E2); const o={}; lt.rows.forEach(r=>o[r.key||r.t]=r.man);
-    const k=(E.H?.settings?.monthly_longterm_krw||2000000)/1e4;
+    const k=lt.budget;
     return ["QQQM","SPYM","QLD","TQQQ","SCHD","SGOV"].filter(t=>o[t]>0.05).map(t=>`<span style="white-space:nowrap">${t==="SCHD"?"배당":t} <b>${num(o[t]/k*100,0)}</b></span>`).join(" · ");
   };
   const am = (mode)=>RULES.tranches.map(t=>`${t.n}차 ${mode==="수비"? "QQQM 100" : mixText(t.mix)}`).join("<br>");
   const k=E.H?.settings?.monthly_longterm_krw||2000000;
-  return `<h2>상황별 월 적립 비중 (장투 ${won(k)} = 100)</h2>
+  return `${scenSummaryHTML()}
+  <h2>상황별 월 적립 비중 (장투에서 금·BITO를 뺀 몫 = 100)</h2>
   <p class="muted">현재 위치: <b>${pct(E.dd)} · 거시 ${esc(E.mode.name)} · 과열 ${overheat(E).score}개</b>. 표는 지금 쓰는 계산 로직을 조건만 바꿔 돌린 결과입니다. 숫자는 장투 월 적립의 %입니다. 소액 계좌에서는 QLD 30% 상한 때문에 QLD가 줄고 QQQM이 늘어납니다.</p>
   <div class="tbl"><table style="min-width:620px"><tr><th class="l">QQQ 낙폭</th>${modes.map(m=>`<th class="l"><span class="dot ${m[1]}"></span>거시 ${m[0]}</th>`).join("")}</tr>
   ${stages.map(([dd,st,lab])=>`<tr${(E.stage===(dd<=-30?4: dd<=-20?3: dd<=-15?2: dd<=-10?1:0))?' style="background:var(--accent-soft)"':""}><td class="l"><b>${lab}</b></td>${modes.map(m=>`<td class="l">${cell(dd,st,m[0])}</td>`).join("")}</tr>`).join("")}
