@@ -538,10 +538,10 @@ def main():
     with open(os.path.join(DATA, "market.json"), "w", encoding="utf-8") as f:
         json.dump(market, f, ensure_ascii=False, separators=(",", ":"))
 
-    # 차트 팝업용 일봉 (최근 700거래일 종가, 날짜는 일수 차이로 압축). 시세 탭에서 종목을 누를 때만 불러옴
+    # 차트 팝업용 일봉 (최근 960거래일 종가(3년 + 200일선 계산분), 날짜는 일수 차이로 압축). 시세 탭에서 종목을 누를 때만 불러옴
     charts = {}
     for sym, rows in hist.items():
-        rr = rows[-700:]
+        rr = rows[-960:]
         if len(rr) < 2:
             continue
         d0 = datetime.strptime(rr[0][0], "%Y-%m-%d")

@@ -272,7 +272,7 @@ def run(D, i0, end=None, cfg=None):
     A = {k: Acct() for k in ("longterm", "ammo", "swing", "irp", "pension", "gold")}
     PC = cfg.get("park") == "C"; c_done = False
     GOLD = cfg.get("gold", 0); LT_AMT = 200 - GOLD
-    BC = cfg.get("bigcut"); bc_on = False; bc_sold = {}
+    BC = cfg.get("bigcut"); bc_on = False; bc_sold = {}; bc_i0 = None
     big = [datetime.strptime(x[0], "%Y-%m-%d") for x in D["changes"] if x[1] <= -0.5]
     fx = fx_[i0]
     # 초기 잔고
@@ -305,14 +305,23 @@ def run(D, i0, end=None, cfg=None):
         if BC:
             dt = datetime.strptime(d, "%Y-%m-%d"); inwin = any(0 <= (dt - b).days <= 45 for b in big)
             if inwin and not bc_on:
-                bc_on = True; log.append((d, "빅컷 안전장치 시작"))
+                bc_on = True; bc_i0 = i; log.append((d, "빅컷 안전장치 시작"))
                 if BC == "sell":   # 장투 주식을 20%까지 줄임 → SGOV
                     lt_ = A["longterm"]; tv = lt_.val(P, i, fx); stk = {t: lt_.v(t, P, i, fx) for t in lt_.u if t != "SGOV" and lt_.u[t] > 1e-12}
                     st_v = sum(stk.values()); cut = max(0, st_v - 0.2 * tv)
                     for t, v in stk.items():
                         got = lt_.sell(t, cut * v / st_v, P, i, fx); bc_sold[t] = bc_sold.get(t, 0) + got; lt_.buy("SGOV", got, P, i, fx)
                     log.append((d, f"빅컷 매도 {round(cut / MAN)}만"))
-            elif not inwin and bc_on:
+            if bc_on and BC == "stage" and (i - bc_i0) in (0, 5, 10):   # 2주 3단계: 장투 주식 70% → 50% → 30% (레버리지부터)
+                tgt = {0: 0.7, 5: 0.5, 10: 0.3}[i - bc_i0]
+                lt_ = A["longterm"]; tv = lt_.val(P, i, fx)
+                stk = {t: lt_.v(t, P, i, fx) for t in lt_.u if t != "SGOV" and lt_.u[t] > 1e-12}
+                cut = max(0, sum(stk.values()) - tgt * tv)
+                for t in sorted(stk, key=lambda t: 0 if t in ("TQQQ", "QLD") else 1):
+                    if cut <= 0: break
+                    got = lt_.sell(t, min(cut, lt_.v(t, P, i, fx)), P, i, fx); cut -= got
+                    bc_sold[t] = bc_sold.get(t, 0) + got; lt_.buy("SGOV", got, P, i, fx)
+            if not inwin and bc_on:
                 bc_on = False
                 if bc_sold:   # 45일 뒤 판 만큼 다시 매수
                     lt_ = A["longterm"]
@@ -893,7 +902,8 @@ def park_study(D):
          ("C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17", {"park": "C", "gold": 17, "c_split": (0.1, 0.3)}),
          ("C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17", {"park": "C", "gold": 17, "c_split": (0.7, 0.7)}),
          ("B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "new"}),
-         ("B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "sell"})]
+         ("B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "sell"}),
+         ("B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "stage"})]
     starts = SCEN + [("2010~", "2010-01-04", "2010-01-31"), ("2016~", "2016-01-04", "2016-01-31")]
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "gold_ok": "GOLD" in P,
            "notes": ["월 330만 동일(현금 85·연금저축 45·장투 200), 금 17만은 장투 몫에서 차감", "금은 GLD(2004-11~)→GC=F(2000-08~)→고정값, 원화 환산, 매도 없음",
