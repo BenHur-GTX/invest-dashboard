@@ -20,6 +20,7 @@ SYMBOLS = [
     ("^VIX", "VIX", "지수", "USD", "y"),
     ("^KS11", "코스피", "지수", "KRW", "y"),
     ("KRW=X", "원/달러", "지수", "KRW", "y"),
+    ("JPYKRW=X", "원/엔", "지수", "KRW", "y"),
     ("QQQM", "QQQM", "1배 지수", "USD", "y"),
     ("SPYM", "SPYM", "1배 지수", "USD", "y"),
     ("MGK", "MGK", "1배 지수", "USD", "y"),
@@ -49,6 +50,11 @@ SYMBOLS = [
     ("O", "리얼티인컴 O", "배당", "USD", "y"),
     ("MO", "알트리아 MO", "배당", "USD", "y"),
     ("SGOV", "SGOV", "현금·채권", "USD", "y"),
+    # 금·비트코인 (11-13 Ben). IBIT은 국내 증권사 매수 불가, 비트코인 현물 가격 참고용
+    ("GLD", "금 (GLD)", "금·비트코인", "USD", "y"),
+    ("BITO", "비트코인 선물 1배", "금·비트코인", "USD", "y"),
+    ("BITU", "비트코인 2배", "금·비트코인", "USD", "y"),
+    ("IBIT", "비트코인 현물 (참고, 국내 매수 불가)", "금·비트코인", "USD", "y"),
     ("TLT", "TLT", "현금·채권", "USD", "y"),
     ("1489.T", "도쿄 1489", "기타", "JPY", "y"),
     ("MAGS", "MAGS", "빅테크", "USD", "y"),
@@ -74,7 +80,7 @@ SYMBOLS = [
 ]
 
 FRED = {
-    "hy": "BAMLH0A0HYM2", "t10y2y": "T10Y2Y", "dgs2": "DGS2", "fedu": "DFEDTARU",
+    "hy": "BAMLH0A0HYM2", "t10y2y": "T10Y2Y", "dgs2": "DGS2", "dgs10": "DGS10", "fedu": "DFEDTARU",
     "sahm": "SAHMREALTIME", "unrate": "UNRATE", "icsa": "ICSA",
     "walcl": "WALCL", "tga": "WTREGEN", "rrp": "RRPONTSYD", "sofr": "SOFR", "iorb": "IORB",
     "vix": "VIXCLS",
@@ -254,6 +260,8 @@ def summarize(sym, name, group, cur, rows):
         "touch": touch,
         "spark": [r2(x, 4) for x in c[-120:]],
         "spark_dates": [rows[-120:][0][0], rows[-1][0]],
+        "avg3y": r2(sum(c[-756:]) / len(c[-756:]), 4), "min3y": r2(min(c[-756:]), 4), "max3y": r2(max(c[-756:]), 4),
+        "pct3y": r2(sum(1 for x in c[-756:] if x <= last) / len(c[-756:]) * 100, 0),
     }
 
 
@@ -308,7 +316,7 @@ def macro_block(start):
     def last(k):
         return m[k][-1] if m[k] else (None, None)
 
-    for k in ("hy", "t10y2y", "dgs2", "fedu", "sahm", "unrate", "sofr", "iorb", "vix"):
+    for k in ("hy", "t10y2y", "dgs2", "dgs10", "fedu", "sahm", "unrate", "sofr", "iorb", "vix"):
         d, v = last(k)
         out[k] = {"v": v, "date": d, "spark": [x[1] for x in m[k][-260:]]}
     # HY 4주 변화
@@ -532,6 +540,19 @@ def main():
     }
     with open(os.path.join(DATA, "market.json"), "w", encoding="utf-8") as f:
         json.dump(market, f, ensure_ascii=False, separators=(",", ":"))
+
+    # 차트 팝업용 일봉 (최근 960거래일 종가(3년 + 200일선 계산분), 날짜는 일수 차이로 압축). 시세 탭에서 종목을 누를 때만 불러옴
+    charts = {}
+    for sym, rows in hist.items():
+        rr = rows[-960:]
+        if len(rr) < 2:
+            continue
+        d0 = datetime.strptime(rr[0][0], "%Y-%m-%d")
+        dd = [(datetime.strptime(r[0], "%Y-%m-%d") - d0).days for r in rr]
+        charts[sym] = {"d0": rr[0][0], "dd": [dd[0]] + [dd[i] - dd[i - 1] for i in range(1, len(dd))],
+                       "c": [float(f"{r[4]:.5g}") if r[4] < 1000 else round(r[4], 1) for r in rr]}
+    with open(os.path.join(DATA, "charts.json"), "w", encoding="utf-8") as f:
+        json.dump({"generated": market["generated"], "s": charts}, f, ensure_ascii=False, separators=(",", ":"))
 
     # 백테스트는 하루 1회면 충분 (미국 장 마감 후 실행분 또는 파일 없을 때)
     bt_path = os.path.join(DATA, "backtest.json")

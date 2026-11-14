@@ -54,14 +54,14 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if os.environ.get("ONLY_DIV") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if os.environ.get("ONLY_DIV") else []) + (["GC=F", "GLD"] if os.environ.get("ONLY_PARK") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
             print("yahoo fail", s, e, flush=True); y[s] = []
         time.sleep(0.4)
     f = {}
-    for k, sid in {"fx": "DEXKOUS", "ft_old": "DFEDTAR", "ft_new": "DFEDTARU", "dgs2": "DGS2", "sahm": "SAHMREALTIME",
+    for k, sid in {"fx": "DEXKOUS", "ft_old": "DFEDTAR", "ft_new": "DFEDTARU", "dgs2": "DGS2", "dgs10": "DGS10", "sahm": "SAHMREALTIME",
                    "icsa": "ICSA", "walcl": "WALCL", "tga": "WTREGEN", "rrp": "RRPONTSYD", "hy": "BAMLH0A0HYM2", "baa": "BAA10Y", "margin": "BOGZ1FL663067003Q"}.items():
         try:
             f[k] = B.fred(sid, "1990-01-01"); print("fred", sid, len(f[k]), flush=True)
@@ -97,6 +97,12 @@ def prep(y, f):
     for i in range(1, n):
         sg.append(sg[-1] * (1 + rf[i - 1] / 252))
     P["SGOV"] = sg
+    # 금: GLD(2004-11~) 수익률 우선, 그 전은 금 선물 GC=F, 그 전(2000-08 이전)은 첫 값으로 고정
+    gc = dict((r[0], r[4]) for r in y.get("GC=F", []) if r[4])
+    if gc:
+        gv = ff(list(gc.items()), dates); first = next(v for v in gv if v); gv = [v or first for v in gv]
+        gr = [0] + [gv[k] / gv[k - 1] - 1 for k in range(1, n)]
+        P["GOLD"] = splice(dates, gr, [(r[0], r[5]) for r in y.get("GLD", [])])
     # 상장 이후만 존재하는 배당·커버드콜 ETF (상장 전 None)
     for t in ("JEPI", "DIVO", "JEPQ"):
         mp = dict((r[0], r[5]) for r in y.get(t, []))
@@ -170,7 +176,7 @@ def prep(y, f):
     ft = sorted(f["ft_old"] + f["ft_new"])
     ft_d = ff(ft, dates)
     changes = [(ft[i][0], ft[i][1] - ft[i - 1][1]) for i in range(1, len(ft)) if abs(ft[i][1] - ft[i - 1][1]) > 1e-9]
-    dgs2 = ff(f["dgs2"], dates); sahm = ff(f["sahm"], dates)
+    dgs2 = ff(f["dgs2"], dates); sahm = ff(f["sahm"], dates); dgs10 = ff(f.get("dgs10") or [], dates)
     ic = f["icsa"]; ic4 = [(ic[i][0], sum(x[1] for x in ic[max(0, i - 3):i + 1]) / min(4, i + 1)) for i in range(len(ic))]
     ic4 = ff(ic4, dates)
     hy_full = f["hy"]
@@ -205,7 +211,7 @@ def prep(y, f):
         mh.append((f"{y_:04d}-{m_:02d}-01", hot))
     mhot = ff(mh, dates)
     return dict(mhot=mhot, dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
-                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
+                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, dgs10=dgs10, sahm=sahm, ic4=ic4,
                 hy=hy, hy_start=hy_start, baa=baa, nl=nl_d, proxy=D_PROXY)
 
 
@@ -263,7 +269,11 @@ def run(D, i0, end=None, cfg=None):
     cfg = cfg or {}
     P, fx_, dates = D["P"], D["fx"], D["dates"]
     end = end or len(dates) - 1
-    A = {k: Acct() for k in ("longterm", "ammo", "swing", "irp", "pension")}
+    A = {k: Acct() for k in ("longterm", "ammo", "swing", "irp", "pension", "gold")}
+    PC = cfg.get("park") == "C"; c_done = False
+    GOLD = cfg.get("gold", 0); LT_AMT = 200 - GOLD
+    BC = cfg.get("bigcut"); bc_on = False; bc_sold = {}; bc_i0 = None; bc_wait = False
+    big = [datetime.strptime(x[0], "%Y-%m-%d") for x in D["changes"] if x[1] <= -0.5]
     fx = fx_[i0]
     # 초기 잔고
     A["irp"].buy("SGOV", INIT["irp"] * 0.5644, P, i0, fx)
@@ -284,6 +294,8 @@ def run(D, i0, end=None, cfg=None):
     sw_last_oh = -10 ** 9
     last_month = None
     curve, prin_curve, log = [], [], []
+    ltf, ltc = [], []
+    sw_b = True; sw_ok = 0; sw_cnt = [0, 0]
     for i in range(i0, end + 1):
         d = dates[i]; fx = fx_[i]
         dd = D["dd"][i]; st = D["states"][i] or 2
@@ -291,6 +303,42 @@ def run(D, i0, end=None, cfg=None):
         mode, hy, L = macro(D, i)
         nolev = mode == "수비" or (hy is not None and hy >= 6)
         oh = overheat(D, i)
+        # 빅컷(0.5%p 이상 한 번에 인하) 후 45일 안전장치
+        if BC:
+            dt = datetime.strptime(d, "%Y-%m-%d"); inwin = any(0 <= (dt - b).days <= 45 for b in big)
+            if inwin and not bc_on:
+                bc_on = True; bc_i0 = i; log.append((d, "빅컷 안전장치 시작"))
+                if BC == "sell":   # 장투 주식을 20%까지 줄임 → SGOV
+                    lt_ = A["longterm"]; tv = lt_.val(P, i, fx); stk = {t: lt_.v(t, P, i, fx) for t in lt_.u if t != "SGOV" and lt_.u[t] > 1e-12}
+                    st_v = sum(stk.values()); cut = max(0, st_v - 0.2 * tv)
+                    for t, v in stk.items():
+                        got = lt_.sell(t, cut * v / st_v, P, i, fx); bc_sold[t] = bc_sold.get(t, 0) + got; lt_.buy("SGOV", got, P, i, fx)
+                    log.append((d, f"빅컷 매도 {round(cut / MAN)}만"))
+            if bc_on and BC in ("stage", "stage_ma", "stage_s5") and (i - bc_i0) in (0, 5, 10):   # 2주 3단계: 장투 주식 70% → 50% → 30% (레버리지부터)
+                tgt = {0: 0.7, 5: 0.5, 10: 0.3}[i - bc_i0]
+                lt_ = A["longterm"]; tv = lt_.val(P, i, fx)
+                stk = {t: lt_.v(t, P, i, fx) for t in lt_.u if t != "SGOV" and lt_.u[t] > 1e-12}
+                cut = max(0, sum(stk.values()) - tgt * tv)
+                for t in sorted(stk, key=lambda t: 0 if t in ("TQQQ", "QLD") else 1):
+                    if cut <= 0: break
+                    got = lt_.sell(t, min(cut, lt_.v(t, P, i, fx)), P, i, fx); cut -= got
+                    bc_sold[t] = bc_sold.get(t, 0) + got; lt_.buy("SGOV", got, P, i, fx)
+            if not inwin and bc_on:
+                bc_on = False
+                if bc_sold and BC in ("stage_ma", "stage_s5"):   # 날짜 대신 추세 회복을 기다림 (그사이 낙폭 사다리는 재개)
+                    bc_wait = True; log.append((d, "빅컷 복귀 대기(추세 조건)"))
+                elif bc_sold:   # 45일 뒤 판 만큼 다시 매수
+                    lt_ = A["longterm"]
+                    for t, v in bc_sold.items(): lt_.buy(t, lt_.sell("SGOV", v, P, i, fx), P, i, fx)
+                    bc_sold = {}
+                log.append((d, "빅컷 안전장치 종료"))
+        if bc_wait and not bc_on:
+            cq, mq = D["c"][i], D["ma200"][i]
+            ok = mq is not None and (cq > mq if BC == "stage_ma" else (D["states"][i] == 5 or cq > mq * 1.03))
+            if ok:
+                lt_ = A["longterm"]; avail = lt_.v("SGOV", P, i, fx); tot = sum(bc_sold.values()) or 1
+                for t, v in bc_sold.items(): lt_.buy(t, lt_.sell("SGOV", min(v, avail * v / tot), P, i, fx), P, i, fx)
+                bc_sold = {}; bc_wait = False; log.append((d, "빅컷 복귀(추세 회복)"))
         rsi = D["rsi"][i]; vix = D["vix"][i]
         c, m200, m60 = D["c"][i], D["ma200"][i], D["ma60"][i]
         aux = sum([rsi is not None and rsi <= 40, vix is not None and vix >= 20,
@@ -299,60 +347,89 @@ def run(D, i0, end=None, cfg=None):
         ym = d[:7]
         if i > i0 and int(d[8:]) >= 25 and ym != last_month:
             last_month = ym
-            add = sum(MONTHLY.values()); principal += add; flows.append((d, -add))
-            # 장투
-            row = next(r for r in MONTHLY_RULES if dd > r[0])
-            al = {"QQQ": row[1], "SPY": row[2], "QLD": row[3], "TQQQ": row[4]}
-            if cfg.get("div") and stage == 0:   # 평상 구간: 1배 일부를 배당 ETF로
-                b = cfg["div"]; al["QQQ"] -= b[0]; al["SPY"] -= b[1]; al["SCHD"] = b[0] + b[1]
-            divt = "SCHD"
-            if cfg.get("div_pool"):   # 그달 200일선 대비 가장 싼 배당 ETF
-                cands = [(D["v200"][t][i], t) for t in cfg["div_pool"] if D["v200"][t][i] is not None]
-                if cands: divt = min(cands)[1]
+            add = sum(MONTHLY.values()); principal += add; flows.append((d, -add)); ltf.append((d, -LT_AMT * MAN))
+            if GOLD: A["gold"].buy("GOLD", GOLD * MAN, P, i, fx)
+            if PC:   # 박종훈 원형: 장투+현금 몫을 SGOV(닻)/지수(돛)로, 레버리지 없음
+                new = (LT_AMT + MONTHLY["ammo"] / MAN) * MAN
+                sgf = 0.0 if dd <= -30 else (cfg["c_split"][1] if oh >= 2 else cfg["c_split"][0])
+                A["ammo"].buy("SGOV", new * sgf, P, i, fx)
+                A["longterm"].buy("QQQ", new * (1 - sgf) * 0.5, P, i, fx); A["longterm"].buy("SPY", new * (1 - sgf) * 0.5, P, i, fx)
+            else:
+                # 장투
+                row = next(r for r in MONTHLY_RULES if dd > r[0])
+                al = {"QQQ": row[1], "SPY": row[2], "QLD": row[3], "TQQQ": row[4]}
+                if cfg.get("div") and stage == 0:   # 평상 구간: 1배 일부를 배당 ETF로
+                    b = cfg["div"]; al["QQQ"] -= b[0]; al["SPY"] -= b[1]; al["SCHD"] = b[0] + b[1]
+                divt = "SCHD"
+                if cfg.get("div_pool"):   # 그달 200일선 대비 가장 싼 배당 ETF
+                    cands = [(D["v200"][t][i], t) for t in cfg["div_pool"] if D["v200"][t][i] is not None]
+                    if cands: divt = min(cands)[1]
+                if GOLD: al = {k: v * LT_AMT / 200 for k, v in al.items()}
+                useB = True
+                if cfg.get("switch") and stage == 0:   # B↔A 스위칭: 매달 적립일에만 판정(신규 적립금만 바뀌고 보유분 매매 없음)
+                    cs = D["c"][max(0, i - 19):i + 1]; mu = sum(cs) / len(cs); sd = (sum((x - mu) ** 2 for x in cs) / len(cs)) ** 0.5
+                    pb = (c_ := D["c"][i]) and ((c_ - (mu - 2 * sd)) / (4 * sd) * 100 if sd else 50)
+                    m2 = D["ma200"][i]; v2 = (c_ / m2 - 1) * 100 if m2 else 0; t10 = D["dgs10"][i]; rr = D["rsi"][i] or 50
+                    chart = [oh >= 1, rr >= 65, pb >= 80, v2 >= 8]; mac = [mode != "공격", t10 is not None and t10 >= 4.5]
+                    sv = cfg["switch"]
+                    if sv == "score": pts = sum(chart) + sum(mac)
+                    elif sv == "macro": pts = 2 * any(mac)
+                    elif sv == "chart": pts = 2 * any(chart)
+                    elif sv == "cheap": pts = 0 if (dd <= -5 and mode == "공격") else 2
+                    else: pts = 2
+                    if pts >= 2: sw_b = True; sw_ok = 0
+                    elif pts == 0:
+                        sw_ok += 1
+                        if sw_ok >= cfg.get("sw_hold", 2): sw_b = False
+                    useB = sw_b; sw_cnt[0 if useB else 1] += 1
+                if cfg.get("normal") and stage == 0 and useB:   # 평상: 장투 몫을 SGOV:주식 비율로 (과열 2개+면 두 번째 비율)
+                    sg = cfg["normal"][1] if oh >= 2 else cfg["normal"][0]; stk = LT_AMT * (1 - sg)
+                    al = {"SGOV": LT_AMT * sg, "QQQ": stk * 0.4, "SPY": stk * 0.3, "SCHD": stk * 0.3, "QLD": 0, "TQQQ": 0}
 
-            def mv(a, b, x):
-                x = min(al.get(a, 0), x)
-                al[a] = al.get(a, 0) - x; al[b] = al.get(b, 0) + x
-            if mode == "중립":
-                if stage == 0: mv("SPY", "SCHD", 30); mv("QLD", "SGOV", al["QLD"] / 2)
-                else:
-                    l = (al["QLD"] + al["TQQQ"]) / 2; t = al["TQQQ"]; mv("TQQQ", "QQQ", t); mv("QLD", "QQQ", max(0, l - t))
-            elif nolev:
-                if stage == 4:
-                    l = al["QLD"] + al["TQQQ"]; mv("TQQQ", "QQQ", al["TQQQ"]); mv("QLD", "QQQ", al["QLD"]); mv("QQQ", "SGOV", l / 2)
-                else:
-                    mv("QLD", "SGOV", al["QLD"]); mv("TQQQ", "SGOV", al["TQQQ"]); mv("QQQ", "SGOV", 20); mv("SPY", "SCHD", 30)
-            if oh >= 2 and cfg.get("div"):   # 과열: QLD 몫 절반은 배당, 절반은 SGOV / 3개+면 QQQM 20도 배당
-                q = al.get("QLD", 0); mv("QLD", "SCHD", q / 2); mv("QLD", "SGOV", q / 2)
-                if oh >= 3: mv("QQQ", "SCHD", 20)
-            elif oh >= 2: mv("QLD", "SGOV", al.get("QLD", 0))
-            if cfg.get("margin") and D["mhot"][i] and st in (3, 4):   # 빚투 극단 + 추세이탈 이하: 신규 레버리지 → QQQ
-                mv("TQQQ", "QQQ", al.get("TQQQ", 0)); mv("QLD", "QQQ", al.get("QLD", 0))
-            mcond = bool(D["mhot"][i]) and st in (3, 4)
-            if cfg.get("margin") == "swap":   # 조건 첫 진입 시 보유 레버리지도 QQQ로 1회 교체
-                if mcond and not mswap:
-                    ltA = A["longterm"]; got = ltA.sell("TQQQ", ltA.v("TQQQ", P, i, fx), P, i, fx) + ltA.sell("QLD", ltA.v("QLD", P, i, fx), P, i, fx)
-                    ltA.buy("QQQ", got, P, i, fx); mswap = True; log.append((d, f"빚투 경보: 장투 레버리지 {round(got / MAN)}만 → QQQ"))
-                elif not mcond:
-                    mswap = False
-            lt = A["longterm"]; ltv = lt.val(P, i, fx) / MAN
-            curlev = (lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)) / MAN
-            maxlev = max(0, 0.30 * (ltv + 200) - curlev); newlev = al.get("QLD", 0) + al.get("TQQQ", 0)
-            if newlev > maxlev + 0.5:
-                cut = newlev - maxlev; r = cut; tq = min(al.get("TQQQ", 0), r); al["TQQQ"] = al.get("TQQQ", 0) - tq; r -= tq
-                al["QLD"] = max(0, al.get("QLD", 0) - r); al["QQQ"] += cut
-            for t, man in al.items():
-                lt.buy(divt if t == "SCHD" else t, man * MAN, P, i, fx)
-            # 분기 30% 상한 정리
-            if d[5:7] in ("03", "06", "09", "12"):
-                ltv = lt.val(P, i, fx); lev = lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)
-                if ltv and lev > 0.30 * ltv:
-                    x = lev - 0.30 * ltv; got = lt.sell("TQQQ", x, P, i, fx); got += lt.sell("QLD", x - got, P, i, fx); lt.buy("QQQ", got, P, i, fx)
-            # 현금
-            af = cfg.get("ammo_frac", 1.0)
-            A["ammo"].buy("SGOV", MONTHLY["ammo"] * af, P, i, fx)
-            if af < 1:   # 현금 몫 축소분은 장투에서 1배 지수(QQQ 60·SPY 40)로 바로 매수
-                lt.buy("QQQ", MONTHLY["ammo"] * (1 - af) * 0.6, P, i, fx); lt.buy("SPY", MONTHLY["ammo"] * (1 - af) * 0.4, P, i, fx)
+                def mv(a, b, x):
+                    x = min(al.get(a, 0), x)
+                    al[a] = al.get(a, 0) - x; al[b] = al.get(b, 0) + x
+                if mode == "중립":
+                    if stage == 0: mv("SPY", "SCHD", 30); mv("QLD", "SGOV", al.get("QLD", 0) / 2)
+                    else:
+                        l = (al["QLD"] + al["TQQQ"]) / 2; t = al["TQQQ"]; mv("TQQQ", "QQQ", t); mv("QLD", "QQQ", max(0, l - t))
+                elif nolev:
+                    if stage == 4:
+                        l = al["QLD"] + al["TQQQ"]; mv("TQQQ", "QQQ", al["TQQQ"]); mv("QLD", "QQQ", al["QLD"]); mv("QQQ", "SGOV", l / 2)
+                    else:
+                        mv("QLD", "SGOV", al["QLD"]); mv("TQQQ", "SGOV", al["TQQQ"]); mv("QQQ", "SGOV", 20); mv("SPY", "SCHD", 30)
+                if oh >= 2 and cfg.get("div"):   # 과열: QLD 몫 절반은 배당, 절반은 SGOV / 3개+면 QQQM 20도 배당
+                    q = al.get("QLD", 0); mv("QLD", "SCHD", q / 2); mv("QLD", "SGOV", q / 2)
+                    if oh >= 3: mv("QQQ", "SCHD", 20)
+                elif oh >= 2: mv("QLD", "SGOV", al.get("QLD", 0))
+                if cfg.get("margin") and D["mhot"][i] and st in (3, 4):   # 빚투 극단 + 추세이탈 이하: 신규 레버리지 → QQQ
+                    mv("TQQQ", "QQQ", al.get("TQQQ", 0)); mv("QLD", "QQQ", al.get("QLD", 0))
+                mcond = bool(D["mhot"][i]) and st in (3, 4)
+                if cfg.get("margin") == "swap":   # 조건 첫 진입 시 보유 레버리지도 QQQ로 1회 교체
+                    if mcond and not mswap:
+                        ltA = A["longterm"]; got = ltA.sell("TQQQ", ltA.v("TQQQ", P, i, fx), P, i, fx) + ltA.sell("QLD", ltA.v("QLD", P, i, fx), P, i, fx)
+                        ltA.buy("QQQ", got, P, i, fx); mswap = True; log.append((d, f"빚투 경보: 장투 레버리지 {round(got / MAN)}만 → QQQ"))
+                    elif not mcond:
+                        mswap = False
+                lt = A["longterm"]; ltv = lt.val(P, i, fx) / MAN
+                curlev = (lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)) / MAN
+                maxlev = max(0, 0.30 * (ltv + LT_AMT) - curlev); newlev = al.get("QLD", 0) + al.get("TQQQ", 0)
+                if newlev > maxlev + 0.5:
+                    cut = newlev - maxlev; r = cut; tq = min(al.get("TQQQ", 0), r); al["TQQQ"] = al.get("TQQQ", 0) - tq; r -= tq
+                    al["QLD"] = max(0, al.get("QLD", 0) - r); al["QQQ"] += cut
+                if bc_on: al = {"SGOV": sum(al.values())}   # 빅컷 45일: 신규 장투 적립 전액 SGOV
+                for t, man in al.items():
+                    lt.buy(divt if t == "SCHD" else t, man * MAN, P, i, fx)
+                # 분기 30% 상한 정리
+                if d[5:7] in ("03", "06", "09", "12"):
+                    ltv = lt.val(P, i, fx); lev = lt.v("QLD", P, i, fx) + lt.v("TQQQ", P, i, fx)
+                    if ltv and lev > 0.30 * ltv:
+                        x = lev - 0.30 * ltv; got = lt.sell("TQQQ", x, P, i, fx); got += lt.sell("QLD", x - got, P, i, fx); lt.buy("QQQ", got, P, i, fx)
+                # 현금
+                af = cfg.get("ammo_frac", 1.0)
+                A["ammo"].buy("SGOV", MONTHLY["ammo"] * af, P, i, fx)
+                if af < 1:   # 현금 몫 축소분은 장투에서 1배 지수(QQQ 60·SPY 40)로 바로 매수
+                    lt.buy("QQQ", MONTHLY["ammo"] * (1 - af) * 0.6, P, i, fx); lt.buy("SPY", MONTHLY["ammo"] * (1 - af) * 0.4, P, i, fx)
             # 연금저축
             w = (65, 35) if stage >= 1 else (55, 45)
             A["pension"].buy("QQQ", MONTHLY["pension"] * w[0] / 100, P, i, fx)
@@ -367,7 +444,13 @@ def run(D, i0, end=None, cfg=None):
                 got = irp.sell("SPY", x * sv / risk, P, i, fx) + irp.sell("QQQ", x * qv / risk, P, i, fx); irp.buy("SGOV", got, P, i, fx)
         # ---------- 현금 계좌 차수 (일별) ----------
         am = A["ammo"]
-        for n, (lvl, rem, mix) in enumerate(AMMO_T, 1):
+        if PC:   # −30% 첫 도달: 닻(SGOV)의 75% → 나스닥·S&P500 반반. 전고점 −1% 이내 회복 시 재무장
+            if dd <= -30 and not c_done:
+                amt = am.sell("SGOV", am.v("SGOV", P, i, fx) * cfg.get("c_deploy", 0.75), P, i, fx)
+                A["longterm"].buy("QQQ", amt / 2, P, i, fx); A["longterm"].buy("SPY", amt / 2, P, i, fx)
+                c_done = True; log.append((d, f"닻 투입 {round(amt / MAN)}만"))
+            if dd > -1: c_done = False
+        for n, (lvl, rem, mix) in enumerate([] if (PC or bc_on) else AMMO_T, 1):
             if n in ammo_done: continue
             if dd <= lvl and aux >= 2:
                 amt = am.sell("SGOV", am.v("SGOV", P, i, fx) * rem / 100, P, i, fx)
@@ -381,12 +464,12 @@ def run(D, i0, end=None, cfg=None):
                 tot = 0
                 for t in inv:
                     v = am.v(t, P, i, fx); half = am.sell(t, v / 2, P, i, fx); am.buy("SGOV", half, P, i, fx)
-                    q = am.u[t]; am.u[t] = 0; A["longterm"].u[t] = A["longterm"].u.get(t, 0) + q; tot += v
+                    q = am.u[t]; am.u[t] = 0; A["longterm"].u[t] = A["longterm"].u.get(t, 0) + q; tot += v; ltf.append((d, -(v - half)))
                 log.append((d, f"현금 회복 정산 {round(tot / MAN)}만"))
             ammo_done.clear()
         # ---------- 장투 현금 풀 (SGOV) 낙폭 투입 ----------
         lt = A["longterm"]
-        for n, (lvl, rem, mix) in enumerate(LT_POOL_T, 1):
+        for n, (lvl, rem, mix) in enumerate([] if (PC or bc_on or cfg.get("no_ladder")) else LT_POOL_T, 1):
             if n in lt_done: continue
             if dd <= lvl and lt.u.get("SGOV", 0) > 0:
                 amt = lt.sell("SGOV", lt.v("SGOV", P, i, fx) * rem / 100, P, i, fx)
@@ -465,7 +548,8 @@ def run(D, i0, end=None, cfg=None):
             if frac == 1.0: sw_pos.pop("QLD", None)
         tot = sum(a.val(P, i, fx) for a in A.values())
         curve.append(tot); prin_curve.append(principal)
-    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end)
+        ltc.append((A["longterm"].val(P, i, fx), A["longterm"].v("SGOV", P, i, fx), stage))
+    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end, ltf=ltf, ltc=ltc, sw=sw_cnt)
 
 
 # ================= 통합 4종목 전략 (SPYM·QQQM·SGOV·QLD) =================
@@ -836,6 +920,108 @@ def margin_study(D):
     json.dump(out, open(os.path.join(B.DATA, "margin_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def park_study(D):
+    """박종훈식 닻·돛 배분 vs 현재 규칙 → data/park_bt.json"""
+    dates, P = D["dates"], D["P"]
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    V = [("A 현재 규칙", L),
+         ("A+금 현재 규칙 + 금 월17만(장투 183만)", {**L, "gold": 17}),
+         ("B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17", {**L, "gold": 17, "normal": (0.7, 0.7)}),
+         ("B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17", {**L, "gold": 17, "normal": (0.3, 0.7)}),
+         ("C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17", {"park": "C", "gold": 17, "c_split": (0.1, 0.3)}),
+         ("C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17", {"park": "C", "gold": 17, "c_split": (0.7, 0.7)}),
+         ("B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "new"}),
+         ("B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "sell"}),
+         ("B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "stage"}),
+         ("B+빅컷4 = 빅컷3 + 복귀는 45일 지난 뒤 QQQ 200일선 위일 때(그사이 사다리 재개)", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "stage_ma"}),
+         ("B+빅컷5 = 빅컷3 + 복귀는 45일 지난 뒤 200일선 +3% 회복(회복 상태)일 때", {**L, "gold": 17, "normal": (0.7, 0.7), "bigcut": "stage_s5"})]
+    starts = SCEN + [("2010~", "2010-01-04", "2010-01-31"), ("2016~", "2016-01-04", "2016-01-31")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "gold_ok": "GOLD" in P,
+           "notes": ["월 330만 동일(현금 85·연금저축 45·장투 200), 금 17만은 장투 몫에서 차감", "금은 GLD(2004-11~)→GC=F(2000-08~)→고정값, 원화 환산, 매도 없음",
+                     "IRP·연금저축·스윙은 모든 안에서 현재 규칙 동일", "세금·수수료·환전 스프레드 제외", "C안 과열 30%는 신규 적립금에만 적용(보유분 매도 없음)"],
+           "rows": []}
+    # 빅컷 사건 연구: 0.5%p 이상 인하일 이후 45일·90일 QQQ 최저 수익률, 당시 5년 고점 대비 낙폭
+    ev = []
+    for cd, dl in D["changes"]:
+        if dl > -0.5: continue
+        k0 = next((k for k, x in enumerate(dates) if x >= cd), None)
+        if k0 is None: continue
+        c0 = D["c"][k0]; t0 = datetime.strptime(dates[k0], "%Y-%m-%d")
+        w45 = [k for k in range(k0, len(dates)) if (datetime.strptime(dates[k], "%Y-%m-%d") - t0).days <= 45]
+        w90 = [k for k in range(k0, len(dates)) if (datetime.strptime(dates[k], "%Y-%m-%d") - t0).days <= 90]
+        w365 = [k for k in range(k0, len(dates)) if (datetime.strptime(dates[k], "%Y-%m-%d") - t0).days <= 365]
+        ev.append({"date": cd, "delta": round(dl, 2), "dd_at_cut": round(D["dd"][k0], 1),
+                   "min45": round((min(D["c"][k] for k in w45) / c0 - 1) * 100, 1), "ret45": round((D["c"][w45[-1]] / c0 - 1) * 100, 1),
+                   "min90": round((min(D["c"][k] for k in w90) / c0 - 1) * 100, 1), "ret365": round((D["c"][w365[-1]] / c0 - 1) * 100, 1)})
+    out["bigcut_events"] = ev; print("BIGCUT", json.dumps(ev, ensure_ascii=False), flush=True)
+    for name, a, b in starts:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [x[0] for x in SCEN] else ks[0]
+        bq = bench(D, i0, "QQQ"); bs = bench(D, i0, "SPY")
+        for vn, cfg in V:
+            if cfg.get("gold") and "GOLD" not in P: continue
+            r = run(D, i0, cfg=cfg); m = metrics(D, r, bq, bs); h = m["horizon"]
+            k = len(dates) - 1
+            row = {"scenario": name, "strategy": vn, "start": dates[i0], "irr": h["end"]["irr"], "worst": m["underwater"].get("worst_vs_principal_pct"),
+                   "uw_months": m["underwater"].get("months"), "mdd5": m["mdd_5y"][0], "mdd_all": m["mdd_all"][0],
+                   "y3": (h["3y"] or {}).get("ret_pct"), "y5": (h["5y"] or {}).get("ret_pct"), "y10": (h["10y"] or {}).get("ret_pct"),
+                   "end": h["end"]["ret_pct"], "end_man": h["end"]["value_man"], "qqq_end": h["end"]["qqq_all_ret_pct"], "spy_end": h["end"]["spy_all_ret_pct"],
+                   "qqq_irr": None, "acct_end_man": {an: round(ac.val(P, k, D["fx"][k]) / MAN) for an, ac in r["A"].items()},
+                   "sgov_share_end": round(sum(ac.v("SGOV", P, k, D["fx"][k]) for ac in r["A"].values()) / r["curve"][-1] * 100, 1),
+                   "events": [e for e in r["log"] if "닻" in e[1] or "현금" in e[1] or "빅컷" in e[1]][:16]}
+            out["rows"].append(row); print("PARK", json.dumps({x: row[x] for x in ("scenario", "strategy", "irr", "worst", "mdd5", "end", "sgov_share_end")}, ensure_ascii=False), flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "park_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def park_verify(D):
+    """A vs B 검증: 장투 계좌 단독 수익률·손실, 평상 비율, 상승장 구간 → data/park_verify.json"""
+    dates, P = D["dates"], D["P"]
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    Lnt = {k: v for k, v in L.items() if k not in ("trigger", "frac", "mix", "stop")}
+    V = [("A 현재 규칙(금17)", {**L, "gold": 17}),
+         ("B 평상 7:3", {**L, "gold": 17, "normal": (0.7, 0.7)}),
+         ("B' 평상 3:7·과열 7:3", {**L, "gold": 17, "normal": (0.3, 0.7)}),
+         ("S1 점수: 차트4+거시2 중 2개↑ B, 0개 2달 A", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "score"}),
+         ("S2 거시만: 거시 비정상 또는 10년물≥4.5 B", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "macro"}),
+         ("S3 차트만: 과열·RSI≥65·%B≥80·200일선+8% 중 1개 B", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "chart"}),
+         ("S4 싸면 A: −5~−10%이고 거시 정상일 때만 A", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "cheap"})]
+    win = [(n, a, b, None) for n, a, b in SCEN] + [("2010~", "2010-01-04", "2010-01-31", None), ("2016~", "2016-01-04", "2016-01-31", None),
+           ("상승장 2016-01~2018-09", "2016-01-04", "2016-01-31", "2018-09-28"), ("상승장 2019-01~2021-12", "2019-01-02", "2019-01-31", "2021-12-31"),
+           ("상승장 2023-01~2024-12", "2023-01-03", "2023-01-31", "2024-12-31"), ("상승장 2023-07~2025-06", "2023-07-03", "2023-07-31", "2025-06-30")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "notes": ["장투 계좌 단독: 월 183만 적립 + 현금 계좌 회복 정산 이관분을 납입으로 계산", "worst = 장투 평가액/누적 납입 최저", "normal_pct = 기간 중 QQQ 5년 고점 대비 −10% 위였던 날 비율",
+                     "qqq_dca = 같은 날 같은 금액 QQQ만 적립(현금 이관 제외)"], "rows": []}
+    for name, a, b, e in win:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [x[0] for x in SCEN] else ks[0]
+        end = next((k for k, d in enumerate(dates) if d >= e), len(dates) - 1) if e else len(dates) - 1
+        for vn, cfg in V:
+            if "GOLD" not in P: break
+            r = run(D, i0, end=end, cfg=cfg); ltf, ltc = r["ltf"], r["ltc"]
+            if not ltf: continue
+            fmap = {}
+            for d, v in ltf: fmap[d] = fmap.get(d, 0) - v
+            cum = 0; worst = 0; pk = 0; mdd = 0; sg = []; q = 0; qf = []
+            for k, (v, s, stg) in enumerate(ltc):
+                d = dates[i0 + k]; cum += fmap.get(d, 0)
+                if cum > 0: worst = min(worst, v / cum - 1)
+                if v > 0: sg.append(s / v)
+            norm = sum(1 for x in ltc if x[2] == 0) / len(ltc)
+            for d, v in ltf:
+                if v == -(200 - cfg["gold"]) * MAN:
+                    k = dates.index(d); q += -v / D["fx"][k] / P["QQQ"][k]; qf.append((d, v))
+            qv = q * P["QQQ"][end] * D["fx"][end]
+            row = {"window": name, "strategy": vn, "start": dates[i0], "end": dates[end], "lt_irr": xirr(ltf, dates[end], ltc[-1][0]),
+                   "lt_worst": round(worst * 100, 1), "lt_end_man": round(ltc[-1][0] / MAN), "lt_paid_man": round(-sum(v for _, v in ltf) / MAN),
+                   "normal_pct": round(norm * 100), "sgov_avg": round(sum(sg) / len(sg) * 100) if sg else None, "sgov_end": round(ltc[-1][1] / ltc[-1][0] * 100) if ltc[-1][0] else None,
+                   "total_irr": xirr(r["flows"], dates[end], r["curve"][-1]), "qqq_dca_irr": xirr(qf, dates[end], qv),
+                   "b_month_pct": round(r["sw"][0] / sum(r["sw"]) * 100) if sum(r["sw"]) else None, "total_worst": round(min(min(cv / pv - 1 for cv, pv in zip(r["curve"], r["prin"])), 0) * 100, 1)}
+            out["rows"].append(row); print("PV", json.dumps(row, ensure_ascii=False), flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "park_verify.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def main():
     y, f = load()
     D = prep(y, f)
@@ -844,6 +1030,10 @@ def main():
         margin_study(D); print("ok"); return
     if os.environ.get("ONLY_DIV"):
         div_study(D); print("ok"); return
+    if os.environ.get("ONLY_PARKV"):
+        park_verify(D); print("ok"); return
+    if os.environ.get("ONLY_PARK"):
+        park_study(D); print("ok"); return
     if os.environ.get("ONLY_DDWIN"):
         ddwin_study(D); print("ok"); return
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dd_window_days": DD_WIN, "data_start": dates[0],
