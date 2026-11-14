@@ -271,7 +271,7 @@ def summarize(sym, name, group, cur, rows):
     if len(c) >= 20:
         wv = c[-20:]; mu = sum(wv) / 20; sd = (sum((x - mu) ** 2 for x in wv) / 20) ** 0.5
         bb_lo = mu - 2 * sd; pctb = (last - bb_lo) / (4 * sd) * 100 if sd else 50
-    w40 = week40(rows) if sym in ("QQQ", "^NDX") else None
+    w40 = week40(rows)   # 11-14 Ben: 시세 목록에 종목별 40주선 골든/데드 표시
     return {
         "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40,
         "bb_lo": r2(bb_lo, 4), "bb_pctb": r2(pctb, 0), "bb_break": bool(bb_lo is not None and last < bb_lo),
