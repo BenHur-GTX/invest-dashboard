@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-14T01:06:09Z",
+ "generated": "2026-11-14T01:38:40Z",
  "bigtech": [
   "NVDA",
   "AAPL",
@@ -55,7 +55,7 @@
    "worst": -35.8,
    "paid": 400,
    "moved_to_lt": 1269,
-   "end": 439,
+   "end": 436,
    "by_mult": {
     "2": [
      24,
@@ -76,7 +76,7 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 20,
-   "irr": 13.06,
+   "irr": 13.05,
    "qqq_same_flows_irr": null,
    "mdd": -23.0,
    "trades": 324,
@@ -85,7 +85,7 @@
    "worst": -35.8,
    "paid": 2720,
    "moved_to_lt": 4761,
-   "end": 2984,
+   "end": 2966,
    "by_mult": {
     "2": [
      24,
@@ -106,7 +106,7 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 40,
-   "irr": 12.51,
+   "irr": 12.5,
    "qqq_same_flows_irr": null,
    "mdd": -23.0,
    "trades": 324,
@@ -115,7 +115,7 @@
    "worst": -35.8,
    "paid": 5040,
    "moved_to_lt": 8253,
-   "end": 5529,
+   "end": 5497,
    "by_mult": {
     "2": [
      24,
@@ -136,7 +136,7 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 0,
-   "irr": 9.78,
+   "irr": 9.77,
    "qqq_same_flows_irr": null,
    "mdd": -49.6,
    "trades": 291,
@@ -145,7 +145,7 @@
    "worst": -39.8,
    "paid": 400,
    "moved_to_lt": 962,
-   "end": 472,
+   "end": 468,
    "by_mult": {
     "2": [
      21,
@@ -166,8 +166,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 20,
-   "irr": 8.81,
-   "qqq_same_flows_irr": 11.36,
+   "irr": 8.78,
+   "qqq_same_flows_irr": 11.32,
    "mdd": -33.4,
    "trades": 291,
    "win": 57,
@@ -175,7 +175,7 @@
    "worst": -39.8,
    "paid": 2720,
    "moved_to_lt": 4119,
-   "end": 3207,
+   "end": 3177,
    "by_mult": {
     "2": [
      21,
@@ -196,8 +196,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 40,
-   "irr": 8.66,
-   "qqq_same_flows_irr": 12.6,
+   "irr": 8.64,
+   "qqq_same_flows_irr": 12.56,
    "mdd": -31.7,
    "trades": 291,
    "win": 57,
@@ -205,7 +205,7 @@
    "worst": -39.8,
    "paid": 5040,
    "moved_to_lt": 7274,
-   "end": 5941,
+   "end": 5886,
    "by_mult": {
     "2": [
      21,
@@ -226,8 +226,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 0,
-   "irr": 6.01,
-   "qqq_same_flows_irr": 4.53,
+   "irr": 5.99,
+   "qqq_same_flows_irr": 4.52,
    "mdd": -58.4,
    "trades": 238,
    "win": 55,
@@ -235,7 +235,7 @@
    "worst": -42.8,
    "paid": 400,
    "moved_to_lt": 733,
-   "end": 505,
+   "end": 498,
    "by_mult": {
     "3": [
      47,
@@ -256,8 +256,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 20,
-   "irr": 7.56,
-   "qqq_same_flows_irr": 12.64,
+   "irr": 7.53,
+   "qqq_same_flows_irr": 12.59,
    "mdd": -46.5,
    "trades": 238,
    "win": 55,
@@ -265,7 +265,7 @@
    "worst": -42.8,
    "paid": 2720,
    "moved_to_lt": 3950,
-   "end": 3427,
+   "end": 3379,
    "by_mult": {
     "3": [
      47,
@@ -286,8 +286,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 40,
-   "irr": 7.81,
-   "qqq_same_flows_irr": 13.38,
+   "irr": 7.77,
+   "qqq_same_flows_irr": 13.33,
    "mdd": -45.3,
    "trades": 238,
    "win": 55,
@@ -295,7 +295,7 @@
    "worst": -42.8,
    "paid": 5040,
    "moved_to_lt": 7159,
-   "end": 6348,
+   "end": 6260,
    "by_mult": {
     "3": [
      47,
@@ -316,16 +316,16 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 0,
-   "irr": 15.16,
+   "irr": 15.15,
    "qqq_same_flows_irr": null,
    "mdd": -36.1,
-   "trades": 265,
+   "trades": 266,
    "win": 65,
    "avg_hold": 5.6,
    "worst": -35.8,
    "paid": 400,
    "moved_to_lt": 1176,
-   "end": 433,
+   "end": 430,
    "by_mult": {
     "2": [
      22,
@@ -336,7 +336,7 @@
      4.6
     ],
     "1": [
-     194,
+     195,
      3.5
     ]
    }
@@ -346,16 +346,16 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 20,
-   "irr": 11.99,
+   "irr": 11.98,
    "qqq_same_flows_irr": null,
    "mdd": -23.0,
-   "trades": 265,
+   "trades": 266,
    "win": 65,
    "avg_hold": 5.6,
    "worst": -35.8,
    "paid": 2360,
    "moved_to_lt": 3927,
-   "end": 2553,
+   "end": 2537,
    "by_mult": {
     "2": [
      22,
@@ -366,7 +366,7 @@
      4.6
     ],
     "1": [
-     194,
+     195,
      3.5
     ]
    }
@@ -376,16 +376,16 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 40,
-   "irr": 11.37,
+   "irr": 11.36,
    "qqq_same_flows_irr": null,
    "mdd": -23.0,
-   "trades": 265,
+   "trades": 266,
    "win": 65,
    "avg_hold": 5.6,
    "worst": -35.8,
    "paid": 4320,
    "moved_to_lt": 6677,
-   "end": 4672,
+   "end": 4643,
    "by_mult": {
     "2": [
      22,
@@ -396,7 +396,7 @@
      4.6
     ],
     "1": [
-     194,
+     195,
      3.5
     ]
    }
@@ -406,7 +406,7 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 0,
-   "irr": 10.36,
+   "irr": 10.35,
    "qqq_same_flows_irr": null,
    "mdd": -41.0,
    "trades": 241,
@@ -415,7 +415,7 @@
    "worst": -39.8,
    "paid": 400,
    "moved_to_lt": 967,
-   "end": 469,
+   "end": 465,
    "by_mult": {
     "2": [
      21,
@@ -436,8 +436,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 20,
-   "irr": 8.88,
-   "qqq_same_flows_irr": 9.51,
+   "irr": 8.86,
+   "qqq_same_flows_irr": 9.48,
    "mdd": -27.8,
    "trades": 241,
    "win": 58,
@@ -445,7 +445,7 @@
    "worst": -39.8,
    "paid": 2360,
    "moved_to_lt": 3567,
-   "end": 2760,
+   "end": 2740,
    "by_mult": {
     "2": [
      21,
@@ -466,8 +466,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 40,
-   "irr": 8.64,
-   "qqq_same_flows_irr": 11.56,
+   "irr": 8.62,
+   "qqq_same_flows_irr": 11.52,
    "mdd": -26.9,
    "trades": 241,
    "win": 58,
@@ -475,7 +475,7 @@
    "worst": -39.8,
    "paid": 4320,
    "moved_to_lt": 6168,
-   "end": 5051,
+   "end": 5014,
    "by_mult": {
     "2": [
      21,
@@ -496,7 +496,7 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 0,
-   "irr": 6.26,
+   "irr": 6.24,
    "qqq_same_flows_irr": null,
    "mdd": -56.6,
    "trades": 195,
@@ -505,7 +505,7 @@
    "worst": -42.8,
    "paid": 400,
    "moved_to_lt": 762,
-   "end": 496,
+   "end": 493,
    "by_mult": {
     "3": [
      35,
@@ -526,8 +526,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 20,
-   "irr": 7.63,
-   "qqq_same_flows_irr": 12.23,
+   "irr": 7.61,
+   "qqq_same_flows_irr": 12.18,
    "mdd": -45.0,
    "trades": 195,
    "win": 56,
@@ -535,7 +535,7 @@
    "worst": -42.8,
    "paid": 2360,
    "moved_to_lt": 3577,
-   "end": 2920,
+   "end": 2899,
    "by_mult": {
     "3": [
      35,
@@ -556,8 +556,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 40,
-   "irr": 7.87,
-   "qqq_same_flows_irr": 13.06,
+   "irr": 7.85,
+   "qqq_same_flows_irr": 13.01,
    "mdd": -44.6,
    "trades": 195,
    "win": 56,
@@ -565,7 +565,7 @@
    "worst": -42.8,
    "paid": 4320,
    "moved_to_lt": 6385,
-   "end": 5344,
+   "end": 5305,
    "by_mult": {
     "3": [
      35,
@@ -625,7 +625,7 @@
    "worst": -30.7,
    "paid": 2000,
    "moved_to_lt": 2706,
-   "end": 2088,
+   "end": 2089,
    "by_mult": {
     "2": [
      19,
@@ -707,7 +707,7 @@
    "exit": "mid",
    "monthly": 20,
    "irr": 7.53,
-   "qqq_same_flows_irr": 7.99,
+   "qqq_same_flows_irr": 7.95,
    "mdd": -34.7,
    "trades": 196,
    "win": 57,
@@ -715,7 +715,7 @@
    "worst": -39.7,
    "paid": 2000,
    "moved_to_lt": 2376,
-   "end": 2136,
+   "end": 2137,
    "by_mult": {
     "2": [
      17,
@@ -737,7 +737,7 @@
    "exit": "mid",
    "monthly": 40,
    "irr": 7.04,
-   "qqq_same_flows_irr": 11.01,
+   "qqq_same_flows_irr": 10.96,
    "mdd": -33.8,
    "trades": 196,
    "win": 57,
@@ -775,7 +775,7 @@
    "worst": -46.6,
    "paid": 400,
    "moved_to_lt": 681,
-   "end": 439,
+   "end": 440,
    "by_mult": {
     "3": [
      30,
@@ -797,7 +797,7 @@
    "exit": "wide",
    "monthly": 20,
    "irr": 6.51,
-   "qqq_same_flows_irr": 11.88,
+   "qqq_same_flows_irr": 11.84,
    "mdd": -44.9,
    "trades": 165,
    "win": 55,
@@ -805,7 +805,7 @@
    "worst": -46.6,
    "paid": 2000,
    "moved_to_lt": 2607,
-   "end": 2194,
+   "end": 2195,
    "by_mult": {
     "3": [
      30,
@@ -827,7 +827,7 @@
    "exit": "wide",
    "monthly": 40,
    "irr": 6.61,
-   "qqq_same_flows_irr": 12.79,
+   "qqq_same_flows_irr": 12.74,
    "mdd": -44.2,
    "trades": 165,
    "win": 55,
@@ -835,7 +835,7 @@
    "worst": -46.6,
    "paid": 3600,
    "moved_to_lt": 4525,
-   "end": 3949,
+   "end": 3950,
    "by_mult": {
     "3": [
      30,
@@ -856,8 +856,8 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 0,
-   "irr": 9.43,
-   "qqq_same_flows_irr": 17.97,
+   "irr": 9.41,
+   "qqq_same_flows_irr": 17.9,
    "mdd": -19.2,
    "trades": 152,
    "win": 70,
@@ -865,7 +865,7 @@
    "worst": -23.2,
    "paid": 400,
    "moved_to_lt": 623,
-   "end": 439,
+   "end": 436,
    "by_mult": {
     "1": [
      128,
@@ -886,8 +886,8 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 20,
-   "irr": 9.55,
-   "qqq_same_flows_irr": 18.51,
+   "irr": 9.52,
+   "qqq_same_flows_irr": 18.43,
    "mdd": -13.1,
    "trades": 152,
    "win": 70,
@@ -895,7 +895,7 @@
    "worst": -23.2,
    "paid": 1740,
    "moved_to_lt": 1733,
-   "end": 1908,
+   "end": 1897,
    "by_mult": {
     "1": [
      128,
@@ -916,8 +916,8 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 40,
-   "irr": 9.59,
-   "qqq_same_flows_irr": 18.69,
+   "irr": 9.55,
+   "qqq_same_flows_irr": 18.6,
    "mdd": -12.6,
    "trades": 152,
    "win": 70,
@@ -925,7 +925,7 @@
    "worst": -23.2,
    "paid": 3080,
    "moved_to_lt": 2843,
-   "end": 3378,
+   "end": 3358,
    "by_mult": {
     "1": [
      128,
@@ -946,8 +946,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 0,
-   "irr": 8.61,
-   "qqq_same_flows_irr": 18.1,
+   "irr": 8.58,
+   "qqq_same_flows_irr": 18.03,
    "mdd": -20.1,
    "trades": 140,
    "win": 66,
@@ -955,7 +955,7 @@
    "worst": -23.2,
    "paid": 400,
    "moved_to_lt": 632,
-   "end": 472,
+   "end": 468,
    "by_mult": {
     "1": [
      117,
@@ -976,8 +976,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 20,
-   "irr": 10.0,
-   "qqq_same_flows_irr": 18.55,
+   "irr": 9.96,
+   "qqq_same_flows_irr": 18.47,
    "mdd": -13.8,
    "trades": 140,
    "win": 66,
@@ -985,7 +985,7 @@
    "worst": -23.2,
    "paid": 1740,
    "moved_to_lt": 1930,
-   "end": 2050,
+   "end": 2031,
    "by_mult": {
     "1": [
      117,
@@ -1006,8 +1006,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 40,
-   "irr": 10.38,
-   "qqq_same_flows_irr": 18.71,
+   "irr": 10.33,
+   "qqq_same_flows_irr": 18.63,
    "mdd": -13.5,
    "trades": 140,
    "win": 66,
@@ -1015,7 +1015,7 @@
    "worst": -23.2,
    "paid": 3080,
    "moved_to_lt": 3229,
-   "end": 3628,
+   "end": 3594,
    "by_mult": {
     "1": [
      117,
@@ -1036,8 +1036,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 0,
-   "irr": 10.23,
-   "qqq_same_flows_irr": 18.08,
+   "irr": 10.2,
+   "qqq_same_flows_irr": 18.02,
    "mdd": -28.4,
    "trades": 117,
    "win": 62,
@@ -1045,7 +1045,7 @@
    "worst": -30.6,
    "paid": 400,
    "moved_to_lt": 741,
-   "end": 505,
+   "end": 498,
    "by_mult": {
     "1": [
      99,
@@ -1066,8 +1066,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 20,
-   "irr": 11.8,
-   "qqq_same_flows_irr": 18.55,
+   "irr": 11.74,
+   "qqq_same_flows_irr": 18.47,
    "mdd": -25.7,
    "trades": 117,
    "win": 62,
@@ -1075,7 +1075,7 @@
    "worst": -30.6,
    "paid": 1740,
    "moved_to_lt": 2191,
-   "end": 2189,
+   "end": 2159,
    "by_mult": {
     "1": [
      99,
@@ -1096,8 +1096,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 40,
-   "irr": 12.26,
-   "qqq_same_flows_irr": 18.72,
+   "irr": 12.19,
+   "qqq_same_flows_irr": 18.64,
    "mdd": -25.2,
    "trades": 117,
    "win": 62,
@@ -1105,7 +1105,7 @@
    "worst": -30.6,
    "paid": 3080,
    "moved_to_lt": 3641,
-   "end": 3873,
+   "end": 3820,
    "by_mult": {
     "1": [
      99,
@@ -1126,20 +1126,20 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 0,
-   "irr": 7.68,
-   "qqq_same_flows_irr": 18.06,
+   "irr": 7.66,
+   "qqq_same_flows_irr": 17.99,
    "mdd": -21.5,
-   "trades": 112,
+   "trades": 113,
    "win": 69,
    "avg_hold": 6.4,
    "worst": -22.5,
    "paid": 400,
    "moved_to_lt": 535,
-   "end": 433,
+   "end": 430,
    "by_mult": {
     "1": [
-     101,
-     4.2
+     102,
+     4.3
     ],
     "3": [
      8,
@@ -1156,20 +1156,20 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 20,
-   "irr": 8.26,
-   "qqq_same_flows_irr": 18.46,
+   "irr": 8.23,
+   "qqq_same_flows_irr": 18.37,
    "mdd": -17.1,
-   "trades": 112,
+   "trades": 113,
    "win": 69,
    "avg_hold": 6.4,
    "worst": -22.5,
    "paid": 1520,
    "moved_to_lt": 1414,
-   "end": 1643,
+   "end": 1633,
    "by_mult": {
     "1": [
-     101,
-     4.2
+     102,
+     4.3
     ],
     "3": [
      8,
@@ -1186,20 +1186,20 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 40,
-   "irr": 8.43,
-   "qqq_same_flows_irr": 18.61,
+   "irr": 8.39,
+   "qqq_same_flows_irr": 18.52,
    "mdd": -16.1,
-   "trades": 112,
+   "trades": 113,
    "win": 69,
    "avg_hold": 6.4,
    "worst": -22.5,
    "paid": 2640,
    "moved_to_lt": 2293,
-   "end": 2854,
+   "end": 2836,
    "by_mult": {
     "1": [
-     101,
-     4.2
+     102,
+     4.3
     ],
     "3": [
      8,
@@ -1216,8 +1216,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 0,
-   "irr": 7.06,
-   "qqq_same_flows_irr": 18.21,
+   "irr": 7.04,
+   "qqq_same_flows_irr": 18.13,
    "mdd": -21.5,
    "trades": 105,
    "win": 67,
@@ -1225,7 +1225,7 @@
    "worst": -22.5,
    "paid": 400,
    "moved_to_lt": 540,
-   "end": 469,
+   "end": 465,
    "by_mult": {
     "1": [
      94,
@@ -1246,8 +1246,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 20,
-   "irr": 8.72,
-   "qqq_same_flows_irr": 18.54,
+   "irr": 8.69,
+   "qqq_same_flows_irr": 18.46,
    "mdd": -16.5,
    "trades": 105,
    "win": 67,
@@ -1255,7 +1255,7 @@
    "worst": -22.5,
    "paid": 1520,
    "moved_to_lt": 1581,
-   "end": 1775,
+   "end": 1762,
    "by_mult": {
     "1": [
      94,
@@ -1276,8 +1276,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 40,
-   "irr": 9.23,
-   "qqq_same_flows_irr": 18.68,
+   "irr": 9.19,
+   "qqq_same_flows_irr": 18.59,
    "mdd": -15.6,
    "trades": 105,
    "win": 67,
@@ -1285,7 +1285,7 @@
    "worst": -22.5,
    "paid": 2640,
    "moved_to_lt": 2623,
-   "end": 3082,
+   "end": 3059,
    "by_mult": {
     "1": [
      94,
@@ -1306,8 +1306,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 0,
-   "irr": 8.74,
-   "qqq_same_flows_irr": 18.15,
+   "irr": 8.72,
+   "qqq_same_flows_irr": 18.08,
    "mdd": -27.4,
    "trades": 89,
    "win": 65,
@@ -1315,7 +1315,7 @@
    "worst": -27.4,
    "paid": 400,
    "moved_to_lt": 680,
-   "end": 496,
+   "end": 493,
    "by_mult": {
     "1": [
      80,
@@ -1336,8 +1336,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 20,
-   "irr": 10.67,
-   "qqq_same_flows_irr": 18.49,
+   "irr": 10.64,
+   "qqq_same_flows_irr": 18.42,
    "mdd": -22.6,
    "trades": 89,
    "win": 65,
@@ -1345,7 +1345,7 @@
    "worst": -27.4,
    "paid": 1520,
    "moved_to_lt": 1920,
-   "end": 1878,
+   "end": 1864,
    "by_mult": {
     "1": [
      80,
@@ -1366,8 +1366,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 40,
-   "irr": 11.29,
-   "qqq_same_flows_irr": 18.64,
+   "irr": 11.25,
+   "qqq_same_flows_irr": 18.56,
    "mdd": -22.0,
    "trades": 89,
    "win": 65,
@@ -1375,7 +1375,7 @@
    "worst": -27.4,
    "paid": 2640,
    "moved_to_lt": 3160,
-   "end": 3259,
+   "end": 3235,
    "by_mult": {
     "1": [
      80,
@@ -1397,7 +1397,7 @@
    "exit": "fast",
    "monthly": 0,
    "irr": 4.71,
-   "qqq_same_flows_irr": 18.2,
+   "qqq_same_flows_irr": 18.12,
    "mdd": -13.7,
    "trades": 77,
    "win": 64,
@@ -1427,7 +1427,7 @@
    "exit": "fast",
    "monthly": 20,
    "irr": 5.14,
-   "qqq_same_flows_irr": 18.52,
+   "qqq_same_flows_irr": 18.43,
    "mdd": -11.1,
    "trades": 77,
    "win": 64,
@@ -1457,7 +1457,7 @@
    "exit": "fast",
    "monthly": 40,
    "irr": 5.29,
-   "qqq_same_flows_irr": 18.66,
+   "qqq_same_flows_irr": 18.57,
    "mdd": -10.3,
    "trades": 77,
    "win": 64,
@@ -1465,7 +1465,7 @@
    "worst": -22.5,
    "paid": 1960,
    "moved_to_lt": 1102,
-   "end": 2045,
+   "end": 2046,
    "by_mult": {
     "1": [
      71,
@@ -1487,7 +1487,7 @@
    "exit": "mid",
    "monthly": 0,
    "irr": 4.28,
-   "qqq_same_flows_irr": 18.27,
+   "qqq_same_flows_irr": 18.19,
    "mdd": -17.2,
    "trades": 73,
    "win": 62,
@@ -1517,7 +1517,7 @@
    "exit": "mid",
    "monthly": 20,
    "irr": 5.26,
-   "qqq_same_flows_irr": 18.54,
+   "qqq_same_flows_irr": 18.45,
    "mdd": -15.3,
    "trades": 73,
    "win": 62,
@@ -1547,7 +1547,7 @@
    "exit": "mid",
    "monthly": 40,
    "irr": 5.62,
-   "qqq_same_flows_irr": 18.67,
+   "qqq_same_flows_irr": 18.58,
    "mdd": -14.8,
    "trades": 73,
    "win": 62,
@@ -1577,7 +1577,7 @@
    "exit": "wide",
    "monthly": 0,
    "irr": 6.57,
-   "qqq_same_flows_irr": 18.2,
+   "qqq_same_flows_irr": 18.12,
    "mdd": -24.2,
    "trades": 62,
    "win": 65,
@@ -1585,7 +1585,7 @@
    "worst": -28.2,
    "paid": 400,
    "moved_to_lt": 502,
-   "end": 439,
+   "end": 440,
    "by_mult": {
     "1": [
      57,
@@ -1607,7 +1607,7 @@
    "exit": "wide",
    "monthly": 20,
    "irr": 7.7,
-   "qqq_same_flows_irr": 18.48,
+   "qqq_same_flows_irr": 18.4,
    "mdd": -21.5,
    "trades": 62,
    "win": 65,
@@ -1615,7 +1615,7 @@
    "worst": -28.2,
    "paid": 1180,
    "moved_to_lt": 1135,
-   "end": 1293,
+   "end": 1294,
    "by_mult": {
     "1": [
      57,
@@ -1637,7 +1637,7 @@
    "exit": "wide",
    "monthly": 40,
    "irr": 8.13,
-   "qqq_same_flows_irr": 18.62,
+   "qqq_same_flows_irr": 18.53,
    "mdd": -20.7,
    "trades": 62,
    "win": 65,
@@ -1645,7 +1645,7 @@
    "worst": -28.2,
    "paid": 1960,
    "moved_to_lt": 1768,
-   "end": 2147,
+   "end": 2148,
    "by_mult": {
     "1": [
      57,
@@ -1666,8 +1666,8 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 0,
-   "irr": 9.81,
-   "qqq_same_flows_irr": 18.98,
+   "irr": 9.77,
+   "qqq_same_flows_irr": 18.87,
    "mdd": -19.2,
    "trades": 107,
    "win": 68,
@@ -1675,7 +1675,7 @@
    "worst": -23.2,
    "paid": 400,
    "moved_to_lt": 420,
-   "end": 439,
+   "end": 436,
    "by_mult": {
     "3": [
      13,
@@ -1696,8 +1696,8 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 20,
-   "irr": 10.61,
-   "qqq_same_flows_irr": 19.42,
+   "irr": 10.56,
+   "qqq_same_flows_irr": 19.29,
    "mdd": -11.5,
    "trades": 107,
    "win": 68,
@@ -1705,7 +1705,7 @@
    "worst": -23.2,
    "paid": 1220,
    "moved_to_lt": 868,
-   "end": 1338,
+   "end": 1330,
    "by_mult": {
     "3": [
      13,
@@ -1726,8 +1726,8 @@
    "dd": "A",
    "exit": "fast",
    "monthly": 40,
-   "irr": 10.92,
-   "qqq_same_flows_irr": 19.62,
+   "irr": 10.86,
+   "qqq_same_flows_irr": 19.47,
    "mdd": -10.5,
    "trades": 107,
    "win": 68,
@@ -1735,7 +1735,7 @@
    "worst": -23.2,
    "paid": 2040,
    "moved_to_lt": 1316,
-   "end": 2236,
+   "end": 2224,
    "by_mult": {
     "3": [
      13,
@@ -1756,8 +1756,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 0,
-   "irr": 11.42,
-   "qqq_same_flows_irr": 19.02,
+   "irr": 11.37,
+   "qqq_same_flows_irr": 18.92,
    "mdd": -20.1,
    "trades": 97,
    "win": 67,
@@ -1765,7 +1765,7 @@
    "worst": -23.2,
    "paid": 400,
    "moved_to_lt": 493,
-   "end": 472,
+   "end": 468,
    "by_mult": {
     "3": [
      12,
@@ -1786,8 +1786,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 20,
-   "irr": 12.66,
-   "qqq_same_flows_irr": 19.5,
+   "irr": 12.58,
+   "qqq_same_flows_irr": 19.37,
    "mdd": -13.4,
    "trades": 97,
    "win": 67,
@@ -1795,7 +1795,7 @@
    "worst": -23.2,
    "paid": 1220,
    "moved_to_lt": 1033,
-   "end": 1436,
+   "end": 1423,
    "by_mult": {
     "3": [
      12,
@@ -1816,8 +1816,8 @@
    "dd": "A",
    "exit": "mid",
    "monthly": 40,
-   "irr": 13.14,
-   "qqq_same_flows_irr": 19.71,
+   "irr": 13.05,
+   "qqq_same_flows_irr": 19.58,
    "mdd": -13.3,
    "trades": 97,
    "win": 67,
@@ -1825,7 +1825,7 @@
    "worst": -23.2,
    "paid": 2040,
    "moved_to_lt": 1573,
-   "end": 2400,
+   "end": 2378,
    "by_mult": {
     "3": [
      12,
@@ -1846,8 +1846,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 0,
-   "irr": 12.36,
-   "qqq_same_flows_irr": 19.05,
+   "irr": 12.28,
+   "qqq_same_flows_irr": 18.95,
    "mdd": -28.4,
    "trades": 77,
    "win": 61,
@@ -1855,7 +1855,7 @@
    "worst": -27.4,
    "paid": 400,
    "moved_to_lt": 521,
-   "end": 505,
+   "end": 498,
    "by_mult": {
     "3": [
      8,
@@ -1876,8 +1876,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 20,
-   "irr": 13.49,
-   "qqq_same_flows_irr": 19.57,
+   "irr": 13.37,
+   "qqq_same_flows_irr": 19.45,
    "mdd": -24.0,
    "trades": 77,
    "win": 61,
@@ -1885,7 +1885,7 @@
    "worst": -27.4,
    "paid": 1220,
    "moved_to_lt": 1069,
-   "end": 1533,
+   "end": 1511,
    "by_mult": {
     "3": [
      8,
@@ -1906,8 +1906,8 @@
    "dd": "A",
    "exit": "wide",
    "monthly": 40,
-   "irr": 13.92,
-   "qqq_same_flows_irr": 19.8,
+   "irr": 13.78,
+   "qqq_same_flows_irr": 19.66,
    "mdd": -22.5,
    "trades": 77,
    "win": 61,
@@ -1915,7 +1915,7 @@
    "worst": -27.4,
    "paid": 2040,
    "moved_to_lt": 1616,
-   "end": 2560,
+   "end": 2525,
    "by_mult": {
     "3": [
      8,
@@ -1936,23 +1936,23 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 0,
-   "irr": 8.61,
-   "qqq_same_flows_irr": 18.91,
+   "irr": 8.57,
+   "qqq_same_flows_irr": 18.8,
    "mdd": -21.5,
-   "trades": 83,
+   "trades": 84,
    "win": 65,
    "avg_hold": 6.1,
    "worst": -22.5,
    "paid": 400,
    "moved_to_lt": 379,
-   "end": 433,
+   "end": 430,
    "by_mult": {
     "3": [
      5,
      4.6
     ],
     "1": [
-     75,
+     76,
      3.6
     ],
     "2": [
@@ -1966,23 +1966,23 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 20,
-   "irr": 9.57,
-   "qqq_same_flows_irr": 19.35,
+   "irr": 9.51,
+   "qqq_same_flows_irr": 19.22,
    "mdd": -14.7,
-   "trades": 83,
+   "trades": 84,
    "win": 65,
    "avg_hold": 6.1,
    "worst": -22.5,
    "paid": 1080,
    "moved_to_lt": 749,
-   "end": 1167,
+   "end": 1160,
    "by_mult": {
     "3": [
      5,
      4.6
     ],
     "1": [
-     75,
+     76,
      3.6
     ],
     "2": [
@@ -1996,23 +1996,23 @@
    "dd": "B",
    "exit": "fast",
    "monthly": 40,
-   "irr": 9.97,
-   "qqq_same_flows_irr": 19.57,
+   "irr": 9.9,
+   "qqq_same_flows_irr": 19.43,
    "mdd": -14.3,
-   "trades": 83,
+   "trades": 84,
    "win": 65,
    "avg_hold": 6.1,
    "worst": -22.5,
    "paid": 1760,
    "moved_to_lt": 1119,
-   "end": 1901,
+   "end": 1889,
    "by_mult": {
     "3": [
      5,
      4.6
     ],
     "1": [
-     75,
+     76,
      3.6
     ],
     "2": [
@@ -2026,8 +2026,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 0,
-   "irr": 10.7,
-   "qqq_same_flows_irr": 19.01,
+   "irr": 10.66,
+   "qqq_same_flows_irr": 18.9,
    "mdd": -21.5,
    "trades": 77,
    "win": 69,
@@ -2035,7 +2035,7 @@
    "worst": -22.5,
    "paid": 400,
    "moved_to_lt": 466,
-   "end": 469,
+   "end": 465,
    "by_mult": {
     "1": [
      69,
@@ -2056,8 +2056,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 20,
-   "irr": 11.87,
-   "qqq_same_flows_irr": 19.48,
+   "irr": 11.81,
+   "qqq_same_flows_irr": 19.36,
    "mdd": -13.6,
    "trades": 77,
    "win": 69,
@@ -2065,7 +2065,7 @@
    "worst": -22.5,
    "paid": 1080,
    "moved_to_lt": 910,
-   "end": 1259,
+   "end": 1250,
    "by_mult": {
     "1": [
      69,
@@ -2086,8 +2086,8 @@
    "dd": "B",
    "exit": "mid",
    "monthly": 40,
-   "irr": 12.37,
-   "qqq_same_flows_irr": 19.72,
+   "irr": 12.29,
+   "qqq_same_flows_irr": 19.59,
    "mdd": -11.4,
    "trades": 77,
    "win": 69,
@@ -2095,7 +2095,7 @@
    "worst": -22.5,
    "paid": 1760,
    "moved_to_lt": 1354,
-   "end": 2050,
+   "end": 2035,
    "by_mult": {
     "1": [
      69,
@@ -2116,8 +2116,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 0,
-   "irr": 14.54,
-   "qqq_same_flows_irr": 18.96,
+   "irr": 14.5,
+   "qqq_same_flows_irr": 18.87,
    "mdd": -27.2,
    "trades": 62,
    "win": 68,
@@ -2125,7 +2125,7 @@
    "worst": -27.4,
    "paid": 400,
    "moved_to_lt": 593,
-   "end": 496,
+   "end": 493,
    "by_mult": {
     "1": [
      56,
@@ -2146,8 +2146,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 20,
-   "irr": 14.79,
-   "qqq_same_flows_irr": 19.59,
+   "irr": 14.73,
+   "qqq_same_flows_irr": 19.47,
    "mdd": -20.8,
    "trades": 62,
    "win": 68,
@@ -2155,7 +2155,7 @@
    "worst": -27.4,
    "paid": 1080,
    "moved_to_lt": 1066,
-   "end": 1332,
+   "end": 1322,
    "by_mult": {
     "1": [
      56,
@@ -2176,8 +2176,8 @@
    "dd": "B",
    "exit": "wide",
    "monthly": 40,
-   "irr": 14.9,
-   "qqq_same_flows_irr": 19.87,
+   "irr": 14.83,
+   "qqq_same_flows_irr": 19.74,
    "mdd": -19.0,
    "trades": 62,
    "win": 68,
@@ -2185,7 +2185,7 @@
    "worst": -27.4,
    "paid": 1760,
    "moved_to_lt": 1539,
-   "end": 2167,
+   "end": 2151,
    "by_mult": {
     "1": [
      56,
@@ -2207,7 +2207,7 @@
    "exit": "fast",
    "monthly": 0,
    "irr": 5.43,
-   "qqq_same_flows_irr": 19.12,
+   "qqq_same_flows_irr": 19.0,
    "mdd": -13.6,
    "trades": 61,
    "win": 59,
@@ -2237,7 +2237,7 @@
    "exit": "fast",
    "monthly": 20,
    "irr": 6.2,
-   "qqq_same_flows_irr": 19.46,
+   "qqq_same_flows_irr": 19.32,
    "mdd": -9.5,
    "trades": 61,
    "win": 59,
@@ -2267,7 +2267,7 @@
    "exit": "fast",
    "monthly": 40,
    "irr": 6.61,
-   "qqq_same_flows_irr": 19.7,
+   "qqq_same_flows_irr": 19.54,
    "mdd": -9.1,
    "trades": 61,
    "win": 59,
@@ -2297,7 +2297,7 @@
    "exit": "mid",
    "monthly": 0,
    "irr": 6.69,
-   "qqq_same_flows_irr": 19.09,
+   "qqq_same_flows_irr": 18.97,
    "mdd": -17.2,
    "trades": 57,
    "win": 63,
@@ -2327,7 +2327,7 @@
    "exit": "mid",
    "monthly": 20,
    "irr": 7.5,
-   "qqq_same_flows_irr": 19.45,
+   "qqq_same_flows_irr": 19.31,
    "mdd": -14.3,
    "trades": 57,
    "win": 63,
@@ -2335,7 +2335,7 @@
    "worst": -22.5,
    "paid": 860,
    "moved_to_lt": 479,
-   "end": 917,
+   "end": 918,
    "by_mult": {
     "1": [
      52,
@@ -2357,7 +2357,7 @@
    "exit": "mid",
    "monthly": 40,
    "irr": 7.94,
-   "qqq_same_flows_irr": 19.69,
+   "qqq_same_flows_irr": 19.54,
    "mdd": -14.1,
    "trades": 57,
    "win": 63,
@@ -2365,7 +2365,7 @@
    "worst": -22.5,
    "paid": 1320,
    "moved_to_lt": 663,
-   "end": 1407,
+   "end": 1408,
    "by_mult": {
     "1": [
      52,
@@ -2387,7 +2387,7 @@
    "exit": "wide",
    "monthly": 0,
    "irr": 10.4,
-   "qqq_same_flows_irr": 19.0,
+   "qqq_same_flows_irr": 18.9,
    "mdd": -24.0,
    "trades": 46,
    "win": 63,
@@ -2395,7 +2395,7 @@
    "worst": -28.2,
    "paid": 400,
    "moved_to_lt": 441,
-   "end": 439,
+   "end": 440,
    "by_mult": {
     "1": [
      42,
@@ -2417,7 +2417,7 @@
    "exit": "wide",
    "monthly": 20,
    "irr": 10.74,
-   "qqq_same_flows_irr": 19.45,
+   "qqq_same_flows_irr": 19.33,
    "mdd": -19.0,
    "trades": 46,
    "win": 63,
@@ -2446,8 +2446,8 @@
    "dd": "C",
    "exit": "wide",
    "monthly": 40,
-   "irr": 10.92,
-   "qqq_same_flows_irr": 19.75,
+   "irr": 10.91,
+   "qqq_same_flows_irr": 19.61,
    "mdd": -17.2,
    "trades": 46,
    "win": 63,
