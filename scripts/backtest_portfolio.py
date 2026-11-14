@@ -294,6 +294,7 @@ def run(D, i0, end=None, cfg=None):
     sw_last_oh = -10 ** 9
     last_month = None
     curve, prin_curve, log = [], [], []
+    ltf, ltc = [], []
     for i in range(i0, end + 1):
         d = dates[i]; fx = fx_[i]
         dd = D["dd"][i]; st = D["states"][i] or 2
@@ -345,7 +346,7 @@ def run(D, i0, end=None, cfg=None):
         ym = d[:7]
         if i > i0 and int(d[8:]) >= 25 and ym != last_month:
             last_month = ym
-            add = sum(MONTHLY.values()); principal += add; flows.append((d, -add))
+            add = sum(MONTHLY.values()); principal += add; flows.append((d, -add)); ltf.append((d, -LT_AMT * MAN))
             if GOLD: A["gold"].buy("GOLD", GOLD * MAN, P, i, fx)
             if PC:   # 박종훈 원형: 장투+현금 몫을 SGOV(닻)/지수(돛)로, 레버리지 없음
                 new = (LT_AMT + MONTHLY["ammo"] / MAN) * MAN
@@ -445,12 +446,12 @@ def run(D, i0, end=None, cfg=None):
                 tot = 0
                 for t in inv:
                     v = am.v(t, P, i, fx); half = am.sell(t, v / 2, P, i, fx); am.buy("SGOV", half, P, i, fx)
-                    q = am.u[t]; am.u[t] = 0; A["longterm"].u[t] = A["longterm"].u.get(t, 0) + q; tot += v
+                    q = am.u[t]; am.u[t] = 0; A["longterm"].u[t] = A["longterm"].u.get(t, 0) + q; tot += v; ltf.append((d, -(v - half)))
                 log.append((d, f"현금 회복 정산 {round(tot / MAN)}만"))
             ammo_done.clear()
         # ---------- 장투 현금 풀 (SGOV) 낙폭 투입 ----------
         lt = A["longterm"]
-        for n, (lvl, rem, mix) in enumerate([] if (PC or bc_on) else LT_POOL_T, 1):
+        for n, (lvl, rem, mix) in enumerate([] if (PC or bc_on or cfg.get("no_ladder")) else LT_POOL_T, 1):
             if n in lt_done: continue
             if dd <= lvl and lt.u.get("SGOV", 0) > 0:
                 amt = lt.sell("SGOV", lt.v("SGOV", P, i, fx) * rem / 100, P, i, fx)
@@ -529,7 +530,8 @@ def run(D, i0, end=None, cfg=None):
             if frac == 1.0: sw_pos.pop("QLD", None)
         tot = sum(a.val(P, i, fx) for a in A.values())
         curve.append(tot); prin_curve.append(principal)
-    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end)
+        ltc.append((A["longterm"].val(P, i, fx), A["longterm"].v("SGOV", P, i, fx), stage))
+    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end, ltf=ltf, ltc=ltc)
 
 
 # ================= 통합 4종목 전략 (SPYM·QQQM·SGOV·QLD) =================
@@ -954,6 +956,51 @@ def park_study(D):
     json.dump(out, open(os.path.join(B.DATA, "park_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def park_verify(D):
+    """A vs B 검증: 장투 계좌 단독 수익률·손실, 평상 비율, 상승장 구간 → data/park_verify.json"""
+    dates, P = D["dates"], D["P"]
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    Lnt = {k: v for k, v in L.items() if k not in ("trigger", "frac", "mix", "stop")}
+    V = [("A 현재 규칙(금17)", {**L, "gold": 17}),
+         ("B 평상 7:3", {**L, "gold": 17, "normal": (0.7, 0.7)}),
+         ("B' 평상 3:7·과열 7:3", {**L, "gold": 17, "normal": (0.3, 0.7)}),
+         ("A 반등가속 없음", {**Lnt, "gold": 17}),
+         ("B 7:3 사다리·반등가속 없음(SGOV 묵힘)", {**Lnt, "gold": 17, "normal": (0.7, 0.7), "no_ladder": True})]
+    win = [(n, a, b, None) for n, a, b in SCEN] + [("2010~", "2010-01-04", "2010-01-31", None), ("2016~", "2016-01-04", "2016-01-31", None),
+           ("상승장 2016-01~2018-09", "2016-01-04", "2016-01-31", "2018-09-28"), ("상승장 2019-01~2021-12", "2019-01-02", "2019-01-31", "2021-12-31"),
+           ("상승장 2023-01~2024-12", "2023-01-03", "2023-01-31", "2024-12-31"), ("상승장 2023-07~2025-06", "2023-07-03", "2023-07-31", "2025-06-30")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "notes": ["장투 계좌 단독: 월 183만 적립 + 현금 계좌 회복 정산 이관분을 납입으로 계산", "worst = 장투 평가액/누적 납입 최저", "normal_pct = 기간 중 QQQ 5년 고점 대비 −10% 위였던 날 비율",
+                     "qqq_dca = 같은 날 같은 금액 QQQ만 적립(현금 이관 제외)"], "rows": []}
+    for name, a, b, e in win:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [x[0] for x in SCEN] else ks[0]
+        end = next((k for k, d in enumerate(dates) if d >= e), len(dates) - 1) if e else len(dates) - 1
+        for vn, cfg in V:
+            if "GOLD" not in P: break
+            r = run(D, i0, end=end, cfg=cfg); ltf, ltc = r["ltf"], r["ltc"]
+            if not ltf: continue
+            fmap = {}
+            for d, v in ltf: fmap[d] = fmap.get(d, 0) - v
+            cum = 0; worst = 0; pk = 0; mdd = 0; sg = []; q = 0; qf = []
+            for k, (v, s, stg) in enumerate(ltc):
+                d = dates[i0 + k]; cum += fmap.get(d, 0)
+                if cum > 0: worst = min(worst, v / cum - 1)
+                if v > 0: sg.append(s / v)
+            norm = sum(1 for x in ltc if x[2] == 0) / len(ltc)
+            for d, v in ltf:
+                if v == -(200 - cfg["gold"]) * MAN:
+                    k = dates.index(d); q += -v / D["fx"][k] / P["QQQ"][k]; qf.append((d, v))
+            qv = q * P["QQQ"][end] * D["fx"][end]
+            row = {"window": name, "strategy": vn, "start": dates[i0], "end": dates[end], "lt_irr": xirr(ltf, dates[end], ltc[-1][0]),
+                   "lt_worst": round(worst * 100, 1), "lt_end_man": round(ltc[-1][0] / MAN), "lt_paid_man": round(-sum(v for _, v in ltf) / MAN),
+                   "normal_pct": round(norm * 100), "sgov_avg": round(sum(sg) / len(sg) * 100) if sg else None, "sgov_end": round(ltc[-1][1] / ltc[-1][0] * 100) if ltc[-1][0] else None,
+                   "total_irr": xirr(r["flows"], dates[end], r["curve"][-1]), "qqq_dca_irr": xirr(qf, dates[end], qv)}
+            out["rows"].append(row); print("PV", json.dumps(row, ensure_ascii=False), flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "park_verify.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def main():
     y, f = load()
     D = prep(y, f)
@@ -962,6 +1009,8 @@ def main():
         margin_study(D); print("ok"); return
     if os.environ.get("ONLY_DIV"):
         div_study(D); print("ok"); return
+    if os.environ.get("ONLY_PARKV"):
+        park_verify(D); print("ok"); return
     if os.environ.get("ONLY_PARK"):
         park_study(D); print("ok"); return
     if os.environ.get("ONLY_DDWIN"):
