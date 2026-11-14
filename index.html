@@ -239,7 +239,7 @@ const RULES = {
   // 장투 월 200만 배분 (만원) — QQQ 고점 대비 낙폭 단계별
   monthly: [
     {min:-10,  label:"평상",      alloc:{QQQM:75, SPYM:35, SCHD:30, QLD:40}},   // SCHD = 배당 몫(SCHD·JEPI·DIVO·JEPQ 중 200일선 대비 가장 싼 것)
-    {min:-15,  label:"조정 -10%", alloc:{QQQM:90, SPYM:60, QLD:50}},
+    {min:-15,  label:"조정 -10%", alloc:{QQQM:85, SPYM:85, QLD:30}},   // 11-14 Ben: SPYM·QQQM 반반 + QLD 소량
     {min:-20,  label:"하락 -15%", alloc:{QQQM:90, SPYM:50, QLD:60}},
     {min:-30,  label:"하락 -20%", alloc:{QQQM:60, SPYM:20, QLD:120}},
     {min:-999, label:"폭락 -30%", alloc:{QQQM:40, SPYM:0, QLD:120, TQQQ:40}},
@@ -1019,7 +1019,7 @@ function fxHTML(){
   const dv=(u.price/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
   const g = dv<=0? {c:"g", t:"유리", a:"월급 들어온 날 달러 몫(장투·BITO)을 100% 환전합니다."}
           : dv<=5? {c:"y", t:"보통", a:"이번 달 매수에 필요한 달러만 환전합니다."}
-          : {c:"r", t:"불리", a:`이번 달 매수 필요분만 환전하고 미리 바꿔 두지 않습니다.${jd!=null&&jd<=0? " 엔화가 3년 평균보다 싸니 남는 원화가 있으면 엔화가 2순위입니다." : ""}`};
+          : {c:"r", t:"불리", a:`이번 달 매수 필요분만 환전하고 미리 바꿔 두지 않습니다.${jd!=null&&jd<=0? " 엔화가 3년 평균보다 싸니 남는 원화가 있으면 엔화로 바꿔 모아 둡니다(도쿄 1489 폭락 때 매수용)." : ""}`};
   return `<div class="panel"><p><span class="dot ${g.c}"></span> <b>환전 ${g.t}</b> · 원/달러 <b>${num(u.price,1)}원</b> · 3년 평균 ${num(u.avg3y,1)}원 대비 <b>${dv>0?"+":""}${num(dv,1)}%</b> (3년 중 하위 ${num(u.pct3y,0)}%)${j?.avg3y? ` · 원/엔 100엔 ${num(j.price*100,1)}원, 3년 평균 대비 ${jd>0?"+":""}${num(jd,1)}%`:""}</p><p class="muted">${g.a} 기준: 3년 평균 이하 유리, +5%까지 보통, 그 위 불리.</p></div>`;
 }
 function vPlan(){
@@ -1058,7 +1058,7 @@ function vPlan(){
 const SCEN_SUMMARY = [
   {id:"normal", n:"평상", c:"QQQ 5년 고점 −10% 이내", pen:"배당다우존스 60 / 나스닥100 40", irp:"위험 55~60% (S&P 40·나스닥 30·배당 30)", lt:"SGOV 70 : 주식 30 (QQQM 40·SPYM 30·배당 30)", am:"SGOV 적립만", sw:"신호 때만 1회 4%, 개별주 3종목 이하", gb:"금 1g · BITO 월 3만(1%까지는 월 ≤24만)"},
   {id:"hot", n:"과열", c:"과열 신호 2개↑", pen:"평상과 같음", irp:"60% 초과분 → 머니마켓", lt:"7:3 유지. 3개↑면 보유 QLD 20% → SGOV(6개월 1회)", am:"평상과 같음", sw:"레버리지 2개 30% · 3개 50% · 4개↑ 전량 매도", gb:"금: 주봉 RSI≥75 + 200일선 +20%면 10% → SGOV"},
-  {id:"s1", n:"−10% 구간", c:"−10 ~ −15%", pen:"배당 50 / 나스닥100 50", irp:"추세이탈 62~65%, −5%마다 부족분 1/3", lt:"신규 전액 주식: QQQM 45·SPYM 30·QLD 25 (중립이면 QLD 절반 → QQQM) + 모은 SGOV 10% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
+  {id:"s1", n:"−10% 구간", c:"−10 ~ −15%", pen:"배당 50 / 나스닥100 50", irp:"추세이탈 62~65%, −5%마다 부족분 1/3", lt:"신규 전액 주식: QQQM 42.5·SPYM 42.5·QLD 15 (중립이면 QLD 절반 → QQQM) + 모은 SGOV 10% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
   {id:"s2", n:"−15% 구간", c:"−15 ~ −20%", pen:"배당 50 / 나스닥100 50", irp:"62~65%", lt:"QQQM 45·SPYM 25·QLD 30 + 남은 SGOV 22% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
   {id:"s3", n:"−20% 구간", c:"−20 ~ −30%", pen:"50:50, 나스닥100 신규는 TIME 426030", irp:"62~65% → 폭락 시 68~70%", lt:"QQQM 30·SPYM 10·QLD 60 + 남은 SGOV 43% 투입. 배당 매수 중단", am:"−25%에서 5% 투입", sw:"신호 매수 계속", gb:"금 1g · BITO"},
   {id:"s4", n:"−30% 이하", c:"폭락", pen:"50:50, TIME 426030", irp:"68~70%", lt:"QQQM 20·QLD 60·TQQQ 20 + 남은 SGOV 전부(QLD 80·TQQQ 20). QLD 30% 상한", am:"−30/−35/−40/−50/−60%에 10/15/15/25/30%", sw:"3배는 극단에서만 1회 3%, 합계 10%", gb:"금은 팔지 않음"},
@@ -1311,8 +1311,20 @@ const MSORT_KEYS = {dd:s=>s.dd_ath ?? s.dd52, v200:s=>s.vs200, rsi:s=>s.rsi, bb:
 function rsiCls(v){ return v==null? "" : v<=30? "dn" : v>=70? "up" : ""; }
 // 매수 후보 하이라이트 (11-13 Ben). 장투·적립 후보 ETF는 4개 신호 중 개수, 개별 빅테크는 큰 낙폭 + 과매도일 때만
 const BUY_ETF = ["QQQM","SPYM","MGK","SCHD","JEPI","JEPQ","DIVO","FDVV","VIG","DGRO","O","MO","GLD","BITO"];
+// 엔화(11-14 Ben): 원/엔이 3년 평균보다 쌀 때 엔화로 바꿔 모아 두고, 도쿄 1489(닛케이 고배당50)가 폭락하면 엔화로만 매수.
+// 판정 = MDD(1년 고점 대비) 단계 + 보조 3개(RSI ≤ 30, 200일선 이격 ≤ −10%, 볼린저 하단 이탈·%B ≤ 5) 중 2개 이상
+const JP_TIERS = [[-35,"3차: 남은 엔화 전부"],[-25,"2차: 모은 엔화 1/3"],[-15,"1차: 모은 엔화 1/3"]];
+function jpSig(s){
+  const d=s.dd52, aux=[s.rsi!=null&&s.rsi<=30 && `RSI ${num(s.rsi,0)}`, s.vs200!=null&&s.vs200<=-10 && `200일선 ${pct(s.vs200,0)}`, (s.bb_break||(s.bb_pctb!=null&&s.bb_pctb<=5)) && "볼린저 하단"].filter(Boolean);
+  const tr = d!=null && JP_TIERS.find(x=>d<=x[0]);
+  const why = [`MDD ${pct(d,0)}`, ...aux].join(" · ");
+  if(tr && (aux.length>=2 || d<=-35)) return {lv:2, label:"엔화 매수", why:`${why} → ${tr[1]}`};
+  if(d!=null && d<=-10 && aux.length>=1) return {lv:1, label:"관찰", why:`${why} · MDD −15%↑ + 보조 2개면 매수`};
+  return null;
+}
 function buySig(t, s){
   if(!s) return null;
+  if(t==="1489.T") return jpSig(s);
   const hot = s.rsi!=null && s.rsi>=70 && s.vs200!=null && s.vs200>=10;
   if(s.group==="빅테크" && t!=="MAGS"){
     const d=s.dd52, r=s.rsi;
@@ -1348,6 +1360,7 @@ function acctFor(t, s){
   if(div.includes(t)) return {a:"장투 직투 (배당 칸)", how:`이번 달 배당 칸(월 30만)을 ${t}로. 연금저축 배당 몫은 TIGER 미국배당다우존스.`};
   if(t==="O"||t==="MO") return {a:"장투 직투 (배당 칸)", how:"배당 칸의 절반 이하로. 개별 인컴주라 한 종목 쏠림은 피합니다."};
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
+  if(t==="1489.T") return {a:"직투 엔화 예수금", how:"모아 둔 엔화로만 삽니다(원화 환전 매수 안 함). MDD −15/−25%에서 보조지표(RSI ≤ 30, 200일선 −10%, 볼린저 하단) 2개 이상이면 1/3씩, −35%면 남은 전부. 3~5거래일 나눠서."};
   if(t==="BITO") return {a:"장투 직투 (BITO 칸)", how:"월 적립 외 추가 매수는 매수 적기일 때만, 전체 자산의 3% 상한 안에서. 업비트·해외 거래소 현물은 쓰지 않습니다."};
   if(s?.group==="빅테크"||s?.group==="섹터") return {a:"직투 스윙", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
