@@ -537,13 +537,37 @@ function qldSplit(dollars, px, fractional){
   const u = [...new Set(per)].sort((x,y)=>x-y);
   return {n:sh, weeks, per, text: sh===1 ? "첫 주에 1주" : sh<=3 ? `${weeks.join("·")}주차에 1주씩 (총 ${sh}주)` : `4주에 걸쳐 매주 ${u.join("~")}주 (총 ${sh}주)`};
 }
+/* 11-14 Ben 확정: 장투 B안 — 평상(QQQ 5년 고점 −10% 위)엔 신규 적립 SGOV 70 : 주식 30(QQQM 40·SPYM 30·배당 30).
+   −10% 아래는 기존 하락 사다리(신규 전액 주식). 모아 둔 SGOV는 −10/−15/−20/−30%에서 10/22/43/100% 투입.
+   지표로 B↔기존 규칙 자동 전환은 백테스트상 효과 없음(data/park_verify.json) → B 고정. */
+const LT_NORMAL = {sgov:0.7, mix:{QQQM:0.4, SPYM:0.3, SCHD:0.3}};
+const LT_POOL = [{lvl:-10, pct:10, mix:"QQQM 70·QLD 30"}, {lvl:-15, pct:22, mix:"QQQM 60·QLD 40"}, {lvl:-20, pct:43, mix:"QLD 80·QQQM 20"}, {lvl:-30, pct:100, mix:"QLD 80·TQQQ 20"}];
+const GOLD_G_KRW = 170000;   // KRX 금현물 월 1g (가격 무관, 과매수 땐 일부 차익 → 현금 풀). 장투 몫에서 차감
+// BITO: 전체 자산 1%까지는 3개월에 나눠 채우고(월 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 상한 전체 3%. 장투 직투 계좌
+function sideBuys(E){
+  const s=E.H?.settings||{}, lt=(s.monthly_longterm_krw||2000000)/1e4;
+  if(lt<100) return {gold:0, bito:0, why:"장투 월 100만 미만이면 금·BITO는 생략합니다."};
+  const tot=((s.monthly_longterm_krw||0)+(s.monthly_ammo_krw||0)+(s.monthly_pension_krw||0)+(s.monthly_swing_krw||0))/1e4;
+  const base=Math.max(1, Math.round(tot*0.01));
+  const bv=E.acc.list.reduce((a,x)=>a+x.pos.filter(p=>p.t==="BITO").reduce((b,p)=>b+p.v,0),0), share=E.acc.total? bv/E.acc.total*100 : 0;
+  const need=E.acc.total? (E.acc.total*0.01-bv)/1e4 : 0;
+  const bito = share>=3 ? 0 : need>base ? Math.min(24, Math.ceil(need/3)) : base;
+  return {gold:GOLD_G_KRW/1e4, bito, share, why: share>=3? `BITO가 전체의 ${num(share,1)}%로 상한 3%에 닿아 이번 달은 쉽니다.` : need>base? `BITO 전체 1%(약 ${num(E.acc.total*0.01/1e4,0)}만)까지 3개월에 나눠 채우는 중(현재 ${num(share,1)}%).` : `BITO 월 ${base}만 적립(월 저축의 약 1%).`};
+}
 function planLongterm(E){
   const H=E.H, s=H?.settings||{}, fx=E.fx, S=E.S;
-  const budget = (s.monthly_longterm_krw||2000000)/1e4;
+  const side = sideBuys(E);
+  const budget = (s.monthly_longterm_krw||2000000)/1e4 - side.gold - side.bito;
   const row = RULES.monthly.find(r=>E.dd>r.min) || RULES.monthly[0];
   const k200 = budget/200;
-  const alloc = Object.fromEntries(Object.entries(row.alloc).map(([t,v])=>[t, v*k200]));
+  let alloc = Object.fromEntries(Object.entries(row.alloc).map(([t,v])=>[t, v*k200]));
   const notes = [];
+  if(E.stage===0){
+    const stk = budget*(1-LT_NORMAL.sgov);
+    alloc = {SGOV: budget*LT_NORMAL.sgov, ...Object.fromEntries(Object.entries(LT_NORMAL.mix).map(([t,w])=>[t, stk*w])), QLD:0, TQQQ:0};
+    notes.push(`평상 구간(QQQ 5년 고점 대비 ${pct(E.dd)}): B안 SGOV 70 : 주식 30. SGOV는 −10%부터 하락 사다리 실탄으로 씁니다.`);
+  } else notes.push(`하락 구간(${pct(E.dd)}): 신규 적립은 전액 주식(하락 사다리). 모아 둔 SGOV는 ${LT_POOL.filter(x=>E.dd<=x.lvl).map(x=>`${x.lvl}% ${x.pct}%`).join(", ")||"−"} 차수 투입 대상.`);
+  if(side.gold||side.bito) notes.push(`장투 몫에서 금현물 1g(약 ${num(side.gold,0)}만, 금현물 계좌)${side.bito? `와 BITO ${side.bito}만`:""}을 먼저 뺐습니다. ${side.why}`);
   const q=E.q;
   const oh = overheat(E);
   const hot = oh.score>=2;
@@ -629,8 +653,9 @@ function planLongterm(E){
     const sh = px? (s.fractional? dollars/px : Math.floor(dollars/px)) : null;
     rows.push({t, key, man, dollars, px, sh, how});
   }
+  if(side.bito){ const px=priceOf("BITO",S), dollars=side.bito*1e4/fx; rows.push({t:"BITO", key:"BITO", man:side.bito, dollars, px, sh: px? (s.fractional? dollars/px : Math.floor(dollars/px)) : null, how:"비트코인 선물 ETF. 분배금은 배당소득세 15%. 1주가 안 되면 소수점 매수 또는 다음 달과 합산"}); }
   if(carry) notes.push(`QLD 이월분 ${num(carry,0)}만 보유 중 — 위 QLD 규칙과 같은 조건에서 함께 집행.`);
-  return {row, rows, notes, budget, hot, below};
+  return {row, rows, notes, budget, hot, below, side};
 }
 
 /* ---------- 배당 ETF 선택 ---------- */
@@ -964,14 +989,15 @@ function planSummaryHTML(lt, pn, am){
   const ltRows = lt.rows.filter(r=>r.man>0.05);
   const ltTot = ltRows.reduce((a,r)=>a+r.man*1e4,0);
   const accts = [
-    {n:"장투 (직투)", sub:"달러 환전", items: ltRows.map(r=>({t:r.t, amt:r.man*1e4, note: r.key==="SCHD"? "배당" : r.t==="QLD"? "레버리지" : r.t==="SGOV"? "대기 현금" : ""})), tot: ltTot},
+    {n:"장투 (직투)", sub:"달러 환전", items: ltRows.map(r=>({t:r.t, amt:r.man*1e4, note: r.key==="SCHD"? "배당" : r.t==="BITO"? "비트코인" : r.t==="QLD"? "레버리지" : r.t==="SGOV"? "대기 현금" : ""})), tot: ltTot},
+    ...(lt.side?.gold? [{n:"금현물 (KRX)", sub:"월 1g", items:[{t:"금현물 1g", amt:lt.side.gold*1e4, note:"가격 무관 적립"}], tot:lt.side.gold*1e4}] : []),
     {n:"폭락장 현금", sub:"모아 두기", items:[{t:"SGOV", amt:s.monthly_ammo_krw, note: am.action? `${am.action.t.n}차 투입 대상`:"하락 단계까지 대기"}], tot:s.monthly_ammo_krw},
     {n:"연금저축", sub:"국내상장", items: pn.rows.map(r=>({t:r.name, amt:r.won, note:""})), tot: pn.amt},
   ];
   if(s.monthly_swing_krw>0) accts.push({n:"스윙", sub:"예수금", items:[{t:"예수금", amt:s.monthly_swing_krw, note:"음봉·과대낙폭 매수일까지 대기"}], tot:s.monthly_swing_krw});
   const G = accts.reduce((a,x)=>a+x.tot,0) || 1;
   // 자산군 합계: 나스닥100 / S&P500 / 배당 / 레버리지 / 현금성
-  const cls = t => /QLD|TQQQ/.test(t)? "레버리지" : /SGOV|예수금/.test(t)? "현금성" : /SPYM|S&P500/.test(t)? "S&P500" : /QQQM|나스닥100/.test(t)? "나스닥100" : "배당";
+  const cls = t => /금현물/.test(t)? "금" : /BITO/.test(t)? "비트코인" : /QLD|TQQQ/.test(t)? "레버리지" : /SGOV|예수금/.test(t)? "현금성" : /SPYM|S&P500/.test(t)? "S&P500" : /QQQM|나스닥100/.test(t)? "나스닥100" : "배당";
   const mix = {}; accts.forEach(a=>a.items.forEach(i=>{ const k=cls(i.t); mix[k]=(mix[k]||0)+i.amt; }));
   const won0 = v => Math.round(v/1e3)*1e3;
   return `<h3>이번 달 매수 한눈에</h3>
@@ -985,13 +1011,25 @@ function planSummaryHTML(lt, pn, am){
 }
 function mixText(m){ return Object.entries(m).map(([k,v])=>`${k} ${v}%`).join(" + "); }
 
+/* 환전 타이밍 (11-14 Ben): 원/달러를 최근 3년 평균과 비교. 유리하면 월급 들어온 날 달러 몫 100% 환전.
+   달러가 비쌀 땐 이번 달 매수 필요분만 환전하고, 엔화가 3년 평균보다 싸면 남는 원화 일부를 엔화로(2순위). */
+function fxHTML(){
+  const u=E.S["KRW=X"], j=E.S["JPYKRW=X"];
+  if(!u?.avg3y) return `<div class="panel"><p class="muted">환전 타이밍: 3년 평균 환율 데이터 대기(다음 갱신부터 표시).</p></div>`;
+  const dv=(u.price/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
+  const g = dv<=0? {c:"g", t:"유리", a:"월급 들어온 날 달러 몫(장투·BITO)을 100% 환전합니다."}
+          : dv<=5? {c:"y", t:"보통", a:"이번 달 매수에 필요한 달러만 환전합니다."}
+          : {c:"r", t:"불리", a:`이번 달 매수 필요분만 환전하고 미리 바꿔 두지 않습니다.${jd!=null&&jd<=0? " 엔화가 3년 평균보다 싸니 남는 원화가 있으면 엔화가 2순위입니다." : ""}`};
+  return `<div class="panel"><p><span class="dot ${g.c}"></span> <b>환전 ${g.t}</b> · 원/달러 <b>${num(u.price,1)}원</b> · 3년 평균 ${num(u.avg3y,1)}원 대비 <b>${dv>0?"+":""}${num(dv,1)}%</b> (3년 중 하위 ${num(u.pct3y,0)}%)${j?.avg3y? ` · 원/엔 100엔 ${num(j.price*100,1)}원, 3년 평균 대비 ${jd>0?"+":""}${num(jd,1)}%`:""}</p><p class="muted">${g.a} 기준: 3년 평균 이하 유리, +5%까지 보통, 그 위 불리.</p></div>`;
+}
 function vPlan(){
   const lt = planLongterm(E), pn = planPension(E), bw = buyWindow(E.H?.settings?.buy_day||25), am = planAmmo(E);
   const tot = lt.rows.reduce((a,r)=>a+r.man,0);
   return `
   <h2>이번 달 적립 (${bw.label})</h2>
   <div class="panel"><p class="lead">현재 구간: <b>${esc(lt.row.label)}</b> · QQQ 고점 대비 ${pct(E.dd)} · 상태 ${E.state}. ${RULES.states[E.state].name}</p>
-  <p class="muted">1배 지수(QQQM·SPYM)는 상태와 무관하게 매월 삽니다. QLD 몫만 규칙에 따라 시점이 달라집니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></div>
+  <p class="muted">장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></div>
+  ${fxHTML()}
   ${cfgBanner()}
   ${planSummaryHTML(lt, pn, am)}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
@@ -1286,7 +1324,7 @@ function acctFor(t, s){
   if(div.includes(t)) return {a:"장투 직투 (배당 칸)", how:`이번 달 배당 칸(월 30만)을 ${t}로. 연금저축 배당 몫은 TIGER 미국배당다우존스.`};
   if(t==="O"||t==="MO") return {a:"장투 직투 (배당 칸)", how:"배당 칸의 절반 이하로. 개별 인컴주라 한 종목 쏠림은 피합니다."};
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
-  if(t==="BITO") return {a:"보류", how:"비트코인 편입은 아직 결정 전입니다."};
+  if(t==="BITO") return {a:"장투 직투 (BITO 칸)", how:"월 적립 외 추가 매수는 매수 적기일 때만, 전체 자산의 3% 상한 안에서. 업비트·해외 거래소 현물은 쓰지 않습니다."};
   if(s?.group==="빅테크"||s?.group==="섹터") return {a:"직투 스윙", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
 }

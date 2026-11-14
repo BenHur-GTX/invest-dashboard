@@ -20,6 +20,7 @@ SYMBOLS = [
     ("^VIX", "VIX", "지수", "USD", "y"),
     ("^KS11", "코스피", "지수", "KRW", "y"),
     ("KRW=X", "원/달러", "지수", "KRW", "y"),
+    ("JPYKRW=X", "원/엔", "지수", "KRW", "y"),
     ("QQQM", "QQQM", "1배 지수", "USD", "y"),
     ("SPYM", "SPYM", "1배 지수", "USD", "y"),
     ("MGK", "MGK", "1배 지수", "USD", "y"),
@@ -259,6 +260,8 @@ def summarize(sym, name, group, cur, rows):
         "touch": touch,
         "spark": [r2(x, 4) for x in c[-120:]],
         "spark_dates": [rows[-120:][0][0], rows[-1][0]],
+        "avg3y": r2(sum(c[-756:]) / len(c[-756:]), 4), "min3y": r2(min(c[-756:]), 4), "max3y": r2(max(c[-756:]), 4),
+        "pct3y": r2(sum(1 for x in c[-756:] if x <= last) / len(c[-756:]) * 100, 0),
     }
 
 
