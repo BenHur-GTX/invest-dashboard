@@ -61,7 +61,7 @@ def load():
             print("yahoo fail", s, e, flush=True); y[s] = []
         time.sleep(0.4)
     f = {}
-    for k, sid in {"fx": "DEXKOUS", "ft_old": "DFEDTAR", "ft_new": "DFEDTARU", "dgs2": "DGS2", "sahm": "SAHMREALTIME",
+    for k, sid in {"fx": "DEXKOUS", "ft_old": "DFEDTAR", "ft_new": "DFEDTARU", "dgs2": "DGS2", "dgs10": "DGS10", "sahm": "SAHMREALTIME",
                    "icsa": "ICSA", "walcl": "WALCL", "tga": "WTREGEN", "rrp": "RRPONTSYD", "hy": "BAMLH0A0HYM2", "baa": "BAA10Y", "margin": "BOGZ1FL663067003Q"}.items():
         try:
             f[k] = B.fred(sid, "1990-01-01"); print("fred", sid, len(f[k]), flush=True)
@@ -176,7 +176,7 @@ def prep(y, f):
     ft = sorted(f["ft_old"] + f["ft_new"])
     ft_d = ff(ft, dates)
     changes = [(ft[i][0], ft[i][1] - ft[i - 1][1]) for i in range(1, len(ft)) if abs(ft[i][1] - ft[i - 1][1]) > 1e-9]
-    dgs2 = ff(f["dgs2"], dates); sahm = ff(f["sahm"], dates)
+    dgs2 = ff(f["dgs2"], dates); sahm = ff(f["sahm"], dates); dgs10 = ff(f.get("dgs10") or [], dates)
     ic = f["icsa"]; ic4 = [(ic[i][0], sum(x[1] for x in ic[max(0, i - 3):i + 1]) / min(4, i + 1)) for i in range(len(ic))]
     ic4 = ff(ic4, dates)
     hy_full = f["hy"]
@@ -211,7 +211,7 @@ def prep(y, f):
         mh.append((f"{y_:04d}-{m_:02d}-01", hot))
     mhot = ff(mh, dates)
     return dict(mhot=mhot, dates=dates, c=c, P=P, fx=fx, rf=rf, rsi=rsi, wrsi=wrsi_d, gap50w=gap_d, ma200=ma200, ma60=ma60, vix=vix,
-                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, sahm=sahm, ic4=ic4,
+                states=states, dd=dd, srsi=srsi, sdd52=sdd52, divdd52=divdd52, v200=V200, qdd52=qdd52, ft=ft_d, changes=changes, dgs2=dgs2, dgs10=dgs10, sahm=sahm, ic4=ic4,
                 hy=hy, hy_start=hy_start, baa=baa, nl=nl_d, proxy=D_PROXY)
 
 
@@ -295,6 +295,7 @@ def run(D, i0, end=None, cfg=None):
     last_month = None
     curve, prin_curve, log = [], [], []
     ltf, ltc = [], []
+    sw_b = True; sw_ok = 0; sw_cnt = [0, 0]
     for i in range(i0, end + 1):
         d = dates[i]; fx = fx_[i]
         dd = D["dd"][i]; st = D["states"][i] or 2
@@ -364,7 +365,24 @@ def run(D, i0, end=None, cfg=None):
                     cands = [(D["v200"][t][i], t) for t in cfg["div_pool"] if D["v200"][t][i] is not None]
                     if cands: divt = min(cands)[1]
                 if GOLD: al = {k: v * LT_AMT / 200 for k, v in al.items()}
-                if cfg.get("normal") and stage == 0:   # 평상: 장투 몫을 SGOV:주식 비율로 (과열 2개+면 두 번째 비율)
+                useB = True
+                if cfg.get("switch") and stage == 0:   # B↔A 스위칭: 매달 적립일에만 판정(신규 적립금만 바뀌고 보유분 매매 없음)
+                    cs = D["c"][max(0, i - 19):i + 1]; mu = sum(cs) / len(cs); sd = (sum((x - mu) ** 2 for x in cs) / len(cs)) ** 0.5
+                    pb = (c_ := D["c"][i]) and ((c_ - (mu - 2 * sd)) / (4 * sd) * 100 if sd else 50)
+                    m2 = D["ma200"][i]; v2 = (c_ / m2 - 1) * 100 if m2 else 0; t10 = D["dgs10"][i]; rr = D["rsi"][i] or 50
+                    chart = [oh >= 1, rr >= 65, pb >= 80, v2 >= 8]; mac = [mode != "공격", t10 is not None and t10 >= 4.5]
+                    sv = cfg["switch"]
+                    if sv == "score": pts = sum(chart) + sum(mac)
+                    elif sv == "macro": pts = 2 * any(mac)
+                    elif sv == "chart": pts = 2 * any(chart)
+                    elif sv == "cheap": pts = 0 if (dd <= -5 and mode == "공격") else 2
+                    else: pts = 2
+                    if pts >= 2: sw_b = True; sw_ok = 0
+                    elif pts == 0:
+                        sw_ok += 1
+                        if sw_ok >= cfg.get("sw_hold", 2): sw_b = False
+                    useB = sw_b; sw_cnt[0 if useB else 1] += 1
+                if cfg.get("normal") and stage == 0 and useB:   # 평상: 장투 몫을 SGOV:주식 비율로 (과열 2개+면 두 번째 비율)
                     sg = cfg["normal"][1] if oh >= 2 else cfg["normal"][0]; stk = LT_AMT * (1 - sg)
                     al = {"SGOV": LT_AMT * sg, "QQQ": stk * 0.4, "SPY": stk * 0.3, "SCHD": stk * 0.3, "QLD": 0, "TQQQ": 0}
 
@@ -531,7 +549,7 @@ def run(D, i0, end=None, cfg=None):
         tot = sum(a.val(P, i, fx) for a in A.values())
         curve.append(tot); prin_curve.append(principal)
         ltc.append((A["longterm"].val(P, i, fx), A["longterm"].v("SGOV", P, i, fx), stage))
-    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end, ltf=ltf, ltc=ltc)
+    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end, ltf=ltf, ltc=ltc, sw=sw_cnt)
 
 
 # ================= 통합 4종목 전략 (SPYM·QQQM·SGOV·QLD) =================
@@ -964,8 +982,10 @@ def park_verify(D):
     V = [("A 현재 규칙(금17)", {**L, "gold": 17}),
          ("B 평상 7:3", {**L, "gold": 17, "normal": (0.7, 0.7)}),
          ("B' 평상 3:7·과열 7:3", {**L, "gold": 17, "normal": (0.3, 0.7)}),
-         ("A 반등가속 없음", {**Lnt, "gold": 17}),
-         ("B 7:3 사다리·반등가속 없음(SGOV 묵힘)", {**Lnt, "gold": 17, "normal": (0.7, 0.7), "no_ladder": True})]
+         ("S1 점수: 차트4+거시2 중 2개↑ B, 0개 2달 A", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "score"}),
+         ("S2 거시만: 거시 비정상 또는 10년물≥4.5 B", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "macro"}),
+         ("S3 차트만: 과열·RSI≥65·%B≥80·200일선+8% 중 1개 B", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "chart"}),
+         ("S4 싸면 A: −5~−10%이고 거시 정상일 때만 A", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "cheap"})]
     win = [(n, a, b, None) for n, a, b in SCEN] + [("2010~", "2010-01-04", "2010-01-31", None), ("2016~", "2016-01-04", "2016-01-31", None),
            ("상승장 2016-01~2018-09", "2016-01-04", "2016-01-31", "2018-09-28"), ("상승장 2019-01~2021-12", "2019-01-02", "2019-01-31", "2021-12-31"),
            ("상승장 2023-01~2024-12", "2023-01-03", "2023-01-31", "2024-12-31"), ("상승장 2023-07~2025-06", "2023-07-03", "2023-07-31", "2025-06-30")]
@@ -996,7 +1016,8 @@ def park_verify(D):
             row = {"window": name, "strategy": vn, "start": dates[i0], "end": dates[end], "lt_irr": xirr(ltf, dates[end], ltc[-1][0]),
                    "lt_worst": round(worst * 100, 1), "lt_end_man": round(ltc[-1][0] / MAN), "lt_paid_man": round(-sum(v for _, v in ltf) / MAN),
                    "normal_pct": round(norm * 100), "sgov_avg": round(sum(sg) / len(sg) * 100) if sg else None, "sgov_end": round(ltc[-1][1] / ltc[-1][0] * 100) if ltc[-1][0] else None,
-                   "total_irr": xirr(r["flows"], dates[end], r["curve"][-1]), "qqq_dca_irr": xirr(qf, dates[end], qv)}
+                   "total_irr": xirr(r["flows"], dates[end], r["curve"][-1]), "qqq_dca_irr": xirr(qf, dates[end], qv),
+                   "b_month_pct": round(r["sw"][0] / sum(r["sw"]) * 100) if sum(r["sw"]) else None, "total_worst": metrics(D, r, bench(D, i0, "QQQ"), bench(D, i0, "SPY"))["underwater"].get("worst_vs_principal_pct")}
             out["rows"].append(row); print("PV", json.dumps(row, ensure_ascii=False), flush=True)
     json.dump(out, open(os.path.join(B.DATA, "park_verify.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
