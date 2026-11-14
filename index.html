@@ -294,7 +294,7 @@ function loadCfg(){ try{ const c=JSON.parse(localStorage.getItem("user_cfg")||"n
 function saveCfg(c){ try{ localStorage.setItem("user_cfg", JSON.stringify(c)); }catch(e){} }
 function skeletonHoldings(){
   return {updated:null, skeleton:true, settings:{monthly_longterm_krw:2000000, monthly_ammo_krw:850000, monthly_pension_krw:450000, monthly_swing_krw:0, buy_day:25, qld_cap_pct:30, tqqq_cap_total_pct:10, irp_risk_max_pct:70, swing_trade_pct:4, swing_ticker_max_pct:30, cash_trigger_krw:1e8, conflict_rule:"macro"},
-    accounts:{longterm:{name:"장투 (직투)",principal_krw:0,cash_usd:0,positions:[]}, ammo:{name:"폭락장 현금",principal_krw:0,cash_usd:0,tranches_done:[],positions:[]}, pension:{name:"연금저축",principal_krw:0,cash_krw:0,positions:[]}}, trades:[]};
+    accounts:{longterm:{name:"장투 계좌",principal_krw:0,cash_usd:0,positions:[]}, ammo:{name:"현금 계좌",principal_krw:0,cash_usd:0,tranches_done:[],positions:[]}, pension:{name:"연금저축",principal_krw:0,cash_krw:0,positions:[]}}, trades:[]};
 }
 function applyCfg(H){
   const c = loadCfg() || (H.skeleton ? CFG_DEFAULT : null); H.cfgSource = c ? "user" : "holdings";   // 보유 내역 없는 방문자는 기본 200만
@@ -469,9 +469,9 @@ function bigCutWait(m){
 }
 const BIGCUT_PLAN = [
   {id:"irp", n:"IRP", tgt:30, steps:"1일차에 한 번에 위험자산 → 머니마켓", why:"계좌 안 매매는 세금이 없어 비용이 가장 작습니다. 가장 먼저."},
-  {id:"swing", n:"직투 스윙", tgt:10, steps:"1일차 레버리지·3배 전량 → 3~5일차 개별주·섹터 절반 → 7~10일차 남은 것 정리", why:"단기 계좌라 가장 많이 줄입니다. 손실 종목부터 팔아 양도세(22%, 연 250만 공제)를 줄입니다."},
-  {id:"longterm", n:"장투 직투", tgt:30, steps:"1일차 QLD·TQQQ 전량 → 5일차 배당 ETF·O 절반 → 10일차 1배 지수로 합계 30%", why:"매도 대금은 SGOV. 수익이 큰 종목은 마지막에, 연 250만 공제 안에서 먼저 실현."},
-  {id:"pension", n:"연금저축", tgt:null, steps:"매도 없음, 적립도 평소대로", why:"초장기 계좌라 빅컷과 무관하게 그대로 둡니다(Ben 11-14)."},
+  {id:"swing", n:"스윙 계좌", tgt:10, steps:"1일차 레버리지·3배 전량 → 3~5일차 개별주·섹터 절반 → 7~10일차 남은 것 정리", why:"단기 계좌라 가장 많이 줄입니다. 손실 종목부터 팔아 양도세(22%, 연 250만 공제)를 줄입니다."},
+  {id:"longterm", n:"장투 계좌", tgt:30, steps:"1일차 QLD·TQQQ 전량 → 5일차 배당 ETF·O 절반 → 10일차 1배 지수로 합계 30%", why:"매도 대금은 SGOV. 수익이 큰 종목은 마지막에, 연 250만 공제 안에서 먼저 실현."},
+  {id:"pension", n:"연금저축 계좌", tgt:null, steps:"매도 없음, 적립도 평소대로", why:"초장기 계좌라 빅컷과 무관하게 그대로 둡니다(Ben 11-14)."},
   {id:"ammo", n:"현금 계좌 (SGOV)", tgt:0, steps:"그대로. 45일 동안 낙폭 사다리 투입 금지", why:"빅컷 직후 첫 반등에 투입하지 않습니다(박종훈: 한 달 반등 후 폭락 사례)."},
   {id:"gold", n:"금현물", tgt:null, steps:"그대로, 매달 1g 계속", why:"금은 위기 때 3~4개월 먼저 반응하는 닻입니다."},
 ];
@@ -500,6 +500,7 @@ function empLight(m){
 }
 
 function priceOf(t, S){ const s=S[t]; return s?.price ?? null; }
+const ACC_LABEL = {longterm:"장투 계좌", ammo:"현금 계좌", pension:"연금저축 계좌", swing:"스윙 계좌", irp:"IRP 계좌"};   // 11-14 Ben: 계좌명 통일
 function valueAccounts(H, S, fx){
   const res = {list:[], total:0, cost:0, directTotal:0};
   if(!H) return res;
@@ -518,7 +519,7 @@ function valueAccounts(H, S, fx){
     const cash = (a.cash_krw||0) + (a.cash_usd||0)*fx;
     val += cash; cost += cash;
     const principal = a.principal_krw ?? cost;
-    res.list.push({id, name:a.name, val, cost, principal, pnl: val-principal, ret: principal? (val/principal-1)*100 : null, cash, risk, riskPct: val? risk/val*100 : 0, pos, raw:a, principalIsCost: a.principal_krw==null});
+    res.list.push({id, name:ACC_LABEL[id]||a.name, val, cost, principal, pnl: val-principal, ret: principal? (val/principal-1)*100 : null, cash, risk, riskPct: val? risk/val*100 : 0, pos, raw:a, principalIsCost: a.principal_krw==null});
     res.total += val; res.cost += principal;
     if(!isKR) res.directTotal += val;
   }
@@ -543,7 +544,7 @@ function qldSplit(dollars, px, fractional){
 const LT_NORMAL = {sgov:0.7, mix:{QQQM:0.4, SPYM:0.3, SCHD:0.3}};
 const LT_POOL = [{lvl:-10, pct:10, mix:"QQQM 70·QLD 30"}, {lvl:-15, pct:22, mix:"QQQM 60·QLD 40"}, {lvl:-20, pct:43, mix:"QLD 80·QQQM 20"}, {lvl:-30, pct:100, mix:"QLD 80·TQQQ 20"}];
 const GOLD_G_KRW = 170000;   // KRX 금현물 월 1g (가격 무관, 과매수 땐 일부 차익 → 현금 풀). 장투 몫에서 차감
-// BITO(11-14 개정): 전체 자산 1%까지는 6개월에 나눠 채우고(월 12만, 시세 탭 매수 후보인 달만 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 상한 전체 3%. 장투 직투 계좌
+// BITO(11-14 개정): 전체 자산 1%까지는 6개월에 나눠 채우고(월 12만, 시세 탭 매수 후보인 달만 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 상한 전체 3%. 장투 계좌
 function sideBuys(E){
   const s=E.H?.settings||{}, lt=(s.monthly_longterm_krw||2000000)/1e4;
   if(lt<100) return {gold:0, bito:0, why:"장투 월 100만 미만이면 금·BITO는 생략합니다."};
@@ -823,7 +824,7 @@ function ordersHTML(){
   <div class="tbl"><table><tr><th>종목</th><th>금액</th><th>현재가</th><th>주수</th><th class="l">이유</th></tr>
   ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
   </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
-    const swT = so? `<h3>⑤ 직투 스윙 — 오늘 기준 (예수금 ${won(so.cash0)})</h3>
+    const swT = so? `<h3>⑤ 스윙 계좌 — 오늘 기준 (예수금 ${won(so.cash0)})</h3>
   <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
   ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
   </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 종목당 12%, 반도체 합계 30%, 3배 합계 10% 한도 적용. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>` : "";
@@ -974,13 +975,13 @@ function planSummaryHTML(lt, pn, am){
   const ltRows = lt.rows.filter(r=>r.man>0.05);
   const ltTot = ltRows.reduce((a,r)=>a+r.man*1e4,0);
   const accts = [
-    {n:"장투 (직투)", sub:"달러 환전", items: ltRows.map(r=>({t:r.t, amt:r.man*1e4, note: r.key==="SCHD"? "배당" : r.t==="BITO"? "비트코인" : r.t==="QLD"? "레버리지" : r.t==="SGOV"? "대기 현금" : ""})), tot: ltTot},
+    {n:"장투 계좌", sub:"달러 환전", items: ltRows.map(r=>({t:r.t, amt:r.man*1e4, note: r.key==="SCHD"? "배당" : r.t==="BITO"? "비트코인" : r.t==="QLD"? "레버리지" : r.t==="SGOV"? "대기 현금" : ""})), tot: ltTot},
     ...(lt.side?.gold? [{n:"금현물 (KRX)", sub:"월 1g", items:[{t:"금현물 1g", amt:lt.side.gold*1e4, note:"가격 무관 적립"}], tot:lt.side.gold*1e4}] : []),
-    {n:"폭락장 현금", sub:"모아 두기", items:[{t:"SGOV", amt:s.monthly_ammo_krw, note: am.action? `${am.action.t.n}차 투입 대상`:"하락 단계까지 대기"}], tot:s.monthly_ammo_krw},
-    {n:"연금저축", sub:"국내상장", items: pn.rows.map(r=>({t:r.name, amt:r.won, note:""})), tot: pn.amt},
+    {n:"현금 계좌", sub:"모아 두기", items:[{t:"SGOV", amt:s.monthly_ammo_krw, note: am.action? `${am.action.t.n}차 투입 대상`:"하락 단계까지 대기"}], tot:s.monthly_ammo_krw},
+    {n:"연금저축 계좌", sub:"국내상장", items: pn.rows.map(r=>({t:r.name, amt:r.won, note:""})), tot: pn.amt},
   ];
-  if(lt.side?.swing) accts.push({n:"스윙", sub:"신호 달만", items:[{t:"스윙 예수금", amt:lt.side.swing*1e4, note:"신호 종목 1회 계좌 25%"}], tot:lt.side.swing*1e4});
-  if(s.monthly_swing_krw>0) accts.push({n:"스윙", sub:"예수금", items:[{t:"예수금", amt:s.monthly_swing_krw, note:"음봉·과대낙폭 매수일까지 대기"}], tot:s.monthly_swing_krw});
+  if(lt.side?.swing) accts.push({n:"스윙 계좌", sub:"신호 달만", items:[{t:"스윙 예수금", amt:lt.side.swing*1e4, note:"신호 종목 1회 계좌 25%"}], tot:lt.side.swing*1e4});
+  if(s.monthly_swing_krw>0) accts.push({n:"스윙 계좌", sub:"예수금", items:[{t:"예수금", amt:s.monthly_swing_krw, note:"음봉·과대낙폭 매수일까지 대기"}], tot:s.monthly_swing_krw});
   const G = accts.reduce((a,x)=>a+x.tot,0) || 1;
   // 자산군 합계: 나스닥100 / S&P500 / 배당 / 레버리지 / 현금성
   const cls = t => /금현물/.test(t)? "금" : /BITO/.test(t)? "비트코인" : /QLD|TQQQ/.test(t)? "레버리지" : /SGOV|예수금/.test(t)? "현금성" : /SPYM|S&P500/.test(t)? "S&P500" : /QQQM|나스닥100/.test(t)? "나스닥100" : "배당";
@@ -1026,10 +1027,10 @@ function vPlan(){
   </table></div>
   ${candAcctHTML()}
   ${lt.notes.length? `<div class="panel" style="margin-top:10px">${lt.notes.map(n=>`<p>· ${esc(n)}</p>`).join("")}</div>`:""}
-  <h3>② 폭락장 현금 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
+  <h3>② 현금 계좌 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
   <div class="panel"><p>매달 SGOV로 적립합니다 (원하면 SGOV 80 + 엔화 20). 현재 잔액 ${won(am.bal)} · 집행 차수 ${am.done.length? am.done.join(", ")+"차":"없음"}.
   ${am.action? `<br><b>이번 달 현금 ${am.action.t.n}차 대상</b> — 폭락 대응 탭 참고.`:""}</p></div>
-  <h3>③ 연금저축 ${won(pn.amt)} (국내상장, 레버리지 불가)</h3>
+  <h3>③ 연금저축 계좌 ${won(pn.amt)} (국내상장, 레버리지 불가)</h3>
   ${pensionCheckHTML(pensionCheck(pn.amt, irpAnnual()), false)}
   <div class="tbl"><table>
     <tr><th>종목</th><th>비중</th><th>금액</th><th>현재가</th><th>주수</th></tr>
@@ -1058,7 +1059,7 @@ function scenSummaryHTML(){
   if(bigCut(E.M.macro||{})) cur.add("cut");
   return `<h2>시나리오 × 계좌 한눈에</h2>
   <p class="muted">지금: QQQ 5년 고점 대비 <b>${pct(E.dd)}</b> · 거시 <b>${esc(E.mode.name)}</b> · 과열 ${overheat(E).score}개 → 주황 줄. 장투 비중은 장투 월 적립(금 1g·BITO를 뺀 몫) = 100 기준.</p>
-  <div class="tbl"><table style="min-width:1100px"><tr><th class="l">시나리오</th><th class="l">연금저축</th><th class="l">IRP</th><th class="l">장투 직투</th><th class="l">현금 계좌 (SGOV)</th><th class="l">스윙</th><th class="l">금현물 · BITO</th></tr>
+  <div class="tbl"><table style="min-width:1100px"><tr><th class="l">시나리오</th><th class="l">연금저축</th><th class="l">IRP</th><th class="l">장투 계좌</th><th class="l">현금 계좌 (SGOV)</th><th class="l">스윙</th><th class="l">금현물 · BITO</th></tr>
   ${SCEN_SUMMARY.map(r=>`<tr${cur.has(r.id)?' style="background:var(--accent-soft)"':""}><td class="l"><b>${r.n}</b><br><span class="muted">${r.c}</span></td>${[r.pen,r.irp,r.lt,r.am,r.sw,r.gb].map(x=>`<td class="l" style="white-space:normal;min-width:150px">${esc(x)}</td>`).join("")}</tr>`).join("")}
   </table></div>
   <p class="note">장투는 B안(11-14 확정): 평상엔 SGOV를 모아 두고, −10%부터 신규 적립 전액 주식 + 모은 SGOV를 단계별로 투입합니다. 이번 달 실제 주문 금액은 '이번 달 매수' 탭에 있습니다.</p>`;
@@ -1138,7 +1139,7 @@ function vCrash(){
     <p>매수: 코스피 −1.5% 이상 음봉일마다 ${won(irp.sleeve*0.1)} (RSI ≤ 25면 2배). 매도: 평단 +5% 절반, +8~10% 나머지.</p>
   </div>`:""}
 
-  ${sw? `<h2>직투 스윙 계좌 (${won(sw.a.val)})</h2>
+  ${sw? `<h2>스윙 계좌 (${won(sw.a.val)})</h2>
   <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th class="l">구분</th><th class="l">조건</th><th class="l">현재</th><th>신호</th><th class="l">매수</th><th class="l">매도</th></tr>
   ${sw.sig.sort((x,y)=>y.on-x.on || y.near-x.near).map(s=>`<tr${s.on?' style="background:var(--accent-soft)"':""}><td><b>${s.t}</b></td><td class="l muted">${esc(s.group)}</td><td class="l">${esc(s.cond)}</td><td class="l">${s.now}</td><td>${s.on? pill("ON","r") : s.near? pill("근접","n") : pill("–","n")}</td><td class="l">${s.buy}</td><td class="l muted">${esc(s.sell)}</td></tr>`).join("")}
   </table></div>
@@ -1341,14 +1342,14 @@ function candidatesHTML(S){
 // 매수 후보 → 계좌 (계좌 역할 기준, 11-14 Ben). 후보는 돈을 더 넣는 게 아니라 그 계좌의 이번 달 몫·현금 안에서 우선순위를 바꿉니다
 function acctFor(t, s){
   const div = ["SCHD","JEPI","JEPQ","DIVO","FDVV","VIG","DGRO"];
-  if(t==="QQQM"||t==="SPYM") return {a:"장투 직투", how:`이번 달 장투 ${t} 몫을 그대로 사되 적립일 전이면 오늘 먼저 집행해도 됩니다. 연금저축·IRP는 같은 지수의 국내상장(${t==="QQQM"?"TIGER 미국나스닥100":"TIGER 미국S&P500"})으로.`};
-  if(t==="MGK") return {a:"장투 직투", how:"이번 달 QQQM 몫의 최대 절반을 MGK로 바꿔 삽니다(빅테크 집중). 국내상장 대체 상품은 없습니다."};
-  if(div.includes(t)) return {a:"장투 직투 (배당 칸)", how:`이번 달 배당 칸(월 30만)을 ${t}로. 연금저축 배당 몫은 TIGER 미국배당다우존스.`};
-  if(t==="O"||t==="MO") return {a:"장투 직투 (배당 칸)", how:"배당 칸의 절반 이하로. 개별 인컴주라 한 종목 쏠림은 피합니다."};
+  if(t==="QQQM"||t==="SPYM") return {a:"장투 계좌", how:`이번 달 장투 ${t} 몫을 그대로 사되 적립일 전이면 오늘 먼저 집행해도 됩니다. 연금저축·IRP는 같은 지수의 국내상장(${t==="QQQM"?"TIGER 미국나스닥100":"TIGER 미국S&P500"})으로.`};
+  if(t==="MGK") return {a:"장투 계좌", how:"이번 달 QQQM 몫의 최대 절반을 MGK로 바꿔 삽니다(빅테크 집중). 국내상장 대체 상품은 없습니다."};
+  if(div.includes(t)) return {a:"장투 계좌 (배당 칸)", how:`이번 달 배당 칸(월 30만)을 ${t}로. 연금저축 배당 몫은 TIGER 미국배당다우존스.`};
+  if(t==="O"||t==="MO") return {a:"장투 계좌 (배당 칸)", how:"배당 칸의 절반 이하로. 개별 인컴주라 한 종목 쏠림은 피합니다."};
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
   if(t==="1489.T") return {a:"직투 엔화 예수금", how:"모아 둔 엔화로만 삽니다(원화 환전 매수 안 함). MDD −15/−25%에서 보조지표(RSI ≤ 30, 200일선 −10%, 볼린저 하단) 2개 이상이면 1/3씩, −35%면 남은 전부. 3~5거래일 나눠서."};
-  if(t==="BITO") return {a:"장투 직투 (BITO 칸)", how:"월 적립 외 추가 매수는 매수 적기일 때만, 전체 자산의 3% 상한 안에서. 업비트·해외 거래소 현물은 쓰지 않습니다."};
-  if(s?.group==="빅테크"||s?.group==="섹터") return {a:"직투 스윙", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
+  if(t==="BITO") return {a:"장투 계좌 (BITO 칸)", how:"월 적립 외 추가 매수는 매수 적기일 때만, 전체 자산의 3% 상한 안에서. 업비트·해외 거래소 현물은 쓰지 않습니다."};
+  if(s?.group==="빅테크"||s?.group==="섹터") return {a:"스윙 계좌", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
 }
 function candList(){ return Object.entries(E.S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || (a[1].rsi??99)-(b[1].rsi??99)); }
@@ -1381,7 +1382,10 @@ async function openChart(t){
   <div id="dlgchart"><p class="muted">차트 불러오는 중…</p></div><div class="tip" id="dlgtip" aria-live="polite"></div>
   <div class="dstats"><div>현재가<b>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</b></div><div>고점 대비<b>${cpct(s.dd_ath ?? s.dd52,1)}</b></div><div>200일선 대비<b>${cpct(s.vs200,1)}</b></div><div>RSI (일·주)<b><span class="${rsiCls(s.rsi)}">${num(s.rsi,0)}</span> · ${num(s.rsi_w,0)}</b></div></div></div>`;
   dlg.querySelector("#dlgclose").onclick=()=>dlg.close();
-  if(!dlg.open) dlg.showModal();
+  if(!dlg.open){ dlg.showModal(); history.pushState({chartdlg:1}, ""); }   // 휴대폰 뒤로 가기로 팝업 닫기
+  if(!dlg._bk){ dlg._bk=1;
+    dlg.addEventListener("close", ()=>{ if(history.state?.chartdlg) history.back(); });
+    window.addEventListener("popstate", ()=>{ if(dlg.open) dlg.close(); }); }
   const C = await chartData();
   const x = C.s?.[t];
   let ser = x? decodeSeries(x) : (s.spark||[]).map((v,i)=>[i===0? (s.spark_dates?.[0]||"") : i===s.spark.length-1? (s.spark_dates?.[1]||"") : "", v]);
@@ -1509,10 +1513,10 @@ function vSettings(){
     <label for="c_total"><b>이번 달 저축액</b></label>
     <div class="inline" style="margin:6px 0 4px"><input id="c_total" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(c.total/1e4)}" style="width:120px"><span>만원</span></div>
     <h3>계좌별 비율</h3>
-    ${f("ammo","폭락장 현금","SGOV에 쌓아 두었다가 하락 단계에 투입")}
+    ${f("ammo","현금 계좌","SGOV에 쌓아 두었다가 하락 단계에 투입")}
     ${f("pension","연금저축","국내상장 배당·나스닥100")}
     ${f("swing","스윙 (선택)","매달 넣는 돈이 없으면 0")}
-    ${f("longterm","장투 (직투)","나머지 전부 · 자동 계산",true)}
+    ${f("longterm","장투 계좌","나머지 전부 · 자동 계산",true)}
     <p id="c_sum" class="note"></p>
     <div class="kvrow"><label for="c_irp">IRP 올해 누적 납입<span class="muted"> 넣을 때마다 합계로 고쳐 주세요</span></label><div class="inline"><input id="c_irp" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(irpAnnual()/1e4)}"><span>만원</span></div></div>
     <div id="c_pen"></div>
@@ -1582,9 +1586,9 @@ function quickBody(total){
     const accts = [
       {n:"장투", sub:"미국 ETF", tot:lt.rows.filter(r=>r.man>0.05).reduce((a,r)=>a+r.man*1e4,0), items:lt.rows.filter(r=>r.man>0.05).map(r=>({t:r.t, amt:r.man*1e4, why:ltWhy(r)}))},
       {n:"현금", sub:"SGOV에 모으기", tot:s.monthly_ammo_krw, items:[{t:"SGOV", amt:s.monthly_ammo_krw, why: am.action? `${am.action.t.n}차 투입 대상` : `QQQ ${RULES.tranches[0].dd}%부터 투입`}]},
-      {n:"연금저축", sub:"국내상장", tot:pn.amt, items:pn.rows.map(r=>({t:r.name, amt:r.won, why:pnWhy(r.t)}))},
+      {n:"연금저축 계좌", sub:"국내상장", tot:pn.amt, items:pn.rows.map(r=>({t:r.name, amt:r.won, why:pnWhy(r.t)}))},
     ];
-    if(s.monthly_swing_krw>0) accts.push({n:"스윙", sub:"예수금", tot:s.monthly_swing_krw, items:[{t:"예수금", amt:s.monthly_swing_krw, why:"음봉·과대낙폭 대기"}]});
+    if(s.monthly_swing_krw>0) accts.push({n:"스윙 계좌", sub:"예수금", tot:s.monthly_swing_krw, items:[{t:"예수금", amt:s.monthly_swing_krw, why:"음봉·과대낙폭 대기"}]});
     const G = accts.reduce((a,x)=>a+x.tot,0)||1, w0 = v=>won(Math.round(v/1e3)*1e3);
     const table = `<div class="tbl"><table class="qtbl"><tr><th class="l">종목 · 근거</th><th>비중</th><th>금액</th></tr>
       ${accts.map(a=>`<tr class="acct"><td class="l"><b>${a.n}</b> <span class="muted">${a.sub}</span></td><td>${num(a.tot/G*100,0)}%</td><td><b>${w0(a.tot)}</b></td></tr>
@@ -1643,7 +1647,7 @@ function vRules(){
     <li><b>새 지표가 규칙에 들어간 곳</b>: ① 볼린저 하단 이탈 → 현금 투입 보조지표 1개 + 스윙 2·3회차 매수일 신호. ② 인간지표 공포(한국 반대매매 2년 상위 10% 또는 AAII 하위 10%) → 현금 투입 보조지표 1개 + 스윙 분할 매수일 신호. ③ 인간지표 과열(미국 빚투 또는 AAII 상위 10%) → 과열 점수 +1, 단 가격 과열 신호가 1개 이상 있을 때만(지표 단독으로는 매도 안 함). ④ 오늘 탭 RSI·공포탐욕·VIX 단계 라벨은 현재 위치 안내이고, 실제 금액은 주문표·현금 차수표를 따릅니다.</li>
     <li><b>보조지표 검증 (2026-11-08)</b>: QQQ·SPY·SOXX·코스피 전 기간. 볼린저 하단 이탈은 이후 21일 수익률이 평소의 약 2배(QQQ 하락 국면 +2.0% vs +0.4%, SOXX +3.2% vs +1.3%)라 스윙 분할매수 날짜 신호로 추가. 슬로우 스토캐스틱은 평소와 차이가 없어 제외. '바닥 확인 후 매수'(스토캐스틱 골든크로스·볼린저 재진입 대기)는 회차 도달일 즉시 매수보다 평균 0.7~2.9% 비싸게 사서 채택 안 함 — 회차 가격에 닿으면 바로 삽니다.</li>
     <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV 50% → QLD(현금 계좌 제외), 추세이탈 재발 시 그 몫만 SGOV로 손절. 백테스트상 장기 연 +0.3~1.1%p, 닷컴형 최대 손실 약 +2%p.</li>
-    <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 5/10/15/15/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 직투 스윙(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
+    <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 5/10/15/15/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 스윙 계좌(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개 이상 또는 HY ≥ 6% → 신규 레버리지 중단.</li>
