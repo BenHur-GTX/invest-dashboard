@@ -191,7 +191,7 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .seg button:hover{background:var(--brand-soft)} .seg button[aria-pressed="true"]:hover{background:var(--brand)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-bottom:4px}
 .legend i{display:inline-block;width:16px;height:3px;vertical-align:3px;margin-right:4px}
-.pchart{width:100%;display:block;touch-action:none}
+.pchart{width:100%;display:block;touch-action:none} .pchart.sub{touch-action:pan-y;margin-top:2px;border-top:1px solid #efede7}
 .tip{font-size:12.5px;color:var(--ink2);min-height:18px}
 .dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;font-size:13px}
 .dstats div{background:#f7f6f2;border-radius:8px;padding:7px 9px} .dstats b{display:block;font-size:15px}
@@ -848,7 +848,7 @@ function planBoost(E){
    진입 = 1년 고점 대비 낙폭 ≤ 빅테크 −30% / QLD −40% / TQQQ·SOXL −55% + 그 종목 RSI ≤ 30. 1회 계좌 25%, 동시 4개·종목당 2개, 같은 종목 5거래일 간격.
    청산 = +5% 절반 · +10% 나머지 · −10% 손절 · 10거래일 무조건. 신호 있는 달만 월 적립에서 20만 배정, 다 정리했을 때 이익의 50%는 장투로 이관. */
 const SWING_TH = {1:-30, 2:-40, 3:-55, g:-70};   // g = 성장주(IONQ·RKLB, 11-14 Ben): 모니터링 위주, 진짜 폭락장에서만 짧게. 1회 계좌 12.5%
-const SWING_GROWTH = ["IONQ","RKLB"], SWING_UNIT = {g:0.125};
+const SWING_GROWTH = ["IONQ","RKLB"], SWING_UNIT = {g:0.125, b:0.25};
 const SWING_BT = ["NVDA","AAPL","MSFT","AMZN","GOOGL","META","AVGO","TSLA","TSM"];
 const SWING_MONTHLY = 20;   // 만원, 신호 있는 달만
 const SWING_EXIT = "+5% 절반 · +10% 나머지 · −10% 손절 · 10거래일이면 무조건 청산";
@@ -856,7 +856,15 @@ function swingSignals(E){
   const S=E.S, list=[...SWING_BT.map(t=>[t,1,"빅테크 1배"]), ["QLD",2,"QLD 2배"], ["TQQQ",3,"TQQQ 3배"], ["SOXL",3,"SOXL 3배"], ...SWING_GROWTH.map(t=>[t,"g","성장주"])];
   return list.map(([t,m,group])=>{ const x=S[t]; if(!x) return null; const d=x.dd52??x.dd_ath, th=SWING_TH[m];
     const on = d!=null && x.rsi!=null && d<=th && x.rsi<=30, near = !on && d!=null && x.rsi!=null && d<=th+10 && x.rsi<=40;
-    return {t, m, group, th, on, near, cond:`1년 고점 ${th}% 이하 + RSI ≤ 30`, now:`고점 ${pct(d,0)} · RSI ${num(x.rsi,0)}`, sell:SWING_EXIT}; }).filter(Boolean);
+    return {t, m, group, th, on, near, cond:`1년 고점 ${th}% 이하 + RSI ≤ 30`, now:`고점 ${pct(d,0)} · RSI ${num(x.rsi,0)}`, sell:SWING_EXIT}; }).filter(Boolean).concat(bounceSignal(S));
+}
+// 11-14 Ben: 약세장 반등 스윙. QQQ 40주 데드(주 마감) + 40주선 대비 −10% 이하 + QQQ 일봉 RSI ≤ 30 → QLD 계좌 25%. 백테스트 data/gapswing_bt.json (QLD 승률 50~80%, 1회 +2.5~+8%)
+function bounceSignal(S){
+  const q=S.QQQ, w=q?.w40; if(!w || !S.QLD) return [];
+  const dead = w.cross==="dead" && !w.up, on = dead && w.gap<=-10 && q.rsi!=null && q.rsi<=30;
+  const near = !on && dead && w.gap<=-7 && q.rsi!=null && q.rsi<=40;
+  return [{t:"QLD", m:"b", group:"QLD 반등 (40주)", th:-10, on, near, cond:"QQQ 40주 데드 + 40주선 −10% 이하 + RSI ≤ 30",
+    now:`${dead? "데드":"40주선 위"} · 이격 ${pct(w.gap,1)} · RSI ${num(q.rsi,0)}`, sell:SWING_EXIT}];
 }
 function planSwing(E){
   const a = E.acc.list.find(x=>x.id==="swing"); if(!a) return null;
@@ -1464,7 +1472,7 @@ async function openChart(t){
   <div class="dlgbody"><div class="seg" role="group" aria-label="기간">${DLG_RANGES.map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k==="3y"}">${l}</button>`).join("")}</div>
   <div class="legend" id="dlglegend"></div>
   <div id="dlgchart"><p class="muted">차트 불러오는 중…</p></div><div class="tip" id="dlgtip" aria-live="polite"></div>
-  <div class="dstats"><div>현재가<b>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</b></div><div>고점 대비<b>${cpct(s.dd_ath ?? s.dd52,1)}</b></div><div>40주선 대비<b>${w? cpct(w.gap,1) : "–"}</b></div><div>RSI (일·주)<b><span class="${rsiCls(s.rsi)}">${num(s.rsi,0)}</span> · ${num(s.rsi_w,0)}</b></div></div></div>`;
+  <div class="dstats"><div>현재가<b>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</b></div><div>고점 대비<b>${cpct(s.dd_ath ?? s.dd52,1)}</b></div><div>40주선 이격도<b>${w? cpct(w.gap,1) : "–"}</b></div><div>RSI (일·주)<b><span class="${rsiCls(s.rsi)}">${num(s.rsi,0)}</span> · ${num(s.rsi_w,0)}</b></div></div></div>`;
   dlg.querySelector("#dlgclose").onclick=dlgClose;
   const wasOpen = dlg.open || dlg.hasAttribute("open");
   if(!wasOpen){
@@ -1478,13 +1486,28 @@ async function openChart(t){
   const x = C.s?.[t];
   const ser = x? decodeSeries(x) : (s.spark||[]).map((v,i)=>[i===0? (s.spark_dates?.[0]||"") : i===s.spark.length-1? (s.spark_dates?.[1]||"") : "", v]);
   const wser = x?.w? decodeSeries(x.w) : [];
-  DLG_STATE = {ser, ma50: smaArr(ser.map(r=>r[1]),50), ma200: smaArr(ser.map(r=>r[1]),200), wser, ma40: smaArr(wser.map(r=>r[1]),40), cur:s.cur, fallback:!x};
+  const ma40 = smaArr(wser.map(r=>r[1]),40);
+  DLG_STATE = {ser, ma50: smaArr(ser.map(r=>r[1]),50), ma200: smaArr(ser.map(r=>r[1]),200), wser, ma40, cur:s.cur, fallback:!x,
+    rsiD: rsiArr(ser.map(r=>r[1])), rsiW: rsiArr(wser.map(r=>r[1])), gapW: wser.map((r,i)=>ma40[i]? (r[1]/ma40[i]-1)*100 : null)};
   const draw = k => { drawPopup(k); dlg.querySelectorAll(".seg button").forEach(bt=>bt.setAttribute("aria-pressed", String(bt.dataset.k===k))); };
   dlg.querySelectorAll(".seg button").forEach(bt=>bt.onclick=()=>draw(bt.dataset.k));
   draw(wser.length>45? "3y" : "1y");
 }
+function rsiArr(c, n=14){ const o=new Array(c.length).fill(null); let g=0,l=0; for(let i=1;i<c.length;i++){ const d=c[i]-c[i-1];
+    if(i<=n){ g+=Math.max(d,0); l+=Math.max(-d,0); if(i===n){ g/=n; l/=n; o[i]=l? 100-100/(1+g/l) : 100; } }
+    else { g=(g*(n-1)+Math.max(d,0))/n; l=(l*(n-1)+Math.max(-d,0))/n; o[i]=l? 100-100/(1+g/l) : 100; } } return o; }
+// 보조 패널: 값 배열(v), 기준선(lines), 범위(lo~hi), 색
+function subPanel(v, X, W, PL, PR, title, lo, hi, guides, col, fmtv){
+  const H=84, PT=16, PB=6, Y=y=>PT+(1-(Math.max(lo,Math.min(hi,y))-lo)/(hi-lo))*(H-PT-PB);
+  const pts=v.map((y,i)=>y==null?null:`${X(i).toFixed(1)},${Y(y).toFixed(1)}`).filter(Boolean).join(" ");
+  const last=[...v].reverse().find(y=>y!=null);
+  return `<svg class="pchart sub" viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="${title}">
+    ${guides.map(([g,c2])=>`<line x1="${PL}" x2="${W-PR}" y1="${Y(g).toFixed(1)}" y2="${Y(g).toFixed(1)}" stroke="${c2}" stroke-dasharray="${g===0?"":"3 3"}"/><text x="${W-PR+6}" y="${(Y(g)+4).toFixed(1)}" font-size="10" fill="#55534e">${fmtv(g)}</text>`).join("")}
+    <polyline fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${pts}"/>
+    <text x="${PL}" y="11" font-size="11" fill="#55534e">${title}${last!=null? ` <tspan font-weight="700" fill="#1c1c1a">${fmtv(last)}</tspan>`:""}</text></svg>`;
+}
 function drawPopup(key){
-  const {ser, ma50, ma200, wser, ma40, cur, fallback} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
+  const {ser, ma50, ma200, wser, ma40, cur, fallback, rsiD, rsiW, gapW} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
   const [, label, kind, n] = DLG_RANGES.find(r=>r[0]===key) || DLG_RANGES[1];
   const wk = kind==="w";
   const base = wk? wser : ser, k0 = Math.max(0, base.length-n), S2=base.slice(k0);
@@ -1499,6 +1522,10 @@ function drawPopup(key){
   const line=(arr,col,w)=>{ const pts=arr.map((v,i)=>v==null?null:`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(" "); return pts? `<polyline fill="none" stroke="${col}" stroke-width="${w}" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${pts}"/>`:""; };
   const fmt=v=> cur==="KRW"? num(v, v<100?2:0) : num(v, v<10?2:v<1000?2:0);
   const ticks=[mx, mn+rg/2, mn].map(v=>`<line x1="${PL}" x2="${W-PR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#ebe9e3"/><text x="${W-PR+6}" y="${(Y(v)+4).toFixed(1)}" font-size="11" fill="#55534e">${fmt(v)}</text>`).join("");
+  const rs=(wk? rsiW : rsiD).slice(k0), gp=wk? gapW.slice(k0) : null;
+  const subs = (wk? (()=>{ const vv=gp.filter(v=>v!=null); if(!vv.length) return ""; const lo=Math.min(-12, Math.min(...vv)-2), hi=Math.max(6, Math.max(...vv)+2);
+      return subPanel(gp, X, W, PL, PR, "40주선 대비 이격도", lo, hi, [[0,"#b9b6ae"],[-10,"#3f6fd1"],[-20,"#1f3f7a"]].filter(([g])=>g>=lo), "#8a1c12", v=>`${v>0?"+":""}${num(v,0)}%`); })() : "")
+    + subPanel(rs, X, W, PL, PR, wk? "주봉 RSI" : "일봉 RSI", 0, 100, [[70,"#e3a59d"],[30,"#9db3e3"]], "#55534e", v=>num(v,0));
   let marks="";
   if(wk){ const m=lines[0][0];   // 주봉 종가가 40주선을 넘나든 주
     for(let i=1;i<S2.length;i++){ if(m[i]==null||m[i-1]==null) continue; const u=S2[i][1]>m[i], u0=S2[i-1][1]>m[i-1]; if(u===u0) continue;
@@ -1507,11 +1534,11 @@ function drawPopup(key){
   box.innerHTML = `<svg class="pchart" viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="${label} 가격 차트">${ticks}
     ${lines.map(l=>line(l[0],l[1],l[2])).join("")}${line(S2.map(r=>r[1]),"var(--brand)",2)}${marks}
     <text x="${PL}" y="${H-6}" font-size="11" fill="#55534e">${esc(S2[0][0])}</text><text x="${W-PR}" y="${H-6}" font-size="11" fill="#55534e" text-anchor="end">${esc(S2[S2.length-1][0])}</text>
-    <line id="xh" x1="0" x2="0" y1="${PT}" y2="${H-PB}" stroke="#55534e" stroke-dasharray="3 3" visibility="hidden"/></svg>${fallback? '<p class="note">상세 차트 데이터가 아직 없어 최근 6개월 흐름만 보여 줍니다.</p>' : wk&&!wser.length? '<p class="note">주봉 데이터는 다음 데이터 갱신 후에 보입니다.</p>':""}`;
-  const svg=box.querySelector("svg"), xh=svg.querySelector("#xh"), tip=document.getElementById("dlgtip"), ref=lines[0][0];
+    <line id="xh" x1="0" x2="0" y1="${PT}" y2="${H-PB}" stroke="#55534e" stroke-dasharray="3 3" visibility="hidden"/></svg>${subs}${fallback? '<p class="note">상세 차트 데이터가 아직 없어 최근 6개월 흐름만 보여 줍니다.</p>' : wk&&!wser.length? '<p class="note">주봉 데이터는 다음 데이터 갱신 후에 보입니다.</p>':""}`;
+  const svg=box.querySelector("svg:not(.sub)"), xh=svg.querySelector("#xh"), tip=document.getElementById("dlgtip"), ref=lines[0][0];
   const move=e=>{ const r=svg.getBoundingClientRect(); const fx=(e.clientX-r.left)/r.width*W; const i=Math.max(0,Math.min(S2.length-1,Math.round((fx-PL)/(W-PL-PR)*(S2.length-1))));
     xh.setAttribute("x1",X(i)); xh.setAttribute("x2",X(i)); xh.setAttribute("visibility","visible");
-    const last=S2[S2.length-1][1]; tip.textContent=`${S2[i][0]} · ${fmt(S2[i][1])}${ref[i]!=null? (wk?" · 40주선 ":" · 200일선 ")+fmt(ref[i]):""} · 현재가 대비 ${pct((last/S2[i][1]-1)*100,1)}`; };
+    const last=S2[S2.length-1][1]; tip.textContent=`${S2[i][0]} · ${fmt(S2[i][1])}${ref[i]!=null? (wk?" · 40주선 ":" · 200일선 ")+fmt(ref[i]):""}${wk&&gp[i]!=null? ` · 이격 ${pct(gp[i],1)}`:""}${rs[i]!=null? ` · RSI ${num(rs[i],0)}`:""} · 현재가 대비 ${pct((last/S2[i][1]-1)*100,1)}`; };
   svg.onpointermove=move; svg.onpointerdown=move; svg.onpointerleave=()=>{ xh.setAttribute("visibility","hidden"); tip.textContent=""; };
 }
 function vMarket(){
@@ -1557,12 +1584,13 @@ function w40Info(){
   // 11-14 Ben 결정: 데드 뒤 8주(마감 주) 지속 = '하락 지속 경계' 단계 표시만. 백테스트 data/w40c_bt.json: 2000~ 11번 중 이후 10%+ 추가 하락 4번
   const dead = w.cross==="dead" && !w.up && w.weeks!=null;
   const long = dead && w.weeks>=8;
-  const stage = !dead? "" : long? `<b>하락 지속 경계 (데드 ${w.weeks}주째)</b>` : `데드 ${w.weeks}/8주`;
+  const gs = w.gap<=-20? "<b>이격 극단(−20%↓)</b>" : w.gap<=-10? "<b>과매도 경계(−10%↓)</b>" : "";   // 11-14 Ben: 이격도 단계(경보), 반등 스윙 신호와 연동
+  const stage = [!dead? "" : long? `<b>하락 지속 경계 (데드 ${w.weeks}주째)</b>` : `데드 ${w.weeks}/8주`, gs].filter(Boolean).join(" · ");
   return {w, fresh, long, stage, txt: txt + (stage? ` · ${stage}` : ""), c: w.up? "g":"r"};
 }
 function w40HTML(){
   const x=w40Info(); if(!x) return "";
-  return `<div class="panel"><p><span class="dot ${x.c}"></span> ${x.txt}</p><p class="muted">경보용입니다. 데드면 하락 추세 경계, 골든이면 추세 회복 신호로 참고하고 매매 규칙(낙폭 사다리·적립)은 바꾸지 않습니다. 백테스트에서 40주선을 우선해 사고팔면 닷컴·금융위기 최대 낙폭은 줄었지만 코로나·2022 같은 V자 반등에서 연 1~1.4%p를 놓쳤고, 1999년 이후 신호 79번 중 66%가 8주 안에 뒤집혔습니다.</p><p class="muted">데드 크로스 뒤 8주(주 마감 기준) 동안 40주선 아래에 머물면 '하락 지속 경계'로 표시합니다. 2000년 이후 11번 있었고, 그 뒤 10% 넘게 더 떨어진 건 4번(2000·2002·2008·2022년)입니다. 나머지 7번은 바닥 근처였습니다. 이때 적립을 스윙 대기로 돌리거나 레버리지를 멈추는 방안도 백테스트했지만, 연 0.03~0.5%p 손해에 최악 손실은 거의 줄지 않아 규칙은 바꾸지 않습니다.</p></div>`;
+  return `<div class="panel"><p><span class="dot ${x.c}"></span> ${x.txt}</p><p class="muted">경보용입니다. 데드면 하락 추세 경계, 골든이면 추세 회복 신호로 참고하고 매매 규칙(낙폭 사다리·적립)은 바꾸지 않습니다. 백테스트에서 40주선을 우선해 사고팔면 닷컴·금융위기 최대 낙폭은 줄었지만 코로나·2022 같은 V자 반등에서 연 1~1.4%p를 놓쳤고, 1999년 이후 신호 79번 중 66%가 8주 안에 뒤집혔습니다.</p><p class="muted">데드 크로스 뒤 8주(주 마감 기준) 동안 40주선 아래에 머물면 '하락 지속 경계'로 표시합니다. 2000년 이후 11번 있었고, 그 뒤 10% 넘게 더 떨어진 건 4번(2000·2002·2008·2022년)입니다. 나머지 7번은 바닥 근처였습니다. 이때 적립을 스윙 대기로 돌리거나 레버리지를 멈추는 방안도 백테스트했지만, 연 0.03~0.5%p 손해에 최악 손실은 거의 줄지 않아 규칙은 바꾸지 않습니다.</p><p class="muted">40주선 대비 이격도가 −10% 아래면 '과매도 경계', −20% 아래면 '이격 극단'으로 표시합니다. 1999년 이후 −15~−20%에 처음 닿은 뒤 평균 30% 더 빠져(2000·2002·2008년) 장투 매수 신호로는 쓰지 않고, 스윙 계좌의 QLD 반등 신호(데드 + −10% 이하 + RSI ≤ 30)에만 씁니다.</p></div>`;
 }
 function vMacro(){
   const m=E.M.macro||{};
