@@ -895,7 +895,7 @@ function buyWindow(day=25){
 /* ============================================================
    렌더
    ============================================================ */
-const VIEWS = [["settings","적립 계산기"],["today","오늘"],["plan","이번 달 매수"],["market","시세"],["people","인간지표"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["macro","거시 점검"],["rules","규칙"]];
+const VIEWS = [["plan","이번 달 매수"],["today","오늘"],["market","시세"],["people","인간지표"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["macro","거시 점검"],["rules","규칙"]];
 let E = null, DATA = null;
 
 /* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
@@ -958,7 +958,7 @@ function vToday(){
   const alerts = E.alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join("");
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
-  ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#settings">적립 계산기</a>에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
+  ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#plan">이번 달 매수</a> 탭 맨 위에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
   <div class="alerts">${alerts}</div>
   ${humanSummary()}
   <h2>오늘 할 일</h2>
@@ -978,32 +978,6 @@ function vToday(){
   </div>
   ${E.acc.list.length? `<h2>계좌 요약</h2>${accountsTable(true)}`:""}`;
 }
-function planSummaryHTML(lt, pn, am){
-  const s = E.H.settings;
-  const ltRows = lt.rows.filter(r=>r.man>0.05);
-  const ltTot = ltRows.reduce((a,r)=>a+r.man*1e4,0);
-  const accts = [
-    {n:"장투 계좌", sub:"달러 환전", items: ltRows.map(r=>({t:r.t, amt:r.man*1e4, note: r.key==="SCHD"? "배당" : r.t==="BITO"? "비트코인" : r.t==="QLD"? "레버리지" : r.t==="SGOV"? "대기 현금" : ""})), tot: ltTot},
-    ...(lt.side?.gold? [{n:"금현물 계좌", sub:lt.side.goldExtra? "KRX · 월 저축 밖 추가":"KRX · 장투 몫에서 이동", items:[{t:"금현물 1g", amt:lt.side.gold*1e4, note:"가격 무관 적립"}], tot:lt.side.gold*1e4}] : []),
-    {n:"현금 계좌", sub:"모아 두기", items:[{t:"SGOV", amt:s.monthly_ammo_krw, note: am.action? `${am.action.t.n}차 투입 대상`:"하락 단계까지 대기"}], tot:s.monthly_ammo_krw},
-    {n:"연금저축 계좌", sub:"국내상장", items: pn.rows.map(r=>({t:r.name, amt:r.won, note:""})), tot: pn.amt},
-  ];
-  if(lt.side?.swing) accts.push({n:"스윙 계좌", sub:"신호 달만", items:[{t:"스윙 예수금", amt:lt.side.swing*1e4, note:"신호 종목 1회 계좌 25%"}], tot:lt.side.swing*1e4});
-  if(s.monthly_swing_krw>0) accts.push({n:"스윙 계좌", sub:"예수금", items:[{t:"예수금", amt:s.monthly_swing_krw, note:"음봉·과대낙폭 매수일까지 대기"}], tot:s.monthly_swing_krw});
-  const G = accts.reduce((a,x)=>a+x.tot,0) || 1;
-  // 자산군 합계: 나스닥100 / S&P500 / 배당 / 레버리지 / 현금성
-  const cls = t => /금현물/.test(t)? "금" : /BITO/.test(t)? "비트코인" : /QLD|TQQQ/.test(t)? "레버리지" : /SGOV|예수금/.test(t)? "현금성" : /SPYM|S&P500/.test(t)? "S&P500" : /QQQM|나스닥100/.test(t)? "나스닥100" : "배당";
-  const mix = {}; accts.forEach(a=>a.items.forEach(i=>{ const k=cls(i.t); mix[k]=(mix[k]||0)+i.amt; }));
-  const won0 = v => Math.round(v/1e3)*1e3;
-  return `<h3>이번 달 매수 한눈에</h3>
-  <div class="tbl"><table class="sumtbl">
-    <tr><th class="l">종목</th><th>계좌 내</th><th>전체</th><th>금액</th></tr>
-    ${accts.map(a=>`<tr class="acct"><td class="l" colspan="3"><b>${esc(a.n)}</b> <span class="muted">${esc(a.sub)} · 전체의 ${num(a.tot/G*100,0)}%</span></td><td><b>${won(won0(a.tot))}</b></td></tr>
-      ${a.items.map(i=>`<tr><td class="l">${esc(i.t)}${i.note? ` <span class="muted">${esc(i.note)}</span>`:""}</td><td>${num(a.tot? i.amt/a.tot*100:0,0)}%</td><td>${num(i.amt/G*100,1)}%</td><td>${won(won0(i.amt))}</td></tr>`).join("")}`).join("")}
-    <tr class="total"><td class="l">전체 합계</td><td></td><td>100%</td><td>${won(won0(G))}</td></tr>
-  </table></div>
-  <p class="note">자산군: ${Object.entries(mix).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${num(v/G*100,0)}%`).join(" · ")}. 종목별 매수 방법과 주수는 아래 계좌별 표에 있습니다. IRP는 월 적립이 없어 여기서 빠집니다.</p>`;
-}
 function mixText(m){ return Object.entries(m).map(([k,v])=>`${k} ${v}%`).join(" + "); }
 
 /* 환전 타이밍 (11-14 Ben): 원/달러를 최근 3년 평균과 비교. 유리하면 월급 들어온 날 달러 몫 100% 환전.
@@ -1017,16 +991,16 @@ function fxHTML(){
           : {c:"r", t:"불리", a:`이번 달 매수 필요분만 환전하고 미리 바꿔 두지 않습니다.${jd!=null&&jd<=0? " 엔화가 3년 평균보다 싸니 남는 원화가 있으면 엔화로 바꿔 모아 둡니다(도쿄 1489 폭락 때 매수용)." : ""}`};
   return `<div class="panel"><p><span class="dot ${g.c}"></span> <b>환전 ${g.t}</b> · 원/달러 <b>${num(u.price,1)}원</b> · 3년 평균 ${num(u.avg3y,1)}원 대비 <b>${dv>0?"+":""}${num(dv,1)}%</b> (3년 중 하위 ${num(u.pct3y,0)}%)${j?.avg3y? ` · 원/엔 100엔 ${num(j.price*100,1)}원, 3년 평균 대비 ${jd>0?"+":""}${num(jd,1)}%`:""}</p><p class="muted">${g.a} 기준: 3년 평균 이하 유리, +5%까지 보통, 그 위 불리.</p></div>`;
 }
-function vPlan(){
+function vPlan(){ return calcHeaderHTML() + `<div id="plan_body">${planBody()}</div>`; }   // 11-14 Ben: 적립 계산기 + 이번 달 매수 통합, 첫 화면
+function planBody(){
   const lt = planLongterm(E), pn = planPension(E), bw = buyWindow(E.H?.settings?.buy_day||25), am = planAmmo(E);
   const tot = lt.rows.reduce((a,r)=>a+r.man,0);
   return `
   <h2>이번 달 적립 (${bw.label})</h2>
   <div class="panel"><p class="lead">현재 구간: <b>${esc(lt.row.label)}</b> · QQQ 고점 대비 ${pct(E.dd)} · 상태 ${E.state}. ${RULES.states[E.state].name}</p>
   <p class="muted">장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></div>
+  ${allocBody()}
   ${fxHTML()}
-  ${cfgBanner()}
-  ${planSummaryHTML(lt, pn, am)}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
   <div class="tbl"><table>
     <tr><th>종목</th><th>금액</th><th>달러</th><th>현재가</th><th>${E.H.settings.fractional?"주수(소수점)":"주수"}</th><th class="l">매수 방법</th></tr>
@@ -1079,7 +1053,7 @@ function scenSummaryHTML(){
   return `<h2>시나리오 한눈에</h2>
   <p class="muted">지금 QQQ 5년 고점 대비 <b>${pct(E.dd)}</b> · 거시 <b>${esc(E.mode.name)}</b>. 장투 숫자는 장투 월 적립 = 100 기준. 매달 금 1g(금현물 계좌)·BITO·스윙 20만(신호 달)은 먼저 뗍니다.</p>
   ${scenCardsHTML(scenCur())}
-  <p class="note">이번 달 실제 금액은 적립 계산기·이번 달 매수 탭에 있습니다.</p>`;
+  <p class="note">이번 달 실제 금액은 이번 달 매수 탭에 있습니다.</p>`;
 }
 function vScenario(){
   const stages=[[-5,1,"평상 (고점 -10% 이내)"],[-12,2,"조정 -10~-15%"],[-17,3,"하락 -15~-20%"],[-25,3,"하락 -20~-30%"],[-33,4,"폭락 -30% 이하"]];
@@ -1515,14 +1489,6 @@ function dualChart(c){
   return `<svg viewBox="0 0 ${W} ${h}" class="chart" preserveAspectRatio="none" role="img" aria-label="자산 곡선"><polyline fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke" points="${c.map((r,i)=>x(i)+","+y(r[2])).join(" ")}"/><polyline fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" points="${c.map((r,i)=>x(i)+","+y(r[1])).join(" ")}"/></svg>`;
 }
 
-function cfgBanner(){
-  const s=E.H.settings;
-  const tot = s.monthly_longterm_krw+s.monthly_ammo_krw+s.monthly_pension_krw+(s.monthly_swing_krw||0);
-  const side = sideBuys(E), g = side.gold*1e4;
-  const ltShow = s.monthly_longterm_krw - (side.goldExtra? 0 : g);
-  return `<div class="panel"><p>월 저축 <b>${won(tot + (side.goldExtra? g:0))}</b> = 장투 ${won(ltShow)} · 현금 ${won(s.monthly_ammo_krw)} · 연금저축 ${won(s.monthly_pension_krw)}${g? " · 금현물 "+won(g):""}${s.monthly_swing_krw? " · 스윙 "+won(s.monthly_swing_krw):""} <a href="#settings">바꾸기</a></p></div>`;
-}
-/* ---------- 적립 계산기 (첫 화면, 11-14 간편 보기 통합): 총액 하나 → 계좌·종목 자동 분배 + 근거 태그 + 지금 판단 ---------- */
 function cfgNow(){
   const c = loadCfg(); if(c) return c;
   if(E.H.skeleton) return {...CFG_DEFAULT, pct:{...CFG_DEFAULT.pct}};
@@ -1530,12 +1496,6 @@ function cfgNow(){
   const P = k=>Math.round((s["monthly_"+k+"_krw"]||0)/t*1000)/10;   // 0.1% 단위 (330만 = 200/85/45가 정확히 나오게)
   const pct = {ammo:P("ammo"), pension:P("pension"), swing:P("swing")}; pct.longterm = Math.round((100-pct.ammo-pct.pension-pct.swing)*10)/10;
   return {total:t, pct, fractional:!!s.fractional, gold_extra:!!s.gold_extra};
-}
-function fxShort(){
-  const u=E.S["KRW=X"], j=E.S["JPYKRW=X"]; if(!u?.avg3y) return "";
-  const dv=(u.price/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
-  const a = dv<=0? "달러 몫 100% 환전" : dv<=5? "이번 달 필요한 달러만 환전" : `필요한 달러만 환전${jd!=null&&jd<=0? ", 남는 원화는 엔화로(도쿄 1489 폭락 대비)" : ""}`;
-  return `환전: 원/달러 ${num(u.price,0)}원, 3년 평균 대비 ${dv>0?"+":""}${num(dv,1)}% → ${a}.${jd!=null? ` 원/엔은 3년 평균 대비 ${jd>0?"+":""}${num(jd,1)}%.`:""}`;
 }
 // 현재 E.H.settings 기준 (호출 쪽에서 임시로 바꿔 넣고 부름)
 function allocBody(){
@@ -1565,7 +1525,7 @@ function allocBody(){
     ${accts.map(a=>`<tr class="acct"><td class="l"><b>${a.n}</b> <span class="muted">${a.sub}</span></td><td>${num(a.tot/G*100,0)}%</td><td><b>${w0(a.tot)}</b></td></tr>
     ${a.items.map(i=>`<tr><td class="l"><span class="tk">${esc(i.t)}</span>${i.why? ` <span class="why">${esc(i.why)}</span>`:""}</td><td>${num(a.tot? i.amt/a.tot*100:0,0)}%</td><td>${w0(i.amt)}</td></tr>`).join("")}`).join("")}
     <tr class="total"><td class="l">합계</td><td>100%</td><td>${w0(G)}</td></tr></table></div>
-    <p class="note">계좌 줄의 %는 전체 대비, 종목 줄은 계좌 안 비율. IRP는 월 적립이 없어 빠집니다. 주수·매수 방법은 <a href="#plan">이번 달 매수</a> 탭. ${esc(fxShort())}</p>`;
+    <p class="note">계좌 줄의 %는 전체 대비, 종목 줄은 계좌 안 비율. IRP는 월 적립이 없어 빠집니다. 주수·매수 방법은 아래 계좌별 표에 있습니다.</p>`;
   const modeTxt = {공격:"레버리지 정상", 중립:"레버리지 절반만", 수비:"레버리지 멈춤"}[E.mode.name] || "";
   const tiles = [
     ["QQQ 낙폭", pct(E.dd), `${lt.row.label} 구간`],
@@ -1577,7 +1537,7 @@ function allocBody(){
   return `<h3>지금 판단</h3><div class="qtiles">${tiles.map(([k,v,m])=>`<div><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="m">${esc(m)}</div></div>`).join("")}</div>
     <h3>이번 달 계좌별 매수</h3>${table}` + (pc.msgs.some(m=>m.c!=="info")? pensionCheckHTML(pc, true) : "");
 }
-function vSettings(){
+function calcHeaderHTML(){
   const c = cfgNow();
   const r1 = v=>Math.round((v||0)*10)/10;
   const P = {ammo:r1(c.pct.ammo), pension:r1(c.pct.pension), swing:r1(c.pct.swing)};
@@ -1588,8 +1548,7 @@ function vSettings(){
     <div class="inline"><input id="c_total" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(c.total/1e4)}" aria-label="이번 달 저축액(만원)" style="width:140px;font-size:20px;font-weight:700"><span style="font-size:17px">만원</span></div>
     <p class="note" id="c_line"></p>
   </div>
-  <div id="c_prev"></div>
-  <details class="panel" id="c_more" style="margin-top:14px"><summary><b>계좌 비율 · 옵션 바꾸기</b></summary>
+  <details class="panel" id="c_more"><summary><b>계좌 비율 · 옵션 바꾸기</b></summary>
     ${f("ammo","현금 계좌","SGOV에 쌓아 두었다가 −25%부터 투입")}
     ${f("pension","연금저축 계좌","국내상장 배당·나스닥100")}
     ${f("swing","스윙 계좌 고정 적립 (선택)","0이 기본 · 신호 있는 달엔 장투 몫에서 20만 자동")}
@@ -1599,8 +1558,8 @@ function vSettings(){
     <label class="check"><input id="c_frac" type="checkbox" ${c.fractional?"checked":""}> 미국주식 소수점 매수 사용 (끄면 1주 단위로 계산)</label>
     <div class="kvrow"><label for="c_irp">IRP 올해 누적 납입<span class="muted"> 넣을 때마다 합계로 고쳐 주세요</span></label><div class="inline"><input id="c_irp" type="number" inputmode="numeric" min="0" step="1" value="${Math.round(irpAnnual()/1e4)}"><span>만원</span></div></div>
     <div id="c_pen"></div>
-    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button id="c_save">저장하고 주수까지 보기</button><button class="ghost" id="c_reset">기본값으로</button></div>
-    <p class="note">입력값은 이 기기 브라우저에만 저장됩니다. 계좌마다 따로 계산하므로 한 계좌 비율을 바꿔도 다른 계좌의 종목 구성은 그대로이고 금액만 바뀝니다.</p>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="ghost" id="c_reset">기본값으로</button></div>
+    <p class="note">바꾸면 아래 주문표가 바로 바뀌고 이 기기 브라우저에 저장됩니다(다른 탭에도 적용). 계좌마다 따로 계산하므로 한 계좌 비율을 바꿔도 다른 계좌의 종목 구성은 그대로이고 금액만 바뀝니다.</p>
     <ol class="steps" style="margin-top:8px">
       <li>현금은 20~30%를 권합니다. 너무 작으면 폭락장에서 차수별 투입이 의미 없을 만큼 작아집니다.</li>
       <li>장투 월 금액이 QQQM 1주(약 ${won((priceOf("QQQM",E.S)||0)*E.fx)})보다 작으면 소수점 매수를 켜거나 몇 달 모아서 사세요.</li>
@@ -1608,36 +1567,33 @@ function vSettings(){
     </ol>
   </details>`;
 }
-function bindSettings(){
+function bindPlan(){
   const keys=["longterm","ammo","pension","swing"], free=["ammo","pension","swing"];
   const read=()=>{ const t=Math.max(0,Math.round(+$("#c_total").value||0))*1e4;
     const P={}; free.forEach(k=>{ let v=Math.round((+$("#p_"+k).value||0)*10)/10; P[k]=Math.min(100,Math.max(0,v)); });
     P.longterm = Math.round((100-P.ammo-P.pension-P.swing)*10)/10; return {t,P}; };
   const cur=()=>{ const {t,P}=read(); return {total:t, pct:P, fractional:$("#c_frac").checked, gold_extra:$("#c_gold").checked}; };
-  const upd=()=>{ const {t,P}=read(); const bad = P.longterm<0 || t<=0;
+  const upd=(save=true)=>{ const {t,P}=read(); const bad = P.longterm<0 || t<=0;
     $("#p_longterm").value = Math.max(0,P.longterm);
     keys.forEach(k=>{ $("#o_"+k).textContent = won(t*Math.max(0,P[k])/100); });
     $("#c_sum").innerHTML = P.longterm<0 ? `<span class="r">현금·연금저축·스윙 합이 ${100-P.longterm}%입니다. 100% 이하로 줄여 주세요</span>` : `합계 100% = ${won(t)}`;
-    $("#c_line").innerHTML = bad? "" : `장투 ${P.longterm}% · 현금 ${P.ammo}% · 연금저축 ${P.pension}%${P.swing? " · 스윙 "+P.swing+"%":""} · 금현물 1g은 ${$("#c_gold").checked? "저축 밖에서 추가":"장투 몫에서"} (<a href="#settings" id="c_open">바꾸기</a>). 종목·비중은 규칙이 정합니다.`;
+    $("#c_line").innerHTML = bad? "" : `장투 ${P.longterm}% · 현금 ${P.ammo}% · 연금저축 ${P.pension}%${P.swing? " · 스윙 "+P.swing+"%":""} · 금현물 1g은 ${$("#c_gold").checked? "저축 밖에서 추가":"장투 몫에서"} (<a href="#c_more" id="c_open">바꾸기</a>). 종목·비중은 규칙이 정합니다.`;
     const op=$("#c_open"); if(op) op.onclick=e=>{ e.preventDefault(); $("#c_more").open=true; $("#c_more").scrollIntoView({behavior:"smooth"}); };
-    $("#c_save").disabled = bad;
     $("#c_pen").innerHTML = pensionCheckHTML(pensionCheck(t*Math.max(0,P.pension)/100, (+$("#c_irp").value||0)*1e4));
-    if(bad){ $("#c_prev").innerHTML=""; return; }
-    const s=E.H.settings, keep={...s};
-    const r3 = v=>Math.round(v/1e3)*1e3;
+    if(bad) return;
+    const s=E.H.settings; const r3 = v=>Math.round(v/1e3)*1e3;
     Object.assign(s,{monthly_ammo_krw:r3(t*P.ammo/100), monthly_pension_krw:r3(t*P.pension/100), monthly_swing_krw:r3(t*P.swing/100)});
     Object.assign(s,{monthly_longterm_krw:t-s.monthly_ammo_krw-s.monthly_pension_krw-s.monthly_swing_krw, fractional:$("#c_frac").checked, gold_extra:$("#c_gold").checked});
-    try{ $("#c_prev").innerHTML = allocBody(); }
-    catch(e){ $("#c_prev").innerHTML = `<p class="muted">계산 실패: ${esc(e.message)}</p>`; console.error(e); }
-    finally{ Object.keys(s).forEach(k=>delete s[k]); Object.assign(s,keep); }
+    if(save) saveCfg(cur());
+    try{ $("#plan_body").innerHTML = planBody(); document.querySelectorAll("#plan_body [data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart)); }
+    catch(e){ $("#plan_body").innerHTML = `<p class="muted">계산 실패: ${esc(e.message)}</p>`; console.error(e); }
   };
   $("#c_total").addEventListener("input",()=>upd());
   free.forEach(k=>$("#p_"+k).addEventListener("input",()=>upd()));
   free.forEach(k=>$("#p_"+k).addEventListener("change",()=>{ $("#p_"+k).value=Math.round((+$("#p_"+k).value||0)*10)/10; upd(); }));
   $("#c_frac").addEventListener("change",()=>upd()); $("#c_gold").addEventListener("change",()=>upd());
   $("#c_irp").addEventListener("input",()=>{ try{ localStorage.setItem("irp_annual", Math.max(0,Math.round(+$("#c_irp").value||0))*1e4); }catch(e){} upd(); });
-  upd();
-  $("#c_save").onclick=()=>{ saveCfg(cur()); location.hash="plan"; location.reload(); };
+  upd(false);
   $("#c_reset").onclick=()=>{ try{ localStorage.removeItem("user_cfg"); localStorage.removeItem("quick_total"); }catch(e){} location.reload(); };
 }
 
@@ -1684,13 +1640,14 @@ function vRules(){
 }
 
 function render(){
-  const home = "settings";   // 첫 화면: 적립 계산기 (11-14 Ben, 간편 보기 통합)
+  const home = "plan";   // 첫 화면: 이번 달 매수(적립 계산기 통합, 11-14 Ben)
   const h = (location.hash||"#"+home).slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : home;
-  $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<3?` class="key${i===2?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
-  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules, settings:vSettings}[view];
+  if(view!==h && location.hash) history.replaceState(null,"",location.pathname+location.search+"#"+view);   // 없어진 탭 주소(#settings 등) 정리
+  $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<2?` class="key${i===1?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
+  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
-  if(view==="settings") bindSettings();
+  if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
   document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart));
   if(view==="rules"){
@@ -1703,7 +1660,7 @@ function footer(){ return `<footer>투자 판단 보조 도구입니다. 규칙 
 
 (async()=>{
   try{
-    if(new URLSearchParams(location.search).has("simple") || location.hash==="#quick") history.replaceState(null,"",location.pathname+"#settings");   // 옛 간편 보기 주소 → 적립 계산기
+    if(new URLSearchParams(location.search).has("simple") || location.hash==="#quick" || location.hash==="#settings") history.replaceState(null,"",location.pathname+"#plan");   // 옛 간편 보기·적립 계산기 주소 → 이번 달 매수
     DATA = await load();
     E = engine(DATA);
     renderHero(); render();
