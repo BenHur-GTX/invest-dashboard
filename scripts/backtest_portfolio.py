@@ -1318,6 +1318,106 @@ def btc_study(D, y):
     json.dump(out, open(os.path.join(B.DATA, "btc_core_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def gap40_study(D):
+    """11-14 Ben: 40주선 하향 이격도(주봉 종가/40주선 −1)를 매수 타점으로? → data/gap40_bt.json
+    1) 이벤트: 이격도가 처음 T% 이하로 내려간 주(이격도가 −3% 위로 회복하면 재무장). 이후 3·6·12개월 수익, 12개월 안 추가 최저, 그때 5년 고점 낙폭.
+    2) 같은 기준으로 5년 고점 낙폭 사다리(−10/−15/−20/−25/−30/−40) 첫 도달 이벤트.
+    3) 현금 풀 비교: 월 1씩 단기금리로 모으고 규칙대로 QQQ 매수(보유 유지). 사다리 / 이격도 / 둘 다 / 매달 바로 매수."""
+    dates, c, dd = D["dates"], D["c"], D["dd"]; P = D["P"]["QQQ"]; rf = D["rf"]; n = len(dates)
+    wk = {}
+    for k in range(n):
+        wk[datetime.strptime(dates[k], "%Y-%m-%d").isocalendar()[:2]] = k
+    wi = [wk[x] for x in sorted(wk)]
+    if datetime.strptime(dates[-1], "%Y-%m-%d").weekday() != 4: wi = wi[:-1]
+    wc = [c[k] for k in wi]
+    gap = [None] * len(wi)
+    for j in range(39, len(wi)):
+        gap[j] = (wc[j] / (sum(wc[j - 39:j + 1]) / 40) - 1) * 100
+    gap_d = [None] * n; j = 0   # 일별로 '직전 마감 주' 이격도
+    for k in range(n):
+        while j + 1 < len(wi) and wi[j + 1] <= k: j += 1
+        gap_d[k] = gap[j] if wi[j] <= k else None
+
+    def fwd(k, days):
+        k2 = min(n - 1, k + days)
+        return round((P[k2] / P[k] - 1) * 100, 1) if k + days < n else None
+
+    def ev_stats(evs):
+        out = {"n": len(evs)}
+        for key in ("r3", "r6", "r12", "low12"):
+            v = [e[key] for e in evs if e[key] is not None]
+            out[key + "_avg"] = round(sum(v) / len(v), 1) if v else None
+            out[key + "_med"] = round(sorted(v)[len(v) // 2], 1) if v else None
+            if key in ("r6", "r12"): out[key + "_win"] = round(sum(1 for x in v if x > 0) / len(v) * 100) if v else None
+        lv = [e["low12"] for e in evs if e["low12"] is not None]
+        out["low12_le_-10"] = sum(1 for x in lv if x <= -10); out["low12_le_-20"] = sum(1 for x in lv if x <= -20)
+        return out
+
+    def mk(k):
+        lo = min(c[k:min(n, k + 252)])
+        return {"date": dates[k], "gap": round(gap_d[k], 1) if gap_d[k] is not None else None, "dd5y": round(dd[k], 1),
+                "r3": fwd(k, 63), "r6": fwd(k, 126), "r12": fwd(k, 252), "low12": round((lo / c[k] - 1) * 100, 1)}
+
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "from": dates[wi[39]], "gap_now": round(gap[-1], 1),
+           "notes": ["이격도 = QQQ 주봉 종가 / 40주 이동평균 − 1, 주 마감 기준", "이벤트 = 처음 T 이하로 내려간 주(−3% 위로 회복하면 다시 셈)",
+                     "수익은 QQQ 배당 포함, low12 = 이후 12개월 안 최저 종가까지 추가 하락", "세금·수수료 제외"],
+           "gap": {}, "ladder": {}, "base": {}, "pool": []}
+    base = [mk(k) for k in range(wi[39], n - 1, 5)]
+    out["base"] = ev_stats(base)
+    for T in (-5, -10, -15, -20, -25, -30):
+        evs = []; armed = True
+        for k in range(n):
+            g = gap_d[k]
+            if g is None: continue
+            if g > -3: armed = True
+            elif armed and g <= T and (k == 0 or gap_d[k - 1] != g):
+                evs.append(mk(k)); armed = False
+        out["gap"][str(T)] = {**ev_stats(evs), "events": evs}
+    for T in (-10, -15, -20, -25, -30, -40):
+        evs = []; armed = True
+        for k in range(n):
+            if dd[k] > -3: armed = True
+            elif armed and dd[k] <= T:
+                evs.append(mk(k)); armed = False
+        out["ladder"][str(T)] = {**ev_stats(evs), "events": evs}
+    # 현금 풀 비교
+    LAD = [(-25, 5), (-30, 10), (-35, 15), (-40, 15), (-50, 25), (-60, 30)]   # 현금 계좌 사다리(모은 돈 %)
+    GAP = [(-10, 25), (-15, 25), (-20, 25), (-25, 25)]
+    def pool(mode, k0):
+        cash = 0.0; sh = 0.0; flows = []; last_m = None; ld = set(); gd = set(); spent_l = 0.0; spent_g = 0.0; vals = []
+        for k in range(k0, n):
+            if k > k0: cash *= 1 + rf[k - 1] / 252
+            m = dates[k][:7]
+            if m != last_m and int(dates[k][8:]) >= 1:
+                last_m = m; flows.append((dates[k], -1.0))
+                if mode == "dca": sh += 1.0 / P[k]
+                else: cash += 1.0
+            if mode in ("lad", "both"):
+                if dd[k] > -3: ld = set()
+                for lv, pc in LAD:
+                    if dd[k] <= lv and lv not in ld:
+                        rem = 100 - sum(p for l2, p in LAD if l2 in ld); x = cash * pc / rem if rem > 0 else cash
+                        sh += x / P[k]; cash -= x; ld.add(lv)
+            if mode in ("gap", "both") and gap_d[k] is not None:
+                if gap_d[k] > -3: gd = set()
+                for lv, pc in GAP:
+                    if gap_d[k] <= lv and lv not in gd:
+                        rem = 100 - sum(p for l2, p in GAP if l2 in gd); x = cash * pc / rem if rem > 0 else cash
+                        sh += x / P[k]; cash -= x; gd.add(lv)
+            vals.append(cash + sh * P[k])
+        pk = 0; mdd = 0
+        for v in vals: pk = max(pk, v); mdd = min(mdd, v / pk - 1)
+        fv = cash + sh * P[n - 1]
+        return {"irr": xirr(flows, dates[n - 1], fv), "end": round(fv, 1), "cash_share_end": round(cash / fv * 100, 1), "mdd": round(mdd * 100, 1)}
+    for wn, a in (("1999-12~", "1999-12-01"), ("2007-10~", "2007-10-01"), ("2010~", "2010-01-04"), ("2016~", "2016-01-04"), ("2020-02~", "2020-02-19"), ("2021-11~", "2021-11-19")):
+        k0 = next(k for k in range(n) if dates[k] >= a)
+        for mode, lab in (("dca", "매달 바로 QQQ"), ("lad", "낙폭 사다리(현금 계좌 규칙)"), ("gap", "이격도 −10/−15/−20/−25에 25%씩"), ("both", "사다리 + 이격도")):
+            r = pool(mode, k0); out["pool"].append({"window": wn, "mode": lab, **r}); print("GAPP", wn, lab, r, flush=True)
+    for T, v in out["gap"].items(): print("GAP", T, {k: x for k, x in v.items() if k != "events"}, flush=True)
+    for T, v in out["ladder"].items(): print("LAD", T, {k: x for k, x in v.items() if k != "events"}, flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "gap40_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def swing_study(D):
     """단기 급락 스윙(짧게 사고 나오기) 규칙 비교 → data/swing_bt.json. 스윙 계좌 단독, 쉬는 돈은 SGOV"""
     dates, P, c, rsi = D["dates"], D["P"], D["c"], D["rsi"]
@@ -1479,6 +1579,8 @@ def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_GAP"):
+        gap40_study(D); print("ok"); return
     if os.environ.get("ONLY_BTC"):
         btc_study(D, y); print("ok"); return
     if os.environ.get("ONLY_N2"):
