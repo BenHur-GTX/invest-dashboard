@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC") or os.environ.get("ONLY_GSW")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -299,7 +299,7 @@ def run(D, i0, end=None, cfg=None):
     curve, prin_curve, log = [], [], []
     ltf, ltc = [], []
     sw_b = True; sw_ok = 0; sw_cnt = [0, 0]
-    CG = cfg.get("gate") == "conf"; LEVC = cfg.get("lev_conf")   # 8주 지속 데드(확인된 하락 추세) 게이트
+    CG = cfg.get("gate") == "conf"; LEVC = cfg.get("lev_conf"); GG = cfg.get("gap_gate"); gst = False; INST = cfg.get("sw40_inst", "QLD"); s4_tr = []; s4_stop = [0]; s4_div = [0.0]   # 8주 지속 데드(확인된 하락 추세) 게이트
     SW40 = cfg.get("sw40"); s4_lots = []; s4_prin = 0.0; s4_n = [0, 0]   # (d) Ben 11-14: 40주선 아래에선 장투 적립 일부를 스윙(QLD 단타)으로
     W = cfg.get("w40"); lev_sold = {"longterm": 0.0, "ammo": 0.0}; one_sold = 0.0   # QQQ 주봉 40주선 신호 (11-14 Ben 검증)
     for i in range(i0, end + 1):
@@ -354,6 +354,11 @@ def run(D, i0, end=None, cfg=None):
             u = D["w40"][i]; up = True if u is None else u; wx = D["w40x"][i]
         conf = bool(D.get("w40c") and D["w40c"][i])
         bear = conf if CG else (not up)
+        if GG is not None:   # 11-14 Ben: 데드 + 40주선 하향 이격도 ≤ GG면 스윙 모드, 골든까지 유지
+            gp = D["gap40"][i]
+            if wx == 1 or up: gst = False
+            elif gp is not None and gp <= GG: gst = True
+            bear = gst
         if SW40 and wx == 1:   # 골든: 스윙 계좌에 남은 현금은 장투로(QQQ60·SPY40)
             s4 = A["sw40"]; got = s4.sell("SGOV", s4.v("SGOV", P, i, fx), P, i, fx)
             if got > 0: A["longterm"].buy("QQQ", got * 0.6, P, i, fx); A["longterm"].buy("SPY", got * 0.4, P, i, fx); ltf.append((d, -got)); s4_prin = max(0.0, s4_prin - got)
@@ -461,7 +466,7 @@ def run(D, i0, end=None, cfg=None):
                 if bc_on: al = {"SGOV": sum(al.values())}   # 빅컷 45일: 신규 장투 적립 전액 SGOV
                 if SW40 and bear:
                     x = sum(al.values()) * SW40; al = {k: v * (1 - SW40) for k, v in al.items()}
-                    A["sw40"].buy("SGOV", x * MAN, P, i, fx); s4_prin += x * MAN; ltf.append((d, x * MAN))
+                    A["sw40"].buy("SGOV", x * MAN, P, i, fx); s4_prin += x * MAN; ltf.append((d, x * MAN)); s4_div[0] += x
                 for t, man in al.items():
                     lt.buy(divt if t == "SCHD" else t, man * MAN, P, i, fx)
                 # 분기 30% 상한 정리
@@ -564,20 +569,21 @@ def run(D, i0, end=None, cfg=None):
         prev_st = st
         # ---------- (d) 40주선 아래 QLD 단타: QQQ RSI ≤ 30이면 계좌 25%씩(최대 4개, 5거래일 간격), +5% 절반·+10% 나머지·−10% 손절·10거래일 청산 ----------
         if SW40:
-            s4 = A["sw40"]; qp = P["QLD"][i] * fx
+            s4 = A["sw40"]; qp = P[INST][i] * fx
             if bear and rsi is not None and rsi <= 30 and len(s4_lots) < 4 and (not s4_lots or i - s4_lots[-1]["i"] >= 5):
                 amt = s4.sell("SGOV", min(s4.val(P, i, fx) * 0.25, s4.v("SGOV", P, i, fx)), P, i, fx)
                 if amt > 0:
-                    q0 = s4.u.get("QLD", 0); s4.buy("QLD", amt, P, i, fx); s4_lots.append({"q": s4.u["QLD"] - q0, "px": P["QLD"][i], "i": i, "half": False})
+                    q0 = s4.u.get(INST, 0); s4.buy(INST, amt, P, i, fx); s4_lots.append({"q": s4.u[INST] - q0, "px": P[INST][i], "i": i, "half": False, "cost": amt, "got": 0.0})
             keep = []
             for lot in s4_lots:
-                g = P["QLD"][i] / lot["px"] - 1; sellq = 0
-                if g <= -0.10 or i - lot["i"] >= 10: sellq = lot["q"]; s4_n[1 if g > 0 else 0] += 1
+                g = P[INST][i] / lot["px"] - 1; sellq = 0
+                if g <= -0.10 or i - lot["i"] >= 10: sellq = lot["q"]; s4_n[1 if g > 0 else 0] += 1; s4_stop[0] += g <= -0.10
                 elif not lot["half"] and g >= 0.05: sellq = lot["q"] / 2; lot["half"] = True
                 elif lot["half"] and g >= 0.10: sellq = lot["q"]; s4_n[1] += 1
                 if sellq:
-                    got = s4.sell("QLD", sellq * qp, P, i, fx); s4.buy("SGOV", got, P, i, fx); lot["q"] -= sellq
+                    got = s4.sell(INST, sellq * qp, P, i, fx); s4.buy("SGOV", got, P, i, fx); lot["q"] -= sellq; lot["got"] += got
                 if lot["q"] > 1e-12: keep.append(lot)
+                else: s4_tr.append(round((lot["got"] / lot["cost"] - 1) * 100, 2) if lot["cost"] else 0)
             s4_lots = keep
             if not s4_lots and s4_prin > 0:
                 v4 = s4.val(P, i, fx)
@@ -616,7 +622,7 @@ def run(D, i0, end=None, cfg=None):
         tot = sum(a.val(P, i, fx) for a in A.values())
         curve.append(tot); prin_curve.append(principal)
         ltc.append((A["longterm"].val(P, i, fx), A["longterm"].v("SGOV", P, i, fx), stage))
-    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end, ltf=ltf, ltc=ltc, sw=sw_cnt, s4=s4_n)
+    return dict(curve=curve, prin=prin_curve, flows=flows, A=A, log=log, i0=i0, end=end, ltf=ltf, ltc=ltc, sw=sw_cnt, s4=s4_n, s4_tr=s4_tr, s4_stop=s4_stop[0], s4_div=s4_div[0])
 
 
 # ================= 통합 4종목 전략 (SPYM·QQQM·SGOV·QLD) =================
@@ -1318,6 +1324,159 @@ def btc_study(D, y):
     json.dump(out, open(os.path.join(B.DATA, "btc_core_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def gap40_study(D):
+    """11-14 Ben: 40주선 하향 이격도(주봉 종가/40주선 −1)를 매수 타점으로? → data/gap40_bt.json
+    1) 이벤트: 이격도가 처음 T% 이하로 내려간 주(이격도가 −3% 위로 회복하면 재무장). 이후 3·6·12개월 수익, 12개월 안 추가 최저, 그때 5년 고점 낙폭.
+    2) 같은 기준으로 5년 고점 낙폭 사다리(−10/−15/−20/−25/−30/−40) 첫 도달 이벤트.
+    3) 현금 풀 비교: 월 1씩 단기금리로 모으고 규칙대로 QQQ 매수(보유 유지). 사다리 / 이격도 / 둘 다 / 매달 바로 매수."""
+    dates, c, dd = D["dates"], D["c"], D["dd"]; P = D["P"]["QQQ"]; rf = D["rf"]; n = len(dates)
+    wk = {}
+    for k in range(n):
+        wk[datetime.strptime(dates[k], "%Y-%m-%d").isocalendar()[:2]] = k
+    wi = [wk[x] for x in sorted(wk)]
+    if datetime.strptime(dates[-1], "%Y-%m-%d").weekday() != 4: wi = wi[:-1]
+    wc = [c[k] for k in wi]
+    gap = [None] * len(wi)
+    for j in range(39, len(wi)):
+        gap[j] = (wc[j] / (sum(wc[j - 39:j + 1]) / 40) - 1) * 100
+    gap_d = [None] * n; j = 0   # 일별로 '직전 마감 주' 이격도
+    for k in range(n):
+        while j + 1 < len(wi) and wi[j + 1] <= k: j += 1
+        gap_d[k] = gap[j] if wi[j] <= k else None
+
+    def fwd(k, days):
+        k2 = min(n - 1, k + days)
+        return round((P[k2] / P[k] - 1) * 100, 1) if k + days < n else None
+
+    def ev_stats(evs):
+        out = {"n": len(evs)}
+        for key in ("r3", "r6", "r12", "low12"):
+            v = [e[key] for e in evs if e[key] is not None]
+            out[key + "_avg"] = round(sum(v) / len(v), 1) if v else None
+            out[key + "_med"] = round(sorted(v)[len(v) // 2], 1) if v else None
+            if key in ("r6", "r12"): out[key + "_win"] = round(sum(1 for x in v if x > 0) / len(v) * 100) if v else None
+        lv = [e["low12"] for e in evs if e["low12"] is not None]
+        out["low12_le_-10"] = sum(1 for x in lv if x <= -10); out["low12_le_-20"] = sum(1 for x in lv if x <= -20)
+        return out
+
+    def mk(k):
+        lo = min(c[k:min(n, k + 252)])
+        return {"date": dates[k], "gap": round(gap_d[k], 1) if gap_d[k] is not None else None, "dd5y": round(dd[k], 1),
+                "r3": fwd(k, 63), "r6": fwd(k, 126), "r12": fwd(k, 252), "low12": round((lo / c[k] - 1) * 100, 1)}
+
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "from": dates[wi[39]], "gap_now": round(gap[-1], 1),
+           "notes": ["이격도 = QQQ 주봉 종가 / 40주 이동평균 − 1, 주 마감 기준", "이벤트 = 처음 T 이하로 내려간 주(−3% 위로 회복하면 다시 셈)",
+                     "수익은 QQQ 배당 포함, low12 = 이후 12개월 안 최저 종가까지 추가 하락", "세금·수수료 제외"],
+           "gap": {}, "ladder": {}, "base": {}, "pool": []}
+    base = [mk(k) for k in range(wi[39], n - 1, 5)]
+    out["base"] = ev_stats(base)
+    for T in (-5, -10, -15, -20, -25, -30):
+        evs = []; armed = True
+        for k in range(n):
+            g = gap_d[k]
+            if g is None: continue
+            if g > -3: armed = True
+            elif armed and g <= T and (k == 0 or gap_d[k - 1] != g):
+                evs.append(mk(k)); armed = False
+        out["gap"][str(T)] = {**ev_stats(evs), "events": evs}
+    for T in (-10, -15, -20, -25, -30, -40):
+        evs = []; armed = True
+        for k in range(n):
+            if dd[k] > -3: armed = True
+            elif armed and dd[k] <= T:
+                evs.append(mk(k)); armed = False
+        out["ladder"][str(T)] = {**ev_stats(evs), "events": evs}
+    # 현금 풀 비교
+    LAD = [(-25, 5), (-30, 10), (-35, 15), (-40, 15), (-50, 25), (-60, 30)]   # 현금 계좌 사다리(모은 돈 %)
+    GAP = [(-10, 25), (-15, 25), (-20, 25), (-25, 25)]
+    def pool(mode, k0):
+        cash = 0.0; sh = 0.0; flows = []; last_m = None; ld = set(); gd = set(); spent_l = 0.0; spent_g = 0.0; vals = []
+        for k in range(k0, n):
+            if k > k0: cash *= 1 + rf[k - 1] / 252
+            m = dates[k][:7]
+            if m != last_m and int(dates[k][8:]) >= 1:
+                last_m = m; flows.append((dates[k], -1.0))
+                if mode == "dca": sh += 1.0 / P[k]
+                else: cash += 1.0
+            if mode in ("lad", "both"):
+                if dd[k] > -3: ld = set()
+                for lv, pc in LAD:
+                    if dd[k] <= lv and lv not in ld:
+                        rem = 100 - sum(p for l2, p in LAD if l2 in ld); x = cash * pc / rem if rem > 0 else cash
+                        sh += x / P[k]; cash -= x; ld.add(lv)
+            if mode in ("gap", "both") and gap_d[k] is not None:
+                if gap_d[k] > -3: gd = set()
+                for lv, pc in GAP:
+                    if gap_d[k] <= lv and lv not in gd:
+                        rem = 100 - sum(p for l2, p in GAP if l2 in gd); x = cash * pc / rem if rem > 0 else cash
+                        sh += x / P[k]; cash -= x; gd.add(lv)
+            vals.append(cash + sh * P[k])
+        pk = 0; mdd = 0
+        for v in vals: pk = max(pk, v); mdd = min(mdd, v / pk - 1)
+        fv = cash + sh * P[n - 1]
+        return {"irr": xirr(flows, dates[n - 1], fv), "end": round(fv, 1), "cash_share_end": round(cash / fv * 100, 1), "mdd": round(mdd * 100, 1)}
+    for wn, a in (("1999-12~", "1999-12-01"), ("2007-10~", "2007-10-01"), ("2010~", "2010-01-04"), ("2016~", "2016-01-04"), ("2020-02~", "2020-02-19"), ("2021-11~", "2021-11-19")):
+        k0 = next(k for k in range(n) if dates[k] >= a)
+        for mode, lab in (("dca", "매달 바로 QQQ"), ("lad", "낙폭 사다리(현금 계좌 규칙)"), ("gap", "이격도 −10/−15/−20/−25에 25%씩"), ("both", "사다리 + 이격도")):
+            r = pool(mode, k0); out["pool"].append({"window": wn, "mode": lab, **r}); print("GAPP", wn, lab, r, flush=True)
+    for T, v in out["gap"].items(): print("GAP", T, {k: x for k, x in v.items() if k != "events"}, flush=True)
+    for T, v in out["ladder"].items(): print("LAD", T, {k: x for k, x in v.items() if k != "events"}, flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "gap40_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def gapswing_study(D):
+    """11-14 Ben: 40주 데드 + 하향 이격도 큼 → 장투 적립 일부를 스윙(약세장 반등 단타), 골든이면 장투 복귀. → data/gapswing_bt.json"""
+    dates, P = D["dates"], D["P"]; n = len(dates); c = D["c"]
+    info = w40_prep(D)
+    wk = {}
+    for k in range(n): wk[datetime.strptime(dates[k], "%Y-%m-%d").isocalendar()[:2]] = k
+    wi = [wk[x] for x in sorted(wk)]
+    gap = [None] * len(wi)
+    for j in range(39, len(wi)):
+        if j < len(wi) - 1 or datetime.strptime(dates[wi[j]], "%Y-%m-%d").weekday() == 4:
+            gap[j] = (c[wi[j]] / (sum(c[wi[x]] for x in range(j - 39, j + 1)) / 40) - 1) * 100
+    gd = [None] * n; j = -1; last = None   # 일별: 직전 마감 주 이격도
+    for k in range(n):
+        while j + 1 < len(wi) and wi[j + 1] <= k:
+            j += 1
+            if gap[j] is not None: last = gap[j]
+        gd[k] = last
+    D["gap40"] = gd
+    print("GAP40 days<=-10:", sum(1 for x in gd if x is not None and x <= -10), flush=True)
+    L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
+    CUR = {**L, "gold": 17, "normal": (0.7, 0.7), "m10": (85, 85, 30, 0), "bigcut": "stage_ma"}
+    V = [("A 지금 규칙", CUR),
+         ("S1 데드+이격 −10%↓: 적립 25% → 스윙, QLD 반등 단타", {**CUR, "gap_gate": -10, "sw40": 0.25}),
+         ("S2 데드+이격 −10%↓: 적립 50% → 스윙, QLD", {**CUR, "gap_gate": -10, "sw40": 0.5}),
+         ("S3 데드+이격 −15%↓: 적립 50% → 스윙, QLD", {**CUR, "gap_gate": -15, "sw40": 0.5}),
+         ("S4 데드+이격 −10%↓: 적립 50% → 스윙, QQQ(1배)", {**CUR, "gap_gate": -10, "sw40": 0.5, "sw40_inst": "QQQ"}),
+         ("S5 데드+이격 −10%↓: 적립 50% → 스윙, TQQQ", {**CUR, "gap_gate": -10, "sw40": 0.5, "sw40_inst": "TQQQ"})]
+    win = [(nm, a, b, None) for nm, a, b in SCEN] + [("2010~", "2010-01-04", "2010-01-31", None), ("2016~", "2016-01-04", "2016-01-31", None),
+           ("상승장 2019-01~2021-12", "2019-01-02", "2019-01-31", "2021-12-31"), ("2018년 4분기 급락 2018-09~2019-12", "2018-09-04", "2018-09-30", "2019-12-31")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "notes": ["전체 = 5계좌 합산, 장투 = 장투 계좌 + 스윙으로 돌린 몫 제외", "스윙 진입: 스윙 모드 중 QQQ 일봉 RSI ≤ 30이면 계좌 25%씩(최대 4개, 5거래일 간격)",
+                     "청산: +5% 절반, +10% 나머지, −10% 손절, 10거래일", "다 정리하고 이익이면 이익 50% 장투로, 골든 크로스 때 남은 현금 전부 장투로", "세금·수수료 제외"], "rows": []}
+    for name, a, b, e in win:
+        ks = [k for k, d in enumerate(dates) if a <= d <= b]
+        if not ks: continue
+        i0 = max(ks, key=lambda k: D["c"][k]) if name in [x[0] for x in SCEN] else ks[0]
+        end = next((k for k, d in enumerate(dates) if d >= e), n - 1) if e else n - 1
+        for vn, cfg in V:
+            if "GOLD" not in P: break
+            r = run(D, i0, end=end, cfg=cfg); ltf, ltc = r["ltf"], r["ltc"]
+            cv = r["curve"]; pk = cv[0]; mdd = 0
+            for x in cv: pk = max(pk, x); mdd = min(mdd, x / pk - 1)
+            tr = r["s4_tr"]
+            row = {"window": name, "strategy": vn, "start": dates[i0], "end": dates[end],
+                   "total_irr": xirr(r["flows"], dates[end], cv[-1]), "total_worst": round(min(min(x / p - 1 for x, p in zip(cv, r["prin"])), 0) * 100, 1),
+                   "total_mdd": round(mdd * 100, 1), "end_man": round(cv[-1] / MAN), "lt_irr": xirr(ltf, dates[end], ltc[-1][0]) if ltf else None,
+                   "trades": len(tr), "win_pct": round(sum(1 for x in tr if x > 0) / len(tr) * 100) if tr else None,
+                   "avg_trade_pct": round(sum(tr) / len(tr), 2) if tr else None, "stops": r["s4_stop"], "diverted_man": round(r["s4_div"]),
+                   "sw_end_man": round(r["A"]["sw40"].val(P, end, D["fx"][end]) / MAN)}
+            out["rows"].append(row); print("GSR", json.dumps(row, ensure_ascii=False), flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "gapswing_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def swing_study(D):
     """단기 급락 스윙(짧게 사고 나오기) 규칙 비교 → data/swing_bt.json. 스윙 계좌 단독, 쉬는 돈은 SGOV"""
     dates, P, c, rsi = D["dates"], D["P"], D["c"], D["rsi"]
@@ -1479,6 +1638,10 @@ def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_GSW"):
+        gapswing_study(D); print("ok"); return
+    if os.environ.get("ONLY_GAP"):
+        gap40_study(D); print("ok"); return
     if os.environ.get("ONLY_BTC"):
         btc_study(D, y); print("ok"); return
     if os.environ.get("ONLY_N2"):
