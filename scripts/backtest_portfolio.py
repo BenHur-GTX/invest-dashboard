@@ -1246,16 +1246,15 @@ def btc_study(D, y):
         gap_note = {"from": a, "to": b, "bito_cagr": round(rb * 100, 1), "btc_cagr": round(rc * 100, 1)}
     L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
     CUR = {**L, "gold": 17, "normal": (0.7, 0.7), "m10": (85, 85, 30, 0), "bigcut": "stage_ma"}
-    V = [("c 현행 3% 고정", {"tiers": [], "base": 3, "trim": None}),
-         ("b 보수 −50% 3 / −70% 5 / −80% 8", {"tiers": [(-80, 8), (-70, 5), (-50, 3)], "base": 3, "trim": None}),
-         ("a Ben안 −50% 5 / −70% 8 / −80% 12", {"tiers": [(-80, 12), (-70, 8), (-50, 5)], "base": 3, "trim": None}),
-         ("b + 차익: 비중이 지금 상한의 2배 넘으면 상한까지 매도", {"tiers": [(-80, 8), (-70, 5), (-50, 3)], "base": 3, "trim": 2.0}),
-         ("a + 차익: 비중이 지금 상한의 2배 넘으면 상한까지 매도", {"tiers": [(-80, 12), (-70, 8), (-50, 5)], "base": 3, "trim": 2.0}),
-         ("c + 차익: 3% 고정, 6% 넘으면 3%까지 매도", {"tiers": [], "base": 3, "trim": 2.0}),
-         ("d Ben 확정: −70% 6 / −80% 9 (보수안 변형)", {"tiers": [(-80, 9), (-70, 6)], "base": 3, "trim": None}),
-         ("d + 차익: 비중이 지금 상한의 2배 넘으면 상한까지 매도", {"tiers": [(-80, 9), (-70, 6)], "base": 3, "trim": 2.0}),
-         ("d' −50% 6 / −80% 9", {"tiers": [(-80, 9), (-50, 6)], "base": 3, "trim": None}),
-         ("d' + 차익", {"tiers": [(-80, 9), (-50, 6)], "base": 3, "trim": 2.0}),
+    R = {"tiers": [(-80, 9), (-70, 6)], "base": 3, "trim": 2.0}
+    V = [("R 추천안(확정): 3/6/9 + 차익", {**R}),
+         ("K1 코어 = 월 기본 적립(12만→3만) 전부, 매도 없음 / 나머지 3/6/9+차익", {**R, "core": ("all", 0)}),
+         ("K2 코어 전체 1%까지 매도 없음 / 나머지 3/6/9+차익", {**R, "core": ("pct", 1)}),
+         ("K3 코어 전체 2%까지 매도 없음 / 나머지 3/6/9+차익", {**R, "core": ("pct", 2)}),
+         ("c 현행 3% 고정(매수만 멈춤)", {"tiers": [], "base": 3, "trim": None}),
+         ("R 비용0(현물 가정)", {**R, "drag": 0}),
+         ("K1 비용0(현물 가정)", {**R, "core": ("all", 0), "drag": 0}),
+         ("K2 비용0(현물 가정)", {**R, "core": ("pct", 1), "drag": 0}),
          ("0 비트코인 없음", None)]
     def idx(d): return next((k for k, x in enumerate(dates) if x >= d), n - 1)
     win = [("2014 사이클 2014-09~2017-12", "2014-09-17", "2017-12-15"), ("2018 사이클 2017-12~2021-11", "2017-12-15", "2021-11-08"),
@@ -1270,29 +1269,33 @@ def btc_study(D, y):
         base = run(D, i0, end=end, cfg=CUR); cv = base["curve"]; inflow = {}
         for d, v in base["flows"]: inflow[d] = inflow.get(d, 0) - v
         for vn, vc in V:
-            core = 0.0; bt = 0.0; prin = 0.0; flows = []; worst = 0; pkv = 0; mdd = 0; months = 0; fill = 0.0; fill_left = 0
-            maxw = 0; tr_n = 0; buy_extra = 0.0; sold = 0.0
+            core = 0.0; bt = 0.0; bc = 0.0; prin = 0.0; flows = []; worst = 0; pkv = 0; mdd = 0; months = 0; fill = 0.0; fill_left = 0
+            maxw = 0; tr_n = 0; buy_extra = 0.0; sold = 0.0; dr = (vc.get("drag", 0.06) if vc else 0.06) / 252; ck = (vc or {}).get("core")
             for k in range(i0, end + 1):
                 j = k - i0
                 if j > 0:
                     prev = cv[j - 1]; add = inflow.get(dates[k], 0)
                     rc = (cv[j] - add) / prev - 1 if prev else 0
                     core *= 1 + rc
-                    if btc[k] and btc[k - 1]: bt *= (btc[k] / btc[k - 1]) * (1 - DRAG)
+                    if btc[k] and btc[k - 1]: g = (btc[k] / btc[k - 1]) * (1 - dr); bt *= g; bc *= g
                 add = inflow.get(dates[k], 0)
                 if add:
                     prin += add; flows.append((dates[k], -add)); months += 1
                     if vc is None:
                         core += add
                     else:
-                        tot = core + bt + add; capp = vc["base"]
+                        tot = core + bt + bc + add; capp = vc["base"]
                         for th, cp in vc["tiers"]:
                             if dd[k] is not None and dd[k] <= th: capp = cp; break
                         cap = tot * capp / 100
                         base_amt = (12 if months <= 6 else 3) * MAN
-                        x = min(base_amt, max(0.0, cap - bt)) if btc[k] else 0
-                        bt += x; core += add - x
-                        # 상한 상향분: 부족분을 3개월 분할로 나머지에서 이동
+                        to_core = 0
+                        if btc[k] and ck:
+                            if ck[0] == "all": to_core = base_amt
+                            elif bc < tot * ck[1] / 100: to_core = min(base_amt, tot * ck[1] / 100 - bc)
+                        bc += to_core
+                        x = min(base_amt - to_core, max(0.0, cap - bt)) if btc[k] else 0
+                        bt += x; core += add - x - to_core
                         gap = cap - bt
                         if gap > 0 and capp > vc["base"] and btc[k]:
                             if fill_left <= 0: fill = gap / 3; fill_left = 3
@@ -1301,18 +1304,18 @@ def btc_study(D, y):
                             fill_left = 0
                         if vc["trim"] and btc[k] and bt > cap * vc["trim"]:
                             z = bt - cap; bt -= z; core += z; sold += z; tr_n += 1
-                tv = core + bt
+                tv = core + bt + bc
                 if prin > 0: worst = min(worst, tv / prin - 1)
                 pkv = max(pkv, tv); mdd = min(mdd, tv / pkv - 1) if pkv else 0
-                if tv: maxw = max(maxw, bt / tv)
-            tv = core + bt
+                if tv: maxw = max(maxw, (bt + bc) / tv)
+            tv = core + bt + bc
             row = {"window": wn, "strategy": vn, "start": dates[i0], "end": dates[end], "irr": xirr(flows, dates[end], tv),
                    "worst": round(worst * 100, 1), "mdd": round(mdd * 100, 1), "end_man": round(tv / MAN), "prin_man": round(prin / MAN),
-                   "btc_w_end": round(bt / tv * 100, 1) if tv else 0, "btc_w_max": round(maxw * 100, 1),
+                   "btc_w_end": round((bt + bc) / tv * 100, 1) if tv else 0, "core_w_end": round(bc / tv * 100, 1) if tv else 0, "btc_w_max": round(maxw * 100, 1),
                    "extra_buy_man": round(buy_extra / MAN), "trim_n": tr_n, "trim_man": round(sold / MAN),
                    "btc_dd_min": round(min(x for x in dd[i0:end + 1] if x is not None), 1)}
             out["rows"].append(row); print("BTCR", json.dumps(row, ensure_ascii=False), flush=True)
-    json.dump(out, open(os.path.join(B.DATA, "btc_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump(out, open(os.path.join(B.DATA, "btc_core_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
 def swing_study(D):
