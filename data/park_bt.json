@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-13T19:55:51Z",
+ "generated": "2026-11-14T00:10:54Z",
  "gold_ok": true,
  "notes": [
   "월 330만 동일(현금 85·연금저축 45·장투 200), 금 17만은 장투 몫에서 차감",
@@ -13,7 +13,7 @@
    "scenario": "닷컴버블",
    "strategy": "A 현재 규칙",
    "start": "2000-03-27",
-   "irr": 14.37,
+   "irr": 14.38,
    "worst": -40.1,
    "uw_months": 85,
    "mdd5": -25.2,
@@ -21,17 +21,17 @@
    "y3": -24.3,
    "y5": -20.1,
    "y10": 22.3,
-   "end": 1041.6,
-   "end_man": 1287927,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 1044.5,
+   "end_man": 1291114,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 1064764,
+    "longterm": 1067515,
     "ammo": 18724,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
     "gold": 0
    },
    "sgov_share_end": 6.4,
@@ -106,7 +106,7 @@
    "scenario": "닷컴버블",
    "strategy": "A+금 현재 규칙 + 금 월17만(장투 183만)",
    "start": "2000-03-27",
-   "irr": 14.18,
+   "irr": 14.19,
    "worst": -38.5,
    "uw_months": 79,
    "mdd5": -24.3,
@@ -114,20 +114,20 @@
    "y3": -22.9,
    "y5": -19.0,
    "y10": 28.0,
-   "end": 1002.3,
-   "end_man": 1243531,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 1005.0,
+   "end_man": 1246574,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 991302,
+    "longterm": 993868,
     "ammo": 18724,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
-   "sgov_share_end": 6.5,
+   "sgov_share_end": 6.4,
    "events": [
     [
      "2000-04-13",
@@ -199,7 +199,7 @@
    "scenario": "닷컴버블",
    "strategy": "B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17",
    "start": "2000-03-27",
-   "irr": 14.24,
+   "irr": 14.25,
    "worst": -38.5,
    "uw_months": 79,
    "mdd5": -24.3,
@@ -207,18 +207,18 @@
    "y3": -22.9,
    "y5": -19.0,
    "y10": 29.5,
-   "end": 1014.6,
-   "end_man": 1257465,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 1017.4,
+   "end_man": 1260551,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 1005236,
+    "longterm": 1007844,
     "ammo": 18724,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
    "sgov_share_end": 6.7,
    "events": [
@@ -292,7 +292,7 @@
    "scenario": "닷컴버블",
    "strategy": "B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17",
    "start": "2000-03-27",
-   "irr": 14.17,
+   "irr": 14.18,
    "worst": -38.5,
    "uw_months": 79,
    "mdd5": -24.3,
@@ -300,18 +300,18 @@
    "y3": -22.9,
    "y5": -19.0,
    "y10": 28.8,
-   "end": 999.3,
-   "end_man": 1240157,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 1002.0,
+   "end_man": 1243172,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 987928,
+    "longterm": 990466,
     "ammo": 18724,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
    "sgov_share_end": 6.3,
    "events": [
@@ -385,7 +385,7 @@
    "scenario": "닷컴버블",
    "strategy": "C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2000-03-27",
-   "irr": 13.53,
+   "irr": 13.54,
    "worst": -40.0,
    "uw_months": 71,
    "mdd5": -29.2,
@@ -393,18 +393,18 @@
    "y3": -22.9,
    "y5": -13.9,
    "y10": 24.0,
-   "end": 875.7,
-   "end_man": 1100767,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 877.9,
+   "end_man": 1103253,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 863728,
+    "longterm": 865736,
     "ammo": 3534,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
    "sgov_share_end": 1.9,
    "events": [
@@ -426,7 +426,7 @@
    "scenario": "닷컴버블",
    "strategy": "C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2000-03-27",
-   "irr": 12.9,
+   "irr": 12.91,
    "worst": -36.3,
    "uw_months": 35,
    "mdd5": -27.4,
@@ -434,20 +434,20 @@
    "y3": -19.9,
    "y5": -12.5,
    "y10": 27.3,
-   "end": 768.5,
-   "end_man": 979749,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 770.4,
+   "end_man": 981910,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 723981,
+    "longterm": 725665,
     "ammo": 22262,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
-   "sgov_share_end": 4.1,
+   "sgov_share_end": 4.0,
    "events": [
     [
      "2000-04-14",
@@ -467,7 +467,7 @@
    "scenario": "닷컴버블",
    "strategy": "B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지",
    "start": "2000-03-27",
-   "irr": 14.24,
+   "irr": 14.26,
    "worst": -36.4,
    "uw_months": 79,
    "mdd5": -22.1,
@@ -475,18 +475,18 @@
    "y3": -21.2,
    "y5": -18.7,
    "y10": 29.9,
-   "end": 1015.1,
-   "end_man": 1257965,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 1017.8,
+   "end_man": 1261079,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 1005629,
+    "longterm": 1008266,
     "ammo": 18830,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
    "sgov_share_end": 7.1,
    "events": [
@@ -560,7 +560,7 @@
    "scenario": "닷컴버블",
    "strategy": "B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수",
    "start": "2000-03-27",
-   "irr": 15.0,
+   "irr": 15.02,
    "worst": -36.4,
    "uw_months": 83,
    "mdd5": -22.4,
@@ -568,18 +568,18 @@
    "y3": -21.0,
    "y5": -18.4,
    "y10": 34.1,
-   "end": 1185.3,
-   "end_man": 1450039,
-   "qqq_end": 1231.9,
-   "spy_end": 631.4,
+   "end": 1188.6,
+   "end_man": 1453718,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 1197703,
+    "longterm": 1200904,
     "ammo": 18830,
-    "swing": 1996,
-    "irp": 38160,
-    "pension": 164284,
-    "gold": 29066
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
    },
    "sgov_share_end": 7.9,
    "events": [
@@ -650,10 +650,103 @@
    ]
   },
   {
+   "scenario": "닷컴버블",
+   "strategy": "B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수",
+   "start": "2000-03-27",
+   "irr": 14.71,
+   "worst": -36.0,
+   "uw_months": 83,
+   "mdd5": -22.3,
+   "mdd_all": -33.7,
+   "y3": -20.7,
+   "y5": -18.3,
+   "y10": 32.9,
+   "end": 1116.5,
+   "end_man": 1372425,
+   "qqq_end": 1235.0,
+   "spy_end": 633.1,
+   "qqq_irr": null,
+   "acct_end_man": {
+    "longterm": 1119611,
+    "ammo": 18830,
+    "swing": 1998,
+    "irp": 38211,
+    "pension": 164666,
+    "gold": 29108
+   },
+   "sgov_share_end": 8.0,
+   "events": [
+    [
+     "2000-04-13",
+     "현금 1차 4만"
+    ],
+    [
+     "2000-04-14",
+     "현금 2차 8만"
+    ],
+    [
+     "2000-05-23",
+     "현금 3차 28만"
+    ],
+    [
+     "2000-11-20",
+     "현금 4차 141만"
+    ],
+    [
+     "2000-12-20",
+     "현금 5차 288만"
+    ],
+    [
+     "2001-01-03",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2001-03-19",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2001-03-19",
+     "현금 6차 637만"
+    ],
+    [
+     "2001-03-20",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2001-07-02",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2001-09-17",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2001-12-24",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2002-11-06",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2002-12-23",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2006-10-26",
+     "현금 회복 정산 730만"
+    ],
+    [
+     "2007-09-18",
+     "빅컷 안전장치 시작"
+    ]
+   ]
+  },
+  {
    "scenario": "금융위기",
    "strategy": "A 현재 규칙",
    "start": "2007-10-31",
-   "irr": 16.24,
+   "irr": 16.26,
    "worst": -4.6,
    "uw_months": 2,
    "mdd5": -16.0,
@@ -661,20 +754,20 @@
    "y3": 18.6,
    "y5": 25.6,
    "y10": 91.8,
-   "end": 579.1,
-   "end_man": 559963,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 580.7,
+   "end_man": 561296,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 416183,
+    "longterm": 417263,
     "ammo": 14109,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
     "gold": 0
    },
-   "sgov_share_end": 9.7,
+   "sgov_share_end": 9.6,
    "events": [
     [
      "2008-03-10",
@@ -738,7 +831,7 @@
    "scenario": "금융위기",
    "strategy": "A+금 현재 규칙 + 금 월17만(장투 183만)",
    "start": "2007-10-31",
-   "irr": 15.99,
+   "irr": 16.01,
    "worst": -4.5,
    "uw_months": 2,
    "mdd5": -16.0,
@@ -746,20 +839,20 @@
    "y3": 19.2,
    "y5": 26.3,
    "y10": 87.2,
-   "end": 557.8,
-   "end_man": 542423,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 559.4,
+   "end_man": 543702,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 387110,
+    "longterm": 388118,
     "ammo": 14109,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
-   "sgov_share_end": 9.9,
+   "sgov_share_end": 9.8,
    "events": [
     [
      "2008-03-10",
@@ -823,7 +916,7 @@
    "scenario": "금융위기",
    "strategy": "B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17",
    "start": "2007-10-31",
-   "irr": 16.11,
+   "irr": 16.12,
    "worst": -4.2,
    "uw_months": 2,
    "mdd5": -16.0,
@@ -831,20 +924,20 @@
    "y3": 19.6,
    "y5": 27.6,
    "y10": 83.2,
-   "end": 567.6,
-   "end_man": 550455,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 569.2,
+   "end_man": 551774,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 395142,
+    "longterm": 396191,
     "ammo": 14109,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
-   "sgov_share_end": 10.9,
+   "sgov_share_end": 10.8,
    "events": [
     [
      "2008-03-10",
@@ -908,7 +1001,7 @@
    "scenario": "금융위기",
    "strategy": "B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17",
    "start": "2007-10-31",
-   "irr": 15.99,
+   "irr": 16.0,
    "worst": -4.2,
    "uw_months": 2,
    "mdd5": -16.0,
@@ -916,18 +1009,18 @@
    "y3": 19.5,
    "y5": 27.9,
    "y10": 88.5,
-   "end": 557.5,
-   "end_man": 542157,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 559.1,
+   "end_man": 543426,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 386844,
+    "longterm": 387842,
     "ammo": 14109,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
    "sgov_share_end": 9.8,
    "events": [
@@ -993,7 +1086,7 @@
    "scenario": "금융위기",
    "strategy": "C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2007-10-31",
-   "irr": 16.07,
+   "irr": 16.09,
    "worst": -4.7,
    "uw_months": 2,
    "mdd5": -16.4,
@@ -1001,18 +1094,18 @@
    "y3": 18.2,
    "y5": 30.7,
    "y10": 111.2,
-   "end": 565.0,
-   "end_man": 548308,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 566.4,
+   "end_man": 549517,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 403658,
+    "longterm": 404597,
     "ammo": 3445,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
    "sgov_share_end": 4.5,
    "events": [
@@ -1030,7 +1123,7 @@
    "scenario": "금융위기",
    "strategy": "C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2007-10-31",
-   "irr": 14.01,
+   "irr": 14.03,
    "worst": -4.2,
    "uw_months": 2,
    "mdd5": -16.2,
@@ -1038,18 +1131,18 @@
    "y3": 18.5,
    "y5": 26.7,
    "y10": 79.3,
-   "end": 412.3,
-   "end_man": 422380,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 413.3,
+   "end_man": 423254,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 259522,
+    "longterm": 260126,
     "ammo": 21654,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
    "sgov_share_end": 10.1,
    "events": [
@@ -1067,7 +1160,7 @@
    "scenario": "금융위기",
    "strategy": "B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지",
    "start": "2007-10-31",
-   "irr": 16.1,
+   "irr": 16.12,
    "worst": -4.1,
    "uw_months": 2,
    "mdd5": -16.0,
@@ -1075,18 +1168,18 @@
    "y3": 19.5,
    "y5": 27.3,
    "y10": 82.3,
-   "end": 567.2,
-   "end_man": 550100,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 568.8,
+   "end_man": 551425,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 394734,
+    "longterm": 395789,
     "ammo": 14162,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
    "sgov_share_end": 11.1,
    "events": [
@@ -1160,7 +1253,7 @@
    "scenario": "금융위기",
    "strategy": "B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수",
    "start": "2007-10-31",
-   "irr": 16.78,
+   "irr": 16.8,
    "worst": -4.1,
    "uw_months": 2,
    "mdd5": -15.4,
@@ -1168,20 +1261,20 @@
    "y3": 21.3,
    "y5": 28.9,
    "y10": 84.5,
-   "end": 627.8,
-   "end_man": 600131,
-   "qqq_end": 902.2,
-   "spy_end": 472.2,
+   "end": 629.6,
+   "end_man": 601586,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 444764,
+    "longterm": 445950,
     "ammo": 14162,
-    "swing": 2473,
-    "irp": 46234,
-    "pension": 80965,
-    "gold": 11533
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
    },
-   "sgov_share_end": 11.0,
+   "sgov_share_end": 10.9,
    "events": [
     [
      "2007-10-31",
@@ -1250,10 +1343,103 @@
    ]
   },
   {
+   "scenario": "금융위기",
+   "strategy": "B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수",
+   "start": "2007-10-31",
+   "irr": 16.45,
+   "worst": -4.1,
+   "uw_months": 2,
+   "mdd5": -15.8,
+   "mdd_all": -29.2,
+   "y3": 20.2,
+   "y5": 27.9,
+   "y10": 83.0,
+   "end": 597.4,
+   "end_man": 575064,
+   "qqq_end": 904.5,
+   "spy_end": 473.5,
+   "qqq_irr": null,
+   "acct_end_man": {
+    "longterm": 419427,
+    "ammo": 14162,
+    "swing": 2476,
+    "irp": 46296,
+    "pension": 81153,
+    "gold": 11550
+   },
+   "sgov_share_end": 11.1,
+   "events": [
+    [
+     "2007-10-31",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2007-11-05",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2008-01-22",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2008-03-17",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2008-03-18",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2008-05-05",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2008-09-17",
+     "현금 1차 46만"
+    ],
+    [
+     "2008-09-29",
+     "현금 2차 106만"
+    ],
+    [
+     "2008-10-06",
+     "현금 3차 171만"
+    ],
+    [
+     "2008-10-07",
+     "현금 4차 179만"
+    ],
+    [
+     "2008-10-08",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2008-12-15",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2008-12-16",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2009-02-02",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2009-03-02",
+     "현금 5차 567만"
+    ],
+    [
+     "2010-12-10",
+     "현금 회복 정산 1575만"
+    ]
+   ]
+  },
+  {
    "scenario": "코로나",
    "strategy": "A 현재 규칙",
    "start": "2020-02-19",
-   "irr": 16.7,
+   "irr": 16.75,
    "worst": -13.9,
    "uw_months": 3,
    "mdd5": -12.9,
@@ -1261,20 +1447,20 @@
    "y3": 16.4,
    "y5": 81.8,
    "y10": null,
-   "end": 99.0,
-   "end_man": 67560,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 99.4,
+   "end_man": 67699,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 37794,
+    "longterm": 37893,
     "ammo": 6185,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
     "gold": 0
    },
-   "sgov_share_end": 22.8,
+   "sgov_share_end": 22.7,
    "events": [
     [
      "2020-03-12",
@@ -1310,7 +1496,7 @@
    "scenario": "코로나",
    "strategy": "A+금 현재 규칙 + 금 월17만(장투 183만)",
    "start": "2020-02-19",
-   "irr": 16.64,
+   "irr": 16.69,
    "worst": -13.8,
    "uw_months": 3,
    "mdd5": -12.5,
@@ -1318,20 +1504,20 @@
    "y3": 16.6,
    "y5": 81.7,
    "y10": null,
-   "end": 98.5,
-   "end_man": 67377,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 98.9,
+   "end_man": 67512,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 35081,
+    "longterm": 35173,
     "ammo": 6185,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
-   "sgov_share_end": 22.6,
+   "sgov_share_end": 22.5,
    "events": [
     [
      "2020-03-12",
@@ -1367,7 +1553,7 @@
    "scenario": "코로나",
    "strategy": "B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17",
    "start": "2020-02-19",
-   "irr": 17.55,
+   "irr": 17.6,
    "worst": -13.2,
    "uw_months": 2,
    "mdd5": -13.0,
@@ -1375,20 +1561,20 @@
    "y3": 18.5,
    "y5": 86.5,
    "y10": null,
-   "end": 106.0,
-   "end_man": 69942,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 106.5,
+   "end_man": 70080,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 37646,
+    "longterm": 37741,
     "ammo": 6185,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
-   "sgov_share_end": 24.9,
+   "sgov_share_end": 24.8,
    "events": [
     [
      "2020-03-12",
@@ -1424,7 +1610,7 @@
    "scenario": "코로나",
    "strategy": "B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17",
    "start": "2020-02-19",
-   "irr": 17.51,
+   "irr": 17.56,
    "worst": -13.4,
    "uw_months": 3,
    "mdd5": -12.8,
@@ -1432,18 +1618,18 @@
    "y3": 18.9,
    "y5": 87.1,
    "y10": null,
-   "end": 105.7,
-   "end_man": 69840,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 106.2,
+   "end_man": 69979,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 37545,
+    "longterm": 37641,
     "ammo": 6185,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
    "sgov_share_end": 23.2,
    "events": [
@@ -1481,7 +1667,7 @@
    "scenario": "코로나",
    "strategy": "C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2020-02-19",
-   "irr": 16.34,
+   "irr": 16.39,
    "worst": -13.7,
    "uw_months": 2,
    "mdd5": -12.4,
@@ -1489,18 +1675,18 @@
    "y3": 20.4,
    "y5": 81.4,
    "y10": null,
-   "end": 96.1,
-   "end_man": 66564,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 96.5,
+   "end_man": 66697,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 38470,
+    "longterm": 38560,
     "ammo": 1983,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
    "sgov_share_end": 13.4,
    "events": [
@@ -1514,7 +1700,7 @@
    "scenario": "코로나",
    "strategy": "C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2020-02-19",
-   "irr": 14.76,
+   "irr": 14.8,
    "worst": -13.2,
    "uw_months": 3,
    "mdd5": -11.9,
@@ -1522,20 +1708,20 @@
    "y3": 20.9,
    "y5": 74.3,
    "y10": null,
-   "end": 83.7,
-   "end_man": 62359,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 84.0,
+   "end_man": 62458,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 23992,
+    "longterm": 24048,
     "ammo": 12256,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
-   "sgov_share_end": 30.8,
+   "sgov_share_end": 30.7,
    "events": [
     [
      "2022-06-13",
@@ -1547,7 +1733,7 @@
    "scenario": "코로나",
    "strategy": "B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지",
    "start": "2020-02-19",
-   "irr": 17.51,
+   "irr": 17.56,
    "worst": -13.2,
    "uw_months": 3,
    "mdd5": -13.0,
@@ -1555,18 +1741,18 @@
    "y3": 18.2,
    "y5": 86.2,
    "y10": null,
-   "end": 105.8,
-   "end_man": 69847,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 106.2,
+   "end_man": 69985,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 37551,
+    "longterm": 37646,
     "ammo": 6185,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
    "sgov_share_end": 24.9,
    "events": [
@@ -1616,7 +1802,7 @@
    "scenario": "코로나",
    "strategy": "B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수",
    "start": "2020-02-19",
-   "irr": 17.57,
+   "irr": 17.62,
    "worst": -13.1,
    "uw_months": 3,
    "mdd5": -13.0,
@@ -1624,18 +1810,18 @@
    "y3": 18.3,
    "y5": 86.2,
    "y10": null,
-   "end": 106.2,
-   "end_man": 70005,
-   "qqq_end": 127.6,
-   "spy_end": 104.0,
+   "end": 106.6,
+   "end_man": 70143,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 37709,
+    "longterm": 37804,
     "ammo": 6185,
-    "swing": 1252,
-    "irp": 14297,
-    "pension": 8033,
-    "gold": 2530
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
    },
    "sgov_share_end": 25.0,
    "events": [
@@ -1690,10 +1876,79 @@
    ]
   },
   {
+   "scenario": "코로나",
+   "strategy": "B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수",
+   "start": "2020-02-19",
+   "irr": 17.62,
+   "worst": -13.2,
+   "uw_months": 3,
+   "mdd5": -13.0,
+   "mdd_all": -18.6,
+   "y3": 18.2,
+   "y5": 86.3,
+   "y10": null,
+   "end": 106.7,
+   "end_man": 70156,
+   "qqq_end": 128.1,
+   "spy_end": 104.5,
+   "qqq_irr": null,
+   "acct_end_man": {
+    "longterm": 37817,
+    "ammo": 6185,
+    "swing": 1253,
+    "irp": 14316,
+    "pension": 8051,
+    "gold": 2533
+   },
+   "sgov_share_end": 24.9,
+   "events": [
+    [
+     "2020-03-04",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2020-05-01",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2020-06-02",
+     "현금 회복 정산 107만"
+    ],
+    [
+     "2022-05-09",
+     "현금 1차 124만"
+    ],
+    [
+     "2022-06-13",
+     "현금 2차 258만"
+    ],
+    [
+     "2022-10-14",
+     "현금 3차 498만"
+    ],
+    [
+     "2023-12-13",
+     "현금 회복 정산 3402만"
+    ],
+    [
+     "2024-09-19",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2024-11-04",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2025-06-10",
+     "현금 회복 정산 3092만"
+    ]
+   ]
+  },
+  {
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "A 현재 규칙",
    "start": "2021-11-19",
-   "irr": 15.88,
+   "irr": 15.95,
    "worst": -11.7,
    "uw_months": 4,
    "mdd5": -17.5,
@@ -1701,17 +1956,17 @@
    "y3": 49.7,
    "y5": null,
    "y10": null,
-   "end": 64.2,
-   "end_man": 44352,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 64.5,
+   "end_man": 44439,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 22856,
+    "longterm": 22916,
     "ammo": 4564,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
     "gold": 0
    },
    "sgov_share_end": 25.4,
@@ -1742,7 +1997,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "A+금 현재 규칙 + 금 월17만(장투 183만)",
    "start": "2021-11-19",
-   "irr": 15.82,
+   "irr": 15.89,
    "worst": -11.2,
    "uw_months": 4,
    "mdd5": -17.0,
@@ -1750,20 +2005,20 @@
    "y3": 49.4,
    "y5": null,
    "y10": null,
-   "end": 63.9,
-   "end_man": 44272,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 64.2,
+   "end_man": 44357,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 21133,
+    "longterm": 21188,
     "ammo": 4564,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
-   "sgov_share_end": 25.3,
+   "sgov_share_end": 25.2,
    "events": [
     [
      "2022-05-09",
@@ -1791,7 +2046,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17",
    "start": "2021-11-19",
-   "irr": 16.73,
+   "irr": 16.79,
    "worst": -10.7,
    "uw_months": 3,
    "mdd5": -16.9,
@@ -1799,18 +2054,18 @@
    "y3": 50.8,
    "y5": null,
    "y10": null,
-   "end": 68.5,
-   "end_man": 45518,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 68.8,
+   "end_man": 45602,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 22378,
+    "longterm": 22433,
     "ammo": 4564,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
    "sgov_share_end": 29.1,
    "events": [
@@ -1840,7 +2095,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17",
    "start": "2021-11-19",
-   "irr": 16.59,
+   "irr": 16.65,
    "worst": -10.7,
    "uw_months": 3,
    "mdd5": -16.6,
@@ -1848,20 +2103,20 @@
    "y3": 51.1,
    "y5": null,
    "y10": null,
-   "end": 67.7,
-   "end_man": 45315,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 68.1,
+   "end_man": 45400,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 22176,
+    "longterm": 22231,
     "ammo": 4564,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
-   "sgov_share_end": 26.7,
+   "sgov_share_end": 26.6,
    "events": [
     [
      "2022-05-09",
@@ -1889,7 +2144,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2021-11-19",
-   "irr": 15.46,
+   "irr": 15.52,
    "worst": -10.4,
    "uw_months": 3,
    "mdd5": -15.1,
@@ -1897,18 +2152,18 @@
    "y3": 48.2,
    "y5": null,
    "y10": null,
-   "end": 62.1,
-   "end_man": 43779,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 62.4,
+   "end_man": 43864,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 23537,
+    "longterm": 23592,
     "ammo": 1666,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
    "sgov_share_end": 16.0,
    "events": [
@@ -1922,7 +2177,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2021-11-19",
-   "irr": 13.03,
+   "irr": 13.07,
    "worst": -8.0,
    "uw_months": 2,
    "mdd5": -13.0,
@@ -1930,20 +2185,20 @@
    "y3": 42.1,
    "y5": null,
    "y10": null,
-   "end": 50.4,
-   "end_man": 40627,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 50.6,
+   "end_man": 40683,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 11199,
+    "longterm": 11225,
     "ammo": 10853,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
-   "sgov_share_end": 39.9,
+   "sgov_share_end": 39.8,
    "events": [
     [
      "2022-06-13",
@@ -1955,7 +2210,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지",
    "start": "2021-11-19",
-   "irr": 16.76,
+   "irr": 16.82,
    "worst": -10.7,
    "uw_months": 3,
    "mdd5": -16.9,
@@ -1963,20 +2218,20 @@
    "y3": 50.8,
    "y5": null,
    "y10": null,
-   "end": 68.6,
-   "end_man": 45550,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 68.9,
+   "end_man": 45634,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 22411,
+    "longterm": 22465,
     "ammo": 4564,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
-   "sgov_share_end": 29.2,
+   "sgov_share_end": 29.1,
    "events": [
     [
      "2022-05-09",
@@ -2012,7 +2267,7 @@
    "scenario": "2022 금리인상·러우전쟁",
    "strategy": "B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수",
    "start": "2021-11-19",
-   "irr": 16.79,
+   "irr": 16.85,
    "worst": -10.7,
    "uw_months": 3,
    "mdd5": -16.9,
@@ -2020,18 +2275,18 @@
    "y3": 50.7,
    "y5": null,
    "y10": null,
-   "end": 68.8,
-   "end_man": 45601,
-   "qqq_end": 74.7,
-   "spy_end": 66.0,
+   "end": 69.1,
+   "end_man": 45686,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 22462,
+    "longterm": 22517,
     "ammo": 4564,
-    "swing": 1122,
-    "irp": 10725,
-    "pension": 5085,
-    "gold": 1643
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
    },
    "sgov_share_end": 29.2,
    "events": [
@@ -2070,10 +2325,67 @@
    ]
   },
   {
+   "scenario": "2022 금리인상·러우전쟁",
+   "strategy": "B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수",
+   "start": "2021-11-19",
+   "irr": 16.88,
+   "worst": -10.7,
+   "uw_months": 3,
+   "mdd5": -16.9,
+   "mdd_all": -16.9,
+   "y3": 50.9,
+   "y5": null,
+   "y10": null,
+   "end": 69.3,
+   "end_man": 45725,
+   "qqq_end": 75.1,
+   "spy_end": 66.4,
+   "qqq_irr": null,
+   "acct_end_man": {
+    "longterm": 22556,
+    "ammo": 4564,
+    "swing": 1123,
+    "irp": 10740,
+    "pension": 5097,
+    "gold": 1646
+   },
+   "sgov_share_end": 29.1,
+   "events": [
+    [
+     "2022-05-09",
+     "현금 1차 27만"
+    ],
+    [
+     "2022-06-13",
+     "현금 2차 63만"
+    ],
+    [
+     "2022-10-14",
+     "현금 3차 171만"
+    ],
+    [
+     "2023-12-13",
+     "현금 회복 정산 1278만"
+    ],
+    [
+     "2024-09-19",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2024-11-04",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2025-06-10",
+     "현금 회복 정산 2020만"
+    ]
+   ]
+  },
+  {
    "scenario": "2010~",
    "strategy": "A 현재 규칙",
    "start": "2010-01-04",
-   "irr": 16.97,
+   "irr": 16.99,
    "worst": -4.1,
    "uw_months": 1,
    "mdd5": -7.3,
@@ -2081,17 +2393,17 @@
    "y3": 8.7,
    "y5": 36.1,
    "y10": 118.2,
-   "end": 482.1,
-   "end_man": 430040,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 483.5,
+   "end_man": 431083,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 318002,
+    "longterm": 318855,
     "ammo": 12645,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
     "gold": 0
    },
    "sgov_share_end": 11.5,
@@ -2138,7 +2450,7 @@
    "scenario": "2010~",
    "strategy": "A+금 현재 규칙 + 금 월17만(장투 183만)",
    "start": "2010-01-04",
-   "irr": 16.71,
+   "irr": 16.73,
    "worst": -3.6,
    "uw_months": 2,
    "mdd5": -6.7,
@@ -2146,20 +2458,20 @@
    "y3": 8.8,
    "y5": 34.1,
    "y10": 113.1,
-   "end": 465.4,
-   "end_man": 417684,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 466.7,
+   "end_man": 418683,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 296175,
+    "longterm": 296970,
     "ammo": 12645,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
-   "sgov_share_end": 11.6,
+   "sgov_share_end": 11.5,
    "events": [
     [
      "2010-12-10",
@@ -2203,7 +2515,7 @@
    "scenario": "2010~",
    "strategy": "B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17",
    "start": "2010-01-04",
-   "irr": 16.83,
+   "irr": 16.85,
    "worst": -3.6,
    "uw_months": 2,
    "mdd5": -6.1,
@@ -2211,18 +2523,18 @@
    "y3": 10.6,
    "y5": 33.2,
    "y10": 110.1,
-   "end": 472.8,
-   "end_man": 423187,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 474.2,
+   "end_man": 424196,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 301678,
+    "longterm": 302483,
     "ammo": 12645,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
    "sgov_share_end": 12.0,
    "events": [
@@ -2268,7 +2580,7 @@
    "scenario": "2010~",
    "strategy": "B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17",
    "start": "2010-01-04",
-   "irr": 16.76,
+   "irr": 16.78,
    "worst": -3.6,
    "uw_months": 2,
    "mdd5": -6.6,
@@ -2276,18 +2588,18 @@
    "y3": 11.3,
    "y5": 37.3,
    "y10": 114.9,
-   "end": 468.5,
-   "end_man": 419958,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 469.8,
+   "end_man": 420961,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 298450,
+    "longterm": 299248,
     "ammo": 12645,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
    "sgov_share_end": 11.7,
    "events": [
@@ -2333,7 +2645,7 @@
    "scenario": "2010~",
    "strategy": "C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2010-01-04",
-   "irr": 16.34,
+   "irr": 16.36,
    "worst": -3.6,
    "uw_months": 2,
    "mdd5": -8.3,
@@ -2341,18 +2653,18 @@
    "y3": 13.2,
    "y5": 46.4,
    "y10": 132.1,
-   "end": 443.1,
-   "end_man": 401232,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 444.3,
+   "end_man": 402109,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 289113,
+    "longterm": 289786,
     "ammo": 3255,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
    "sgov_share_end": 5.2,
    "events": [
@@ -2366,7 +2678,7 @@
    "scenario": "2010~",
    "strategy": "C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2010-01-04",
-   "irr": 13.26,
+   "irr": 13.28,
    "worst": -3.5,
    "uw_months": 2,
    "mdd5": -5.9,
@@ -2374,20 +2686,20 @@
    "y3": 7.2,
    "y5": 27.4,
    "y10": 76.4,
-   "end": 287.0,
-   "end_man": 285912,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 287.8,
+   "end_man": 286480,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 156035,
+    "longterm": 156398,
     "ammo": 21014,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
-   "sgov_share_end": 13.6,
+   "sgov_share_end": 13.5,
    "events": [
     [
      "2022-06-13",
@@ -2399,7 +2711,7 @@
    "scenario": "2010~",
    "strategy": "B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지",
    "start": "2010-01-04",
-   "irr": 16.76,
+   "irr": 16.79,
    "worst": -3.6,
    "uw_months": 2,
    "mdd5": -6.1,
@@ -2407,20 +2719,20 @@
    "y3": 10.6,
    "y5": 33.2,
    "y10": 110.1,
-   "end": 469.0,
-   "end_man": 420315,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 470.3,
+   "end_man": 421316,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 298747,
+    "longterm": 299544,
     "ammo": 12704,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
-   "sgov_share_end": 12.1,
+   "sgov_share_end": 12.0,
    "events": [
     [
      "2010-12-10",
@@ -2476,7 +2788,7 @@
    "scenario": "2010~",
    "strategy": "B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수",
    "start": "2010-01-04",
-   "irr": 17.26,
+   "irr": 17.28,
    "worst": -3.6,
    "uw_months": 2,
    "mdd5": -6.1,
@@ -2484,20 +2796,20 @@
    "y3": 10.6,
    "y5": 33.2,
    "y10": 110.1,
-   "end": 501.1,
-   "end_man": 444097,
-   "qqq_end": 729.9,
-   "spy_end": 410.4,
+   "end": 502.6,
+   "end_man": 445160,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 322529,
+    "longterm": 323387,
     "ammo": 12704,
-    "swing": 2072,
-    "irp": 38839,
-    "pension": 58482,
-    "gold": 9471
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
    },
-   "sgov_share_end": 12.0,
+   "sgov_share_end": 11.9,
    "events": [
     [
      "2010-12-10",
@@ -2558,10 +2870,87 @@
    ]
   },
   {
+   "scenario": "2010~",
+   "strategy": "B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수",
+   "start": "2010-01-04",
+   "irr": 17.0,
+   "worst": -3.6,
+   "uw_months": 2,
+   "mdd5": -6.1,
+   "mdd_all": -27.6,
+   "y3": 10.6,
+   "y5": 33.2,
+   "y10": 110.1,
+   "end": 483.8,
+   "end_man": 431303,
+   "qqq_end": 731.9,
+   "spy_end": 411.6,
+   "qqq_irr": null,
+   "acct_end_man": {
+    "longterm": 309530,
+    "ammo": 12704,
+    "swing": 2074,
+    "irp": 38892,
+    "pension": 58617,
+    "gold": 9485
+   },
+   "sgov_share_end": 12.1,
+   "events": [
+    [
+     "2010-12-10",
+     "현금 회복 정산 430만"
+    ],
+    [
+     "2019-04-08",
+     "현금 회복 정산 5242만"
+    ],
+    [
+     "2020-03-04",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2020-05-01",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2020-06-02",
+     "현금 회복 정산 5853만"
+    ],
+    [
+     "2022-05-09",
+     "현금 1차 513만"
+    ],
+    [
+     "2022-06-13",
+     "현금 2차 1040만"
+    ],
+    [
+     "2022-10-14",
+     "현금 3차 1815만"
+    ],
+    [
+     "2023-12-13",
+     "현금 회복 정산 11939만"
+    ],
+    [
+     "2024-09-19",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2024-11-04",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2025-06-10",
+     "현금 회복 정산 7399만"
+    ]
+   ]
+  },
+  {
    "scenario": "2016~",
    "strategy": "A 현재 규칙",
    "start": "2016-01-04",
-   "irr": 18.04,
+   "irr": 18.07,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -20.9,
@@ -2569,20 +2958,20 @@
    "y3": 9.0,
    "y5": 64.5,
    "y10": 239.7,
-   "end": 227.1,
-   "end_man": 163948,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 227.9,
+   "end_man": 164322,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 110811,
+    "longterm": 111107,
     "ammo": 8862,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
     "gold": 0
    },
-   "sgov_share_end": 16.0,
+   "sgov_share_end": 15.9,
    "events": [
     [
      "2019-04-08",
@@ -2622,7 +3011,7 @@
    "scenario": "2016~",
    "strategy": "A+금 현재 규칙 + 금 월17만(장투 183만)",
    "start": "2016-01-04",
-   "irr": 17.85,
+   "irr": 17.89,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -20.0,
@@ -2630,18 +3019,18 @@
    "y3": 8.9,
    "y5": 63.1,
    "y10": 238.8,
-   "end": 223.0,
-   "end_man": 161886,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 223.8,
+   "end_man": 162248,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 103339,
+    "longterm": 103614,
     "ammo": 8862,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 15.9,
    "events": [
@@ -2683,7 +3072,7 @@
    "scenario": "2016~",
    "strategy": "B Ben안: 평상 SGOV7:주식3, 하락 시 기존 사다리, 금17",
    "start": "2016-01-04",
-   "irr": 18.52,
+   "irr": 18.55,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -19.1,
@@ -2691,18 +3080,18 @@
    "y3": 10.7,
    "y5": 69.3,
    "y10": 254.7,
-   "end": 237.9,
-   "end_man": 169355,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 238.7,
+   "end_man": 169733,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 110807,
+    "longterm": 111099,
     "ammo": 8862,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 16.7,
    "events": [
@@ -2744,7 +3133,7 @@
    "scenario": "2016~",
    "strategy": "B' 평상 3:7·과열 7:3, 하락 시 기존 사다리, 금17",
    "start": "2016-01-04",
-   "irr": 18.19,
+   "irr": 18.23,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -19.2,
@@ -2752,18 +3141,18 @@
    "y3": 11.3,
    "y5": 65.1,
    "y10": 246.2,
-   "end": 230.6,
-   "end_man": 165656,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 231.3,
+   "end_man": 166025,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 107109,
+    "longterm": 107391,
     "ammo": 8862,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 16.2,
    "events": [
@@ -2805,7 +3194,7 @@
    "scenario": "2016~",
    "strategy": "C 화자 원형: 평상 1:9·과열 3:7, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2016-01-04",
-   "irr": 16.95,
+   "irr": 16.98,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -20.6,
@@ -2813,18 +3202,18 @@
    "y3": 12.5,
    "y5": 60.6,
    "y10": 219.9,
-   "end": 203.8,
-   "end_man": 152251,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 204.4,
+   "end_man": 152571,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 100089,
+    "longterm": 100322,
     "ammo": 2477,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 8.6,
    "events": [
@@ -2838,7 +3227,7 @@
    "scenario": "2016~",
    "strategy": "C7 화자 틀 + 평상 7:3, −30%에 닻 75% 투입, 레버리지 없음, 금17",
    "start": "2016-01-04",
-   "irr": 14.49,
+   "irr": 14.52,
    "worst": -4.7,
    "uw_months": 1,
    "mdd5": -12.1,
@@ -2846,18 +3235,18 @@
    "y3": 9.6,
    "y5": 36.2,
    "y10": 172.1,
-   "end": 157.4,
-   "end_man": 129002,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 157.9,
+   "end_man": 129237,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 63601,
+    "longterm": 63749,
     "ammo": 15716,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 20.4,
    "events": [
@@ -2871,7 +3260,7 @@
    "scenario": "2016~",
    "strategy": "B+빅컷1 = B + 빅컷 후 45일 신규 적립 SGOV·사다리 정지",
    "start": "2016-01-04",
-   "irr": 18.38,
+   "irr": 18.41,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -18.7,
@@ -2879,18 +3268,18 @@
    "y3": 10.7,
    "y5": 67.1,
    "y10": 251.4,
-   "end": 234.8,
-   "end_man": 167772,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 235.5,
+   "end_man": 168146,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 109200,
+    "longterm": 109487,
     "ammo": 8887,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 16.8,
    "events": [
@@ -2944,7 +3333,7 @@
    "scenario": "2016~",
    "strategy": "B+빅컷2 = B + 빅컷 즉시 장투 주식 20%까지 매도, 45일 뒤 재매수",
    "start": "2016-01-04",
-   "irr": 19.04,
+   "irr": 19.07,
    "worst": -4.8,
    "uw_months": 1,
    "mdd5": -12.8,
@@ -2952,18 +3341,18 @@
    "y3": 10.7,
    "y5": 77.0,
    "y10": 267.8,
-   "end": 250.1,
-   "end_man": 175459,
-   "qqq_end": 303.7,
-   "spy_end": 203.4,
+   "end": 250.9,
+   "end_man": 175853,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
    "qqq_irr": null,
    "acct_end_man": {
-    "longterm": 116887,
+    "longterm": 117194,
     "ammo": 8887,
-    "swing": 1646,
-    "irp": 22459,
-    "pension": 20169,
-    "gold": 5411
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
    },
    "sgov_share_end": 16.5,
    "events": [
@@ -3010,6 +3399,79 @@
     [
      "2024-09-19",
      "빅컷 매도 51981만"
+    ],
+    [
+     "2024-11-04",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2025-06-10",
+     "현금 회복 정산 4877만"
+    ]
+   ]
+  },
+  {
+   "scenario": "2016~",
+   "strategy": "B+빅컷3 = B + 빅컷 후 2주 3단계(70→50→30%, 레버리지부터), 45일 뒤 재매수",
+   "start": "2016-01-04",
+   "irr": 18.64,
+   "worst": -4.8,
+   "uw_months": 1,
+   "mdd5": -15.3,
+   "mdd_all": -21.2,
+   "y3": 10.7,
+   "y5": 70.0,
+   "y10": 256.8,
+   "end": 240.6,
+   "end_man": 170707,
+   "qqq_end": 304.6,
+   "spy_end": 204.2,
+   "qqq_irr": null,
+   "acct_end_man": {
+    "longterm": 112048,
+    "ammo": 8887,
+    "swing": 1648,
+    "irp": 22489,
+    "pension": 20216,
+    "gold": 5419
+   },
+   "sgov_share_end": 16.8,
+   "events": [
+    [
+     "2019-04-08",
+     "현금 회복 정산 1803만"
+    ],
+    [
+     "2020-03-04",
+     "빅컷 안전장치 시작"
+    ],
+    [
+     "2020-05-01",
+     "빅컷 안전장치 종료"
+    ],
+    [
+     "2020-06-02",
+     "현금 회복 정산 2488만"
+    ],
+    [
+     "2022-05-09",
+     "현금 1차 285만"
+    ],
+    [
+     "2022-06-13",
+     "현금 2차 582만"
+    ],
+    [
+     "2022-10-14",
+     "현금 3차 1044만"
+    ],
+    [
+     "2023-12-13",
+     "현금 회복 정산 6940만"
+    ],
+    [
+     "2024-09-19",
+     "빅컷 안전장치 시작"
     ],
     [
      "2024-11-04",
