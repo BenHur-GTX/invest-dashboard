@@ -543,7 +543,7 @@ function qldSplit(dollars, px, fractional){
 const LT_NORMAL = {sgov:0.7, mix:{QQQM:0.4, SPYM:0.3, SCHD:0.3}};
 const LT_POOL = [{lvl:-10, pct:10, mix:"QQQM 70·QLD 30"}, {lvl:-15, pct:22, mix:"QQQM 60·QLD 40"}, {lvl:-20, pct:43, mix:"QLD 80·QQQM 20"}, {lvl:-30, pct:100, mix:"QLD 80·TQQQ 20"}];
 const GOLD_G_KRW = 170000;   // KRX 금현물 월 1g (가격 무관, 과매수 땐 일부 차익 → 현금 풀). 장투 몫에서 차감
-// BITO: 전체 자산 1%까지는 3개월에 나눠 채우고(월 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 상한 전체 3%. 장투 직투 계좌
+// BITO(11-14 개정): 전체 자산 1%까지는 6개월에 나눠 채우고(월 12만, 시세 탭 매수 후보인 달만 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 상한 전체 3%. 장투 직투 계좌
 function sideBuys(E){
   const s=E.H?.settings||{}, lt=(s.monthly_longterm_krw||2000000)/1e4;
   if(lt<100) return {gold:0, bito:0, why:"장투 월 100만 미만이면 금·BITO는 생략합니다."};
@@ -551,8 +551,9 @@ function sideBuys(E){
   const base=Math.max(1, Math.round(tot*0.01));
   const bv=E.acc.list.reduce((a,x)=>a+x.pos.filter(p=>p.t==="BITO").reduce((b,p)=>b+p.v,0),0), share=E.acc.total? bv/E.acc.total*100 : 0;
   const need=E.acc.total? (E.acc.total*0.01-bv)/1e4 : 0;
-  const bito = share>=3 ? 0 : need>base ? Math.min(24, Math.ceil(need/3)) : base;
-  return {gold:GOLD_G_KRW/1e4, bito, share, why: share>=3? `BITO가 전체의 ${num(share,1)}%로 상한 3%에 닿아 이번 달은 쉽니다.` : need>base? `BITO 전체 1%(약 ${num(E.acc.total*0.01/1e4,0)}만)까지 3개월에 나눠 채우는 중(현재 ${num(share,1)}%).` : `BITO 월 ${base}만 적립(월 저축의 약 1%).`};
+  const sig = buySig("BITO", E.S.BITO), hotBuy = sig && sig.lv>=1;   // 시세 탭 매수 후보로 뜨는 달만 최대 24만
+  const bito = share>=3 ? 0 : need>base ? Math.min(hotBuy? 24 : 12, Math.ceil(need/(hotBuy? 3 : 6))) : base;
+  return {gold:GOLD_G_KRW/1e4, bito, share, why: share>=3? `BITO가 전체의 ${num(share,1)}%로 상한 3%에 닿아 이번 달은 쉽니다.` : need>base? `BITO 전체 1%(약 ${num(E.acc.total*0.01/1e4,0)}만)까지 6개월에 나눠 채우는 중(현재 ${num(share,1)}%). 월 12만${hotBuy? `, 이번 달은 매수 후보(${sig.label})라 최대 24만`:""}.` : `BITO 월 ${base}만 적립(월 저축의 약 1%).`};
 }
 function planLongterm(E){
   const H=E.H, s=H?.settings||{}, fx=E.fx, S=E.S;
@@ -1056,7 +1057,7 @@ function vPlan(){
 
 /* 시나리오 × 계좌 한눈에 (11-14 확정안). 요약 아티팩트와 같은 내용. 현재 국면 줄 강조 */
 const SCEN_SUMMARY = [
-  {id:"normal", n:"평상", c:"QQQ 5년 고점 −10% 이내", pen:"배당다우존스 60 / 나스닥100 40", irp:"위험 55~60% (S&P 40·나스닥 30·배당 30)", lt:"SGOV 70 : 주식 30 (QQQM 40·SPYM 30·배당 30)", am:"SGOV 적립만", sw:"신호 때만 1회 4%, 개별주 3종목 이하", gb:"금 1g · BITO 월 3만(1%까지는 월 ≤24만)"},
+  {id:"normal", n:"평상", c:"QQQ 5년 고점 −10% 이내", pen:"배당다우존스 60 / 나스닥100 40", irp:"위험 55~60% (S&P 40·나스닥 30·배당 30)", lt:"SGOV 70 : 주식 30 (QQQM 40·SPYM 30·배당 30)", am:"SGOV 적립만", sw:"신호 때만 1회 4%, 개별주 3종목 이하", gb:"금 1g · BITO 월 3만(1%까지는 6개월간 월 12만, 매수 후보 달 최대 24만)"},
   {id:"hot", n:"과열", c:"과열 신호 2개↑", pen:"평상과 같음", irp:"60% 초과분 → 머니마켓", lt:"7:3 유지. 3개↑면 보유 QLD 20% → SGOV(6개월 1회)", am:"평상과 같음", sw:"레버리지 2개 30% · 3개 50% · 4개↑ 전량 매도", gb:"금: 주봉 RSI≥75 + 200일선 +20%면 10% → SGOV"},
   {id:"s1", n:"−10% 구간", c:"−10 ~ −15%", pen:"배당 50 / 나스닥100 50", irp:"추세이탈 62~65%, −5%마다 부족분 1/3", lt:"신규 전액 주식: QQQM 42.5·SPYM 42.5·QLD 15 (중립이면 QLD 절반 → QQQM) + 모은 SGOV 10% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
   {id:"s2", n:"−15% 구간", c:"−15 ~ −20%", pen:"배당 50 / 나스닥100 50", irp:"62~65%", lt:"QQQM 45·SPYM 25·QLD 30 + 남은 SGOV 22% 투입", am:"대기", sw:"신호 매수 계속", gb:"금 1g · BITO"},
