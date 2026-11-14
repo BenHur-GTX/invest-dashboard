@@ -1435,11 +1435,14 @@ def gapswing_study(D):
     for j in range(39, len(wi)):
         if j < len(wi) - 1 or datetime.strptime(dates[wi[j]], "%Y-%m-%d").weekday() == 4:
             gap[j] = (c[wi[j]] / (sum(c[wi[x]] for x in range(j - 39, j + 1)) / 40) - 1) * 100
-    gd = [None] * n; j = 0
+    gd = [None] * n; j = -1; last = None   # 일별: 직전 마감 주 이격도
     for k in range(n):
-        while j + 1 < len(wi) and wi[j + 1] <= k and gap[j + 1] is not None: j += 1
-        gd[k] = gap[j] if wi[j] <= k else None
+        while j + 1 < len(wi) and wi[j + 1] <= k:
+            j += 1
+            if gap[j] is not None: last = gap[j]
+        gd[k] = last
     D["gap40"] = gd
+    print("GAP40 days<=-10:", sum(1 for x in gd if x is not None and x <= -10), flush=True)
     L = {"div": (5, 25), "div_sell": True, "div_pool": ["SCHD", "JEPI", "DIVO", "JEPQ"], "trigger": "ma200", "frac": 0.5, "mix": {"QLD": 100}, "stop": True}
     CUR = {**L, "gold": 17, "normal": (0.7, 0.7), "m10": (85, 85, 30, 0), "bigcut": "stage_ma"}
     V = [("A 지금 규칙", CUR),
