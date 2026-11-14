@@ -179,6 +179,9 @@ td.l .symbtn{display:block}
 /* 차트 팝업 */
 dialog.chartdlg{border:0;border-radius:14px;padding:0;width:min(760px,94vw);max-height:92vh;box-shadow:0 20px 60px rgba(0,0,0,.25);color:var(--ink)}
 dialog.chartdlg::backdrop{background:rgba(20,22,20,.45)}
+dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;overflow:auto;background:var(--surface)}
+.mtbl tr[data-chart]{cursor:pointer}
+#dlgclose{white-space:nowrap;flex:0 0 auto}
 .dlghead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 6px}
 .dlghead h3{margin:0;font-size:17px} .dlghead .muted{margin-top:2px}
 .dlgbody{padding:0 16px 16px}
@@ -1421,49 +1424,68 @@ async function chartData(){
 function decodeSeries(x){ const out=[]; let t=new Date(x.d0+"T00:00:00Z").getTime(); x.dd.forEach((d,i)=>{ t+=d*864e5; out.push([new Date(t).toISOString().slice(0,10), x.c[i]]); }); return out; }
 function smaArr(c, n){ const o=new Array(c.length).fill(null); let sum=0; for(let i=0;i<c.length;i++){ sum+=c[i]; if(i>=n) sum-=c[i-n]; if(i>=n-1) o[i]=sum/n; } return o; }
 let DLG_STATE = null;
+// 차트 팝업 (11-14 Ben: 기본 3년 주봉 + 40주선, 골든/데드 표시. 6개월·1년은 일봉 50·200일선). 뒤로 가기로 닫힘
+const DLG_RANGES=[["6m","6개월","d",126],["1y","1년","d",252],["3y","3년 주봉","w",156],["5y","5년 주봉","w",260]];
+function dlgClose(){ const d=document.getElementById("chartdlg"); if(!d) return; if(d.close && d.open) d.close(); else if(d.hasAttribute("open")){ d.removeAttribute("open"); d.classList.remove("fb"); d.dispatchEvent(new Event("close")); } }
 async function openChart(t){
   const s = E.S[t]; if(!s) return;
   let dlg = document.getElementById("chartdlg");
   if(!dlg){ dlg=document.createElement("dialog"); dlg.id="chartdlg"; dlg.className="chartdlg"; dlg.setAttribute("aria-labelledby","dlgttl"); document.body.appendChild(dlg);
-    dlg.addEventListener("click", e=>{ if(e.target===dlg) dlg.close(); }); }
-  const b = buySig(t,s);
-  dlg.innerHTML = `<div class="dlghead"><div><h3 id="dlgttl">${esc(t.replace("^",""))} <span class="muted" style="font-weight:400">${esc(s.name!==t? s.name:"")}</span> ${sigTag(b)}</h3><div class="muted">${b? esc(b.why)+" · ":""}${esc(s.date||"")} 종가 기준</div></div><button type="button" class="ghost" id="dlgclose" aria-label="닫기">닫기</button></div>
-  <div class="dlgbody"><div class="seg" role="group" aria-label="기간">${[["6m","6개월",126],["1y","1년",252],["3y","3년",756]].map(([k,l,n],i)=>`<button type="button" data-n="${n}" aria-pressed="${i===1}">${l}</button>`).join("")}</div>
-  <div class="legend"><span><i style="background:var(--brand)"></i>종가</span><span><i style="background:#e07a28"></i>50일선</span><span><i style="background:#8a1c12"></i>200일선</span></div>
+    dlg.addEventListener("click", e=>{ if(e.target===dlg) dlgClose(); }); }
+  const b = buySig(t,s), w=s.w40;
+  const wtxt = w? `40주선 ${w.up?"위":"아래"} · ${w.cross? (w.cross==="golden"?"골든":"데드")+" "+(w.weeks? w.weeks+"주째":"신규") : ""}` : "";
+  dlg.innerHTML = `<div class="dlghead"><div><h3 id="dlgttl">${esc(t.replace("^",""))} <span class="muted" style="font-weight:400">${esc(s.name!==t? s.name:"")}</span> ${sigTag(b)}</h3><div class="muted">${b? esc(b.why)+" · ":""}${wtxt? `<b class="${w.up?"up":"dn"}">${wtxt}</b> · `:""}${esc(s.date||"")} 종가 기준</div></div><button type="button" class="ghost" id="dlgclose" aria-label="닫기">닫기</button></div>
+  <div class="dlgbody"><div class="seg" role="group" aria-label="기간">${DLG_RANGES.map(([k,l])=>`<button type="button" data-k="${k}" aria-pressed="${k==="3y"}">${l}</button>`).join("")}</div>
+  <div class="legend" id="dlglegend"></div>
   <div id="dlgchart"><p class="muted">차트 불러오는 중…</p></div><div class="tip" id="dlgtip" aria-live="polite"></div>
-  <div class="dstats"><div>현재가<b>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</b></div><div>고점 대비<b>${cpct(s.dd_ath ?? s.dd52,1)}</b></div><div>200일선 대비<b>${cpct(s.vs200,1)}</b></div><div>RSI (일·주)<b><span class="${rsiCls(s.rsi)}">${num(s.rsi,0)}</span> · ${num(s.rsi_w,0)}</b></div></div></div>`;
-  dlg.querySelector("#dlgclose").onclick=()=>dlg.close();
-  if(!dlg.open){ dlg.showModal(); history.pushState({chartdlg:1}, ""); }   // 휴대폰 뒤로 가기로 팝업 닫기
+  <div class="dstats"><div>현재가<b>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</b></div><div>고점 대비<b>${cpct(s.dd_ath ?? s.dd52,1)}</b></div><div>40주선 대비<b>${w? cpct(w.gap,1) : "–"}</b></div><div>RSI (일·주)<b><span class="${rsiCls(s.rsi)}">${num(s.rsi,0)}</span> · ${num(s.rsi_w,0)}</b></div></div></div>`;
+  dlg.querySelector("#dlgclose").onclick=dlgClose;
+  const wasOpen = dlg.open || dlg.hasAttribute("open");
+  if(!wasOpen){
+    if(typeof dlg.showModal==="function") dlg.showModal(); else { dlg.setAttribute("open",""); dlg.classList.add("fb"); }   // 오래된 브라우저: 일반 레이어로
+    history.pushState({chartdlg:1}, "");   // 휴대폰 뒤로 가기로 팝업 닫기
+  }
   if(!dlg._bk){ dlg._bk=1;
     dlg.addEventListener("close", ()=>{ if(history.state?.chartdlg) history.back(); });
-    window.addEventListener("popstate", ()=>{ if(dlg.open) dlg.close(); }); }
+    window.addEventListener("popstate", ()=>{ if(dlg.open || dlg.hasAttribute("open")) dlgClose(); }); }
   const C = await chartData();
   const x = C.s?.[t];
-  let ser = x? decodeSeries(x) : (s.spark||[]).map((v,i)=>[i===0? (s.spark_dates?.[0]||"") : i===s.spark.length-1? (s.spark_dates?.[1]||"") : "", v]);
-  const ma50 = smaArr(ser.map(r=>r[1]),50), ma200 = smaArr(ser.map(r=>r[1]),200);
-  DLG_STATE = {ser, ma50, ma200, cur:s.cur, fallback:!x};
-  const draw = n => { drawPopup(n); dlg.querySelectorAll(".seg button").forEach(bt=>bt.setAttribute("aria-pressed", String(+bt.dataset.n===n))); };
-  dlg.querySelectorAll(".seg button").forEach(bt=>bt.onclick=()=>draw(+bt.dataset.n));
-  draw(252);
+  const ser = x? decodeSeries(x) : (s.spark||[]).map((v,i)=>[i===0? (s.spark_dates?.[0]||"") : i===s.spark.length-1? (s.spark_dates?.[1]||"") : "", v]);
+  const wser = x?.w? decodeSeries(x.w) : [];
+  DLG_STATE = {ser, ma50: smaArr(ser.map(r=>r[1]),50), ma200: smaArr(ser.map(r=>r[1]),200), wser, ma40: smaArr(wser.map(r=>r[1]),40), cur:s.cur, fallback:!x};
+  const draw = k => { drawPopup(k); dlg.querySelectorAll(".seg button").forEach(bt=>bt.setAttribute("aria-pressed", String(bt.dataset.k===k))); };
+  dlg.querySelectorAll(".seg button").forEach(bt=>bt.onclick=()=>draw(bt.dataset.k));
+  draw(wser.length>45? "3y" : "1y");
 }
-function drawPopup(n){
-  const {ser, ma50, ma200, cur, fallback} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
-  const k0 = Math.max(0, ser.length-n), S2=ser.slice(k0), m5=ma50.slice(k0), m2=ma200.slice(k0);
+function drawPopup(key){
+  const {ser, ma50, ma200, wser, ma40, cur, fallback} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
+  const [, label, kind, n] = DLG_RANGES.find(r=>r[0]===key) || DLG_RANGES[1];
+  const wk = kind==="w";
+  const base = wk? wser : ser, k0 = Math.max(0, base.length-n), S2=base.slice(k0);
+  const lines = wk? [[ma40.slice(k0),"#8a1c12",1.6]] : [[ma200.slice(k0),"#8a1c12",1.5],[ma50.slice(k0),"#e07a28",1.5]];
+  const lg=document.getElementById("dlglegend");
+  if(lg) lg.innerHTML = wk? `<span><i style="background:var(--brand)"></i>주봉 종가</span><span><i style="background:#8a1c12"></i>40주선</span><span><b class="up">▲</b> 골든</span><span><b class="dn">▼</b> 데드</span>`
+    : `<span><i style="background:var(--brand)"></i>종가</span><span><i style="background:#e07a28"></i>50일선</span><span><i style="background:#8a1c12"></i>200일선</span>`;
   if(S2.length<2){ box.innerHTML='<p class="muted">차트 데이터가 없습니다.</p>'; return; }
-  const W=Math.max(300, Math.round(box.clientWidth||720)), H=W<500? 220 : 280, PL=6, PR=W<500? 48 : 58, PT=10, PB=22;
-  const vals=[...S2.map(r=>r[1]), ...m5.filter(v=>v!=null), ...m2.filter(v=>v!=null)]; const mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
+  const W=Math.max(300, Math.round(box.clientWidth||720)), H=W<500? 230 : 290, PL=6, PR=W<500? 48 : 58, PT=12, PB=22;
+  const vals=[...S2.map(r=>r[1]), ...lines.flatMap(l=>l[0].filter(v=>v!=null))]; const mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
   const X=i=>PL+i/(S2.length-1)*(W-PL-PR), Y=v=>PT+(1-(v-mn)/rg)*(H-PT-PB);
   const line=(arr,col,w)=>{ const pts=arr.map((v,i)=>v==null?null:`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(" "); return pts? `<polyline fill="none" stroke="${col}" stroke-width="${w}" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${pts}"/>`:""; };
   const fmt=v=> cur==="KRW"? num(v, v<100?2:0) : num(v, v<10?2:v<1000?2:0);
   const ticks=[mx, mn+rg/2, mn].map(v=>`<line x1="${PL}" x2="${W-PR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#ebe9e3"/><text x="${W-PR+6}" y="${(Y(v)+4).toFixed(1)}" font-size="11" fill="#55534e">${fmt(v)}</text>`).join("");
-  box.innerHTML = `<svg class="pchart" viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="${n<=126?"6개월":n<=252?"1년":"3년"} 가격 차트">${ticks}
-    ${line(m2,"#8a1c12",1.5)}${line(m5,"#e07a28",1.5)}${line(S2.map(r=>r[1]),"var(--brand)",2)}
+  let marks="";
+  if(wk){ const m=lines[0][0];   // 주봉 종가가 40주선을 넘나든 주
+    for(let i=1;i<S2.length;i++){ if(m[i]==null||m[i-1]==null) continue; const u=S2[i][1]>m[i], u0=S2[i-1][1]>m[i-1]; if(u===u0) continue;
+      const cx=X(i).toFixed(1), cy=Y(S2[i][1]);
+      marks += u? `<path d="M${cx} ${(cy+6).toFixed(1)} l-5 9 h10z" fill="var(--up)"><title>골든 ${S2[i][0]}</title></path>` : `<path d="M${cx} ${(cy-6).toFixed(1)} l-5 -9 h10z" fill="var(--down)"><title>데드 ${S2[i][0]}</title></path>`; } }
+  box.innerHTML = `<svg class="pchart" viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="${label} 가격 차트">${ticks}
+    ${lines.map(l=>line(l[0],l[1],l[2])).join("")}${line(S2.map(r=>r[1]),"var(--brand)",2)}${marks}
     <text x="${PL}" y="${H-6}" font-size="11" fill="#55534e">${esc(S2[0][0])}</text><text x="${W-PR}" y="${H-6}" font-size="11" fill="#55534e" text-anchor="end">${esc(S2[S2.length-1][0])}</text>
-    <line id="xh" x1="0" x2="0" y1="${PT}" y2="${H-PB}" stroke="#55534e" stroke-dasharray="3 3" visibility="hidden"/></svg>${fallback? '<p class="note">상세 차트 데이터가 아직 없어 최근 6개월 흐름만 보여 줍니다(다음 데이터 갱신 후 3년 차트).</p>':""}`;
-  const svg=box.querySelector("svg"), xh=svg.querySelector("#xh"), tip=document.getElementById("dlgtip");
+    <line id="xh" x1="0" x2="0" y1="${PT}" y2="${H-PB}" stroke="#55534e" stroke-dasharray="3 3" visibility="hidden"/></svg>${fallback? '<p class="note">상세 차트 데이터가 아직 없어 최근 6개월 흐름만 보여 줍니다.</p>' : wk&&!wser.length? '<p class="note">주봉 데이터는 다음 데이터 갱신 후에 보입니다.</p>':""}`;
+  const svg=box.querySelector("svg"), xh=svg.querySelector("#xh"), tip=document.getElementById("dlgtip"), ref=lines[0][0];
   const move=e=>{ const r=svg.getBoundingClientRect(); const fx=(e.clientX-r.left)/r.width*W; const i=Math.max(0,Math.min(S2.length-1,Math.round((fx-PL)/(W-PL-PR)*(S2.length-1))));
     xh.setAttribute("x1",X(i)); xh.setAttribute("x2",X(i)); xh.setAttribute("visibility","visible");
-    const last=S2[S2.length-1][1]; tip.textContent=`${S2[i][0]} · ${fmt(S2[i][1])}${m2[i]!=null? " · 200일선 "+fmt(m2[i]):""} · 현재가 대비 ${pct((last/S2[i][1]-1)*100,1)}`; };
+    const last=S2[S2.length-1][1]; tip.textContent=`${S2[i][0]} · ${fmt(S2[i][1])}${ref[i]!=null? (wk?" · 40주선 ":" · 200일선 ")+fmt(ref[i]):""} · 현재가 대비 ${pct((last/S2[i][1]-1)*100,1)}`; };
   svg.onpointermove=move; svg.onpointerdown=move; svg.onpointerleave=()=>{ xh.setAttribute("visibility","hidden"); tip.textContent=""; };
 }
 function vMarket(){
@@ -1478,10 +1500,10 @@ function vMarket(){
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 모니터링용: 1년 고점 −70% + RSI 30 이하일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI 40 이하면 관찰로 표시합니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다. 40주선 = 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈) 크로스와 경과 주수(마감 주 기준), 신규는 지난주 마감에서 막 바뀐 것, 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 이번 주에 반대로 넘어간 상태(금요일 종가로 확정). 휴대폰에서는 표를 옆으로 밀어서 보세요.</p>
+  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 줄을 누르면 차트가 열립니다(기본 3년 주봉 + 40주선과 골든▲·데드▼ 지점, 6개월·1년은 일봉 50·200일선). 뒤로 가기로 닫힙니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 모니터링용: 1년 고점 −70% + RSI 30 이하일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI 40 이하면 관찰로 표시합니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다. 40주선 = 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈) 크로스와 경과 주수(마감 주 기준), 신규는 지난주 마감에서 막 바뀐 것, 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 이번 주에 반대로 넘어간 상태(금요일 종가로 확정). 휴대폰에서는 표를 옆으로 밀어서 보세요.</p>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table class="mtbl">
     <tr><th>종목</th><th>현재가</th><th>일간</th><th>40주선</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
-    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td>${w40Cell(s.w40)}<td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
+    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td>${w40Cell(s.w40)}<td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
 }
@@ -1748,7 +1770,7 @@ function render(){
   stackTables($("#app"));
   if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
-  document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart));
+  document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openChart(b.dataset.chart); });   // 시세 표는 줄 전체를 눌러도 열림
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
     $("#pksave").onclick=()=>{ try{ localStorage.setItem("holdings_key", $("#pk").value.trim()); location.reload(); }catch(e){} };
