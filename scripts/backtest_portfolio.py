@@ -1024,6 +1024,90 @@ def park_verify(D):
     json.dump(out, open(os.path.join(B.DATA, "park_verify.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def swing_study(D):
+    """단기 급락 스윙(짧게 사고 나오기) 규칙 비교 → data/swing_bt.json. 스윙 계좌 단독, 쉬는 돈은 SGOV"""
+    dates, P, c, rsi = D["dates"], D["P"], D["c"], D["rsi"]
+    n = len(dates)
+    def bbl(i):
+        if i < 19: return None
+        w = c[i - 19:i + 1]; mu = sum(w) / 20; sd = (sum((x - mu) ** 2 for x in w) / 20) ** 0.5
+        return mu - 2 * sd
+    def ret(i, k): return (c[i] / c[i - k] - 1) * 100 if i >= k else 0
+    SIG = {
+        "dip2": ("QQQ 하루 −2%↓ + RSI ≤ 40", lambda i: ret(i, 1) <= -2 and (rsi[i] or 99) <= 40),
+        "rsi30": ("QQQ RSI ≤ 30", lambda i: (rsi[i] or 99) <= 30),
+        "bb": ("QQQ 볼린저 하단 이탈 + RSI ≤ 35", lambda i: bbl(i) is not None and c[i] < bbl(i) and (rsi[i] or 99) <= 35),
+        "d3": ("QQQ 3일 −5%↓", lambda i: ret(i, 3) <= -5),
+        "d3r": ("QQQ 3일 −5%↓ + RSI ≤ 35", lambda i: ret(i, 3) <= -5 and (rsi[i] or 99) <= 35),
+    }
+    EXIT = {
+        "tp": ("+8% 절반·+15% 나머지 (손절·기간 없음 = 지금 규칙)", dict(tp1=8, tp2=15, stop=None, days=None, mr=False)),
+        "tp_s_t": ("+8% 절반·+15% 나머지, −12% 손절, 20거래일 청산", dict(tp1=8, tp2=15, stop=-12, days=20, mr=False)),
+        "fast": ("+5% 절반·+10% 나머지, −10% 손절, 10거래일 청산", dict(tp1=5, tp2=10, stop=-10, days=10, mr=False)),
+        "mr": ("RSI ≥ 50 또는 20일선 회복 시 전량, −12% 손절, 15거래일 청산", dict(tp1=None, tp2=None, stop=-12, days=15, mr=True)),
+        "mr_tp": ("+8% 절반 → 나머지는 RSI ≥ 55·20일선 회복, −12% 손절, 20거래일", dict(tp1=8, tp2=None, stop=-12, days=20, mr=True)),
+    }
+    def sim(i0, i1, inst, sig, ex, unit=1 / 3, lots=3, gap=5):
+        cash = 1.0; pos = []   # [qty, entry_px, entry_i, half_done]
+        f = SIG[sig][1]; e = EXIT[ex][1]; last = -99; trades = []; curve = []
+        sg = P["SGOV"]
+        for i in range(i0, i1 + 1):
+            if i > i0: cash *= sg[i] / sg[i - 1]
+            px = P[inst][i]
+            m20 = sum(c[i - 19:i + 1]) / 20 if i >= 19 else None
+            keep = []
+            for q, ep, ei, hd in pos:
+                g = (px / ep - 1) * 100; held = i - ei
+                out = 0
+                if e["stop"] is not None and g <= e["stop"]: out = 1
+                elif e["days"] is not None and held >= e["days"]: out = 1
+                elif e["tp2"] is not None and g >= e["tp2"]: out = 1
+                elif e["mr"] and (hd or e["tp1"] is None) and ((rsi[i] or 0) >= (55 if e["tp1"] else 50) or (m20 and c[i] > m20)) and held >= 2: out = 1
+                if not out and e["tp1"] is not None and not hd and g >= e["tp1"]:
+                    cash += q / 2 * px; q /= 2; hd = True
+                if out:
+                    cash += q * px; trades.append((ep, px, held, g))
+                else: keep.append([q, ep, ei, hd])
+            pos = keep
+            tot = cash + sum(p[0] * px for p in pos)
+            if f(i) and len(pos) < lots and i - last >= gap:
+                amt = min(cash, tot * unit)
+                if amt > 0: cash -= amt; pos.append([amt / px, px, i, False]); last = i
+            curve.append(cash + sum(p[0] * px for p in pos))
+        yrs = (i1 - i0) / 252
+        cagr = (curve[-1] ** (1 / yrs) - 1) * 100 if yrs > 0 else 0
+        pk = 0; mdd = 0
+        for v in curve: pk = max(pk, v); mdd = min(mdd, v / pk - 1)
+        exp = sum(1 for k in range(len(curve)) if True) and None
+        wins = [t for t in trades if t[1] > t[0]]
+        return {"cagr": round(cagr, 2), "mdd": round(mdd * 100, 1), "trades": len(trades), "win": round(len(wins) / len(trades) * 100) if trades else None,
+                "avg_hold": round(sum(t[2] for t in trades) / len(trades), 1) if trades else None,
+                "avg_ret": round(sum(t[3] for t in trades) / len(trades), 1) if trades else None,
+                "worst": round(min(t[3] for t in trades), 1) if trades else None}
+    def bh(i0, i1, t):
+        yrs = (i1 - i0) / 252; v = [P[t][k] / P[t][i0] for k in range(i0, i1 + 1)]
+        pk = 0; mdd = 0
+        for x in v: pk = max(pk, x); mdd = min(mdd, x / pk - 1)
+        return {"cagr": round((v[-1] ** (1 / yrs) - 1) * 100, 2), "mdd": round(mdd * 100, 1)}
+    def idx(d): return next((k for k, x in enumerate(dates) if x >= d), n - 1)
+    W = [("2000~", "2000-01-03", None), ("2008~", "2008-01-02", None), ("2016~", "2016-01-04", None), ("2020~", "2020-01-02", None),
+         ("닷컴 2000-03~2002-12", "2000-03-01", "2002-12-31"), ("금융위기 2007-10~2009-06", "2007-10-01", "2009-06-30"),
+         ("2022", "2022-01-03", "2022-12-30"), ("2025-02~06", "2025-02-03", "2025-06-30")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "notes": ["스윙 계좌 단독, 1회 계좌 1/3, 최대 3묶음, 5거래일 간격", "쉬는 돈은 SGOV(단기채 금리)", "QLD·TQQQ 상장 전은 QQQ 일간 2·3배 합성", "세금·수수료 제외"],
+           "signals": {k: v[0] for k, v in SIG.items()}, "exits": {k: v[0] for k, v in EXIT.items()}, "rows": [], "bench": []}
+    for wn, a, b in W:
+        i0 = idx(a); i1 = idx(b) if b else n - 1
+        out["bench"].append({"window": wn, "SGOV": bh(i0, i1, "SGOV"), "QQQ": bh(i0, i1, "QQQ"), "QLD": bh(i0, i1, "QLD")})
+        for inst in ("QLD", "TQQQ"):
+            for sk in SIG:
+                for ek in EXIT:
+                    r = sim(i0, i1, inst, sk, ek)
+                    out["rows"].append({"window": wn, "inst": inst, "sig": sk, "exit": ek, **r})
+        print("SWING", wn, flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "swing_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def main():
     y, f = load()
     D = prep(y, f)
@@ -1032,6 +1116,8 @@ def main():
         margin_study(D); print("ok"); return
     if os.environ.get("ONLY_DIV"):
         div_study(D); print("ok"); return
+    if os.environ.get("ONLY_SWING"):
+        swing_study(D); print("ok"); return
     if os.environ.get("ONLY_PARKV"):
         park_verify(D); print("ok"); return
     if os.environ.get("ONLY_PARK"):
