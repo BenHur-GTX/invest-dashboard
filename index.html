@@ -82,6 +82,30 @@ tr.total td{font-weight:700;background:#faf9f6}
 .scard.now{border:2px solid var(--accent)}.scard.now header{background:var(--accent)}
 .scard dl{display:grid;grid-template-columns:62px 1fr;gap:4px 10px;margin:0;padding:9px 12px 11px;font-size:14px;line-height:1.45}
 .scard dt{font-weight:700;color:var(--brand);font-size:13px}.scard dd{margin:0}
+/* 휴대폰: 표를 행 카드로 (11-14 Ben: 가로 스크롤 없이 한 화면에). 열 제목은 각 값 앞에 작은 글씨로 */
+@media (max-width:640px){
+  .tbl table.stack{min-width:0!important}
+  table.stack, table.stack tbody{display:block}
+  table.stack tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;padding:9px 12px;border-bottom:1px solid var(--line)}
+  table.stack tr.hd{gap:4px 6px;padding:6px 10px;background:#faf9f6}
+  table.stack tr.hd th{display:none;position:static;padding:0;border:0;background:none}
+  table.stack tr.hd th.sortable{display:block}
+  table.stack tr.hd:not(:has(th.sortable)){display:none}
+  table.stack td{display:block;padding:0;border:0;text-align:left;white-space:normal;min-width:0!important}
+  table.stack td:first-child{flex:1 0 100%;font-weight:600}
+  table.stack td.wide{flex:1 0 100%}
+  table.stack td[data-label]::before{content:attr(data-label);display:inline;margin-right:5px;font-size:11.5px;font-weight:400;color:var(--ink2)}
+  table.stack td:empty{display:none}
+  table.stack td{background:none!important;box-shadow:none!important}
+  table.stack tr.total{background:#faf9f6}
+  table.stack tr.buy2{background:#e6f2eb;box-shadow:inset 4px 0 0 var(--ok)}
+  table.stack tr.buy1{background:#f3f8f4;box-shadow:inset 4px 0 0 #8cbf5a}
+  table.stack tr.hot{background:#fdf1ef;box-shadow:inset 4px 0 0 var(--bad)}
+  table.stack tr[style*="accent-soft"]{box-shadow:inset 4px 0 0 var(--accent)}
+  .qtbl td.l{white-space:normal}
+  .qtbl .why{white-space:normal;display:inline}
+  .qtbl td:first-child{min-width:0}
+}
 .qtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .qtiles>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
 .qtiles .k{font-size:12px;color:var(--ink2)}.qtiles .v{font-size:20px;font-weight:700;margin:2px 0}.qtiles .m{font-size:12.5px;color:var(--ink2)}
@@ -1608,7 +1632,7 @@ function bindPlan(){
     Object.assign(s,{monthly_ammo_krw:r3(t*P.ammo/100), monthly_pension_krw:r3(t*P.pension/100), monthly_swing_krw:r3(t*P.swing/100)});
     Object.assign(s,{monthly_longterm_krw:t-s.monthly_ammo_krw-s.monthly_pension_krw-s.monthly_swing_krw, fractional:$("#c_frac").checked, gold_extra:$("#c_gold").checked});
     if(save) saveCfg(cur());
-    try{ $("#plan_body").innerHTML = planBody(); document.querySelectorAll("#plan_body [data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart)); }
+    try{ $("#plan_body").innerHTML = planBody(); stackTables($("#plan_body")); document.querySelectorAll("#plan_body [data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart)); }
     catch(e){ $("#plan_body").innerHTML = `<p class="muted">계산 실패: ${esc(e.message)}</p>`; console.error(e); }
   };
   $("#c_total").addEventListener("input",()=>upd());
@@ -1662,6 +1686,20 @@ function vRules(){
   <div style="margin-top:8px;display:flex;gap:8px"><button id="pksave">키 저장</button><button class="ghost" id="pkclear">키 삭제</button></div></div>`;
 }
 
+/* 휴대폰 표 → 행 카드: 머리글을 각 칸 data-label로 복사 (.qtbl은 3열이라 제외) */
+function stackTables(root){
+  (root||document).querySelectorAll(".tbl table:not(.qtbl):not(.stack)").forEach(t=>{
+    const rows=[...t.rows]; if(!rows.length) return;
+    const hr=rows[0]; if(![...hr.cells].some(c=>c.tagName==="TH")) return;
+    hr.classList.add("hd");
+    const heads=[]; [...hr.cells].forEach(c=>{ for(let n=0;n<(c.colSpan||1);n++) heads.push(c.textContent.replace(/[↕▲▼]/g,"").trim()); });
+    rows.slice(1).forEach(r=>{ let col=0; [...r.cells].forEach((c,ix)=>{ const span=c.colSpan||1;
+      if(span===1 && ix>0 && heads[col] && c.tagName==="TD") c.dataset.label=heads[col];
+      if(span>1 || (c.classList.contains("l") && ix>0 && (c.textContent||"").length>40)) c.classList.add("wide");
+      col+=span; }); });
+    t.classList.add("stack");
+  });
+}
 function render(){
   const home = "plan";   // 첫 화면: 이번 달 매수(적립 계산기 통합, 11-14 Ben)
   const h = (location.hash||"#"+home).slice(1);
@@ -1670,6 +1708,7 @@ function render(){
   $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<2?` class="key${i===1?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
   const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
+  stackTables($("#app"));
   if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
   document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=()=>openChart(b.dataset.chart));
