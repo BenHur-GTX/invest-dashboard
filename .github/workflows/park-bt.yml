@@ -24,7 +24,7 @@ jobs:
       - run: |
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"
-          git add data/park_bt.json data/park_verify.json data/swing_bt.json
+          git add data/park_bt.json data/park_verify.json data/swing_bt.json data/swing2_bt.json
           git diff --cached --quiet || git commit -m "backtest: park"
           git pull --rebase origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref_name }}
