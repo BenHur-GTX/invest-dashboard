@@ -162,6 +162,11 @@ th.sortable.on .sortbtn{color:var(--brand);font-weight:700}
 tr.buy2 td{background:#e6f2eb} tr.buy2 td:first-child{box-shadow:inset 4px 0 0 var(--ok)}
 tr.buy1 td{background:#f3f8f4} tr.buy1 td:first-child{box-shadow:inset 4px 0 0 #8cbf5a}
 tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
+/* 시세 목록: 휴대폰에서도 표 그대로 가로 스크롤, 종목 열 고정 (11-14 Ben) */
+.mtbl td:first-child,.mtbl th:first-child{position:sticky;left:0;z-index:1}
+.mtbl tr:not(.buy2):not(.buy1):not(.hot) td:first-child,.mtbl th:first-child{background:var(--surface)}
+.mtbl td:first-child{box-shadow:inset -1px 0 0 var(--line)}
+@media(max-width:640px){ .mtbl{min-width:720px} .mtbl td:first-child{min-width:0;width:124px;max-width:124px;white-space:normal;line-height:1.3} .mtbl .symbtn .muted{display:block;font-size:12px} .mtbl .sig{display:table;margin:3px 0 0} }
 .sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 .sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
 .cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -574,7 +579,11 @@ const LT_POOL = [{lvl:-10, pct:10, mix:"QQQM 70·QLD 30"}, {lvl:-15, pct:22, mix
 const GOLD_G_KRW = 170000;   // KRX 금현물 월 1g 기본 추정가. GLD 시세가 있으면 그걸로 환산
 /* 11-14 Ben: 금현물 계좌는 장투와 별개 계좌. 월 1g. 기본은 월 저축 안에서 장투 몫을 떼어 옮김(gold_extra면 저축 밖 추가 자금) */
 function goldGramKRW(S, fx){ const g=S?.GLD?.price; return g&&fx ? g*fx/(0.0913*31.1035) : GOLD_G_KRW; }   // GLD 1주 ≈ 금 0.0913oz (2026, 보수 차감 반영 근사). KRX 시세와 1~2% 차이
-// BITO(11-14 개정): 전체 자산 1%까지는 6개월에 나눠 채우고(월 12만, 시세 탭 매수 후보인 달만 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 상한 전체 3%. 장투 계좌
+// BITO(11-14 개정): 전체 자산 1%까지는 6개월에 나눠 채우고(월 12만, 시세 탭 매수 후보인 달만 최대 24만), 이후 월 저축의 약 1%(330만 → 3만). 장투 계좌
+// 상한(11-14 Ben, 백테스트 data/btc_bt.json): 비트코인 현물 고점 대비 −70%면 6%, −80% 이하면 9%, 그 밖엔 3%.
+//   상한이 오르면 부족분을 3개월에 나눠 장투 적립금에서 채우고(모자라면 장투 SGOV), 현금 계좌는 쓰지 않음.
+//   차익: BITO 비중이 지금 상한의 2배를 넘으면 상한까지 팔아 장투로.
+function bitoCap(S){ const d=S?.["BTC-USD"]?.dd_ath; return {dd:d, cap: d==null? 3 : d<=-80? 9 : d<=-70? 6 : 3}; }
 function sideBuys(E){
   const s=E.H?.settings||{}, lt=(s.monthly_longterm_krw||2000000)/1e4;
   const gold = Math.round(goldGramKRW(E.S, E.fx)/1e3)/10;   // 만원, 1g
@@ -582,12 +591,29 @@ function sideBuys(E){
   const tot=((s.monthly_longterm_krw||0)+(s.monthly_ammo_krw||0)+(s.monthly_pension_krw||0)+(s.monthly_swing_krw||0))/1e4;
   const base=Math.max(1, Math.round(tot*0.01));
   const bv=E.acc.list.reduce((a,x)=>a+x.pos.filter(p=>p.t==="BITO").reduce((b,p)=>b+p.v,0),0), share=E.acc.total? bv/E.acc.total*100 : 0;
+  const {dd:bdd, cap} = bitoCap(E.S);
   const need=E.acc.total? (E.acc.total*0.01-bv)/1e4 : 0;
   const sig = buySig("BITO", E.S.BITO), hotBuy = sig && sig.lv>=1;   // 시세 탭 매수 후보로 뜨는 달만 최대 24만
-  const bito = share>=3 ? 0 : need>base ? Math.min(hotBuy? 24 : 12, Math.ceil(need/(hotBuy? 3 : 6))) : base;
   const swingOn = swingSignals(E).filter(x=>x.on);
   const swing = swingOn.length && E.acc.list.some(x=>x.id==="swing") ? SWING_MONTHLY : 0;
-  return {gold, goldExtra:!!s.gold_extra, bito, share, swing, swingOn, why: share>=3? `BITO가 전체의 ${num(share,1)}%로 상한 3%에 닿아 이번 달은 쉽니다.` : need>base? `BITO 전체 1%(약 ${num(E.acc.total*0.01/1e4,0)}만)까지 6개월에 나눠 채우는 중(현재 ${num(share,1)}%). 월 12만${hotBuy? `, 이번 달은 매수 후보(${sig.label})라 최대 24만`:""}.` : `BITO 월 ${base}만 적립(월 저축의 약 1%).`};
+  const ddTxt = bdd!=null? `비트코인 현물 고점 대비 ${num(bdd,0)}% → 상한 ${cap}%` : `상한 ${cap}%`;
+  let bito=0, bitoSgov=0, bitoSell=0, why;
+  if(E.acc.total && share > cap*2){
+    bitoSell = Math.round((bv - E.acc.total*cap/100)/1e4);
+    why = `BITO가 전체의 ${num(share,1)}%로 상한(${cap}%)의 2배를 넘었습니다. ${bitoSell}만을 팔아 장투로 옮깁니다(${ddTxt}). 해외 ETF 차익은 연 250만 넘는 부분에 22%.`;
+  } else if(share>=cap){
+    why = `BITO가 전체의 ${num(share,1)}%로 상한에 닿아 이번 달은 쉽니다(${ddTxt}).`;
+  } else if(cap>3 && E.acc.total){
+    const gap=(E.acc.total*cap/100-bv)/1e4, step=Math.ceil(E.acc.total*cap/100/3/1e4);
+    const want=Math.min(gap, Math.max(base, step));
+    const avail=Math.max(0, lt - (s.gold_extra? 0 : gold) - swing - 20);   // 장투 적립에서 최소 20만은 남김
+    bito=Math.round(Math.min(want, avail)); bitoSgov=Math.max(0, Math.round(want-bito));
+    why = `${ddTxt}. 지금 ${num(share,1)}%라 부족분 약 ${num(gap,0)}만을 3개월에 나눠 채웁니다(이번 달 ${Math.round(want)}만${bitoSgov? `, 적립금으로 모자란 ${bitoSgov}만은 장투에 모은 SGOV를 팔아서, SGOV가 없으면 다음 달로` : ""}). 현금 계좌는 쓰지 않습니다.`;
+  } else {
+    bito = need>base ? Math.min(hotBuy? 24 : 12, Math.ceil(need/(hotBuy? 3 : 6))) : base;
+    why = need>base? `BITO 전체 1%(약 ${num(E.acc.total*0.01/1e4,0)}만)까지 6개월에 나눠 채우는 중(현재 ${num(share,1)}%). 월 12만${hotBuy? `, 이번 달은 매수 후보(${sig.label})라 최대 24만`:""}. ${ddTxt}.` : `BITO 월 ${base}만 적립(월 저축의 약 1%). ${ddTxt}.`;
+  }
+  return {gold, goldExtra:!!s.gold_extra, bito, bitoSgov, bitoSell, bitoCap:cap, share, swing, swingOn, why};
 }
 function planLongterm(E){
   const H=E.H, s=H?.settings||{}, fx=E.fx, S=E.S;
@@ -604,7 +630,7 @@ function planLongterm(E){
   } else notes.push(`하락 구간(${pct(E.dd)}): 신규 적립은 전액 주식(하락 사다리). 모아 둔 SGOV는 ${LT_POOL.filter(x=>E.dd<=x.lvl).map(x=>`${x.lvl}% ${x.pct}%`).join(", ")||"−"} 차수 투입 대상.`);
   if(side.swing) notes.push(`스윙 매수 신호(${side.swingOn.map(x=>x.t).join("·")})가 있어 장투 몫에서 ${side.swing}만을 스윙 계좌로 보냅니다. 스윙 포지션을 다 정리했을 때 원금 대비 이익이면 이익의 50%를 장투로 옮깁니다.`);
   if(side.gold && !side.goldExtra) notes.push(`금현물 1g(약 ${num(side.gold,1)}만)은 장투 몫에서 떼어 금현물 계좌로 보냅니다.`);
-  if(side.bito) notes.push(`BITO ${side.bito}만은 장투 계좌에서 먼저 삽니다. ${side.why}`);
+  if(side.bito||side.bitoSgov||side.bitoSell) notes.push(`${side.bito? `BITO ${side.bito}만은 장투 계좌에서 먼저 삽니다. `:""}${side.why}`);
   const q=E.q;
   const oh = overheat(E);
   const hot = oh.score>=2;
@@ -1372,7 +1398,7 @@ function acctFor(t, s){
   if(t==="O"||t==="MO") return {a:"장투 계좌 (배당 칸)", how:"배당 칸의 절반 이하로. 개별 인컴주라 한 종목 쏠림은 피합니다."};
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
   if(t==="1489.T") return {a:"직투 엔화 예수금", how:"모아 둔 엔화로만 삽니다(원화 환전 매수 안 함). MDD −15/−25%에서 보조지표(RSI ≤ 30, 200일선 −10%, 볼린저 하단) 2개 이상이면 1/3씩, −35%면 남은 전부. 3~5거래일 나눠서."};
-  if(t==="BITO") return {a:"장투 계좌 (BITO 칸)", how:"월 적립 외 추가 매수는 매수 적기일 때만, 전체 자산의 3% 상한 안에서. 업비트·해외 거래소 현물은 쓰지 않습니다."};
+  if(t==="BITO") return {a:"장투 계좌 (BITO 칸)", how:"상한은 비트코인 현물 낙폭에 따라 3%(평소)·6%(−70%)·9%(−80% 이하). 상한의 2배를 넘으면 상한까지 차익. 업비트·해외 거래소 현물은 쓰지 않습니다."};
   if(s?.group==="성장주") return {a:"스윙 계좌", how:"1회 계좌 12.5%만, 종목당 2회(5거래일 간격). +5% 절반·+10% 나머지 익절, −10% 손절, 10거래일 안에 정리."};
   if(s?.group==="빅테크"||s?.group==="섹터") return {a:"스윙 계좌", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
@@ -1452,12 +1478,19 @@ function vMarket(){
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 모니터링용: 1년 고점 −70% + RSI 30 이하일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI 40 이하면 관찰로 표시합니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다.</p>
-  ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table>
-    <tr><th>종목</th><th>현재가</th><th>일간</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
-    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
+  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 모니터링용: 1년 고점 −70% + RSI 30 이하일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI 40 이하면 관찰로 표시합니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다. 40주선 = 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈) 크로스와 경과 주수(마감 주 기준), 신규는 지난주 마감에서 막 바뀐 것, 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 이번 주에 반대로 넘어간 상태(금요일 종가로 확정). 휴대폰에서는 표를 옆으로 밀어서 보세요.</p>
+  ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table class="mtbl">
+    <tr><th>종목</th><th>현재가</th><th>일간</th><th>40주선</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
+    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td>${w40Cell(s.w40)}<td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
+}
+// 11-14 Ben: 종목별 주봉 40주선. 마지막 크로스 종류 + 경과 주수(마감 주 기준), 이번 주 진행 중 뒤집히면 표시
+function w40Cell(w){
+  if(!w) return `<td class="muted">–</td>`;
+  const lab = w.cross? `${w.cross==="golden"?"골든":"데드"} ${w.weeks? w.weeks+"주":"신규"}` : (w.up?"위":"아래");
+  const flip = w.live_up!==w.up? ` <span class="muted" title="이번 주 진행 중 40주선 ${w.live_up?"위로":"아래로"}, 금요일 종가로 확정">(이번 주 ${w.live_up?"↑":"↓"})</span>` : "";
+  return `<td class="${w.up?"up":"dn"}" title="40주선 ${num(w.ma,2)} · 종가 ${num(w.close,2)} (${w.gap>0?"+":""}${num(w.gap,1)}%)"${w.weeks!=null&&w.weeks<=1?' style="font-weight:700"':""}>${lab}${flip}</td>`;
 }
 function bindMarket(){
   document.querySelectorAll(".sortbtn").forEach(b=>b.onclick=()=>{
@@ -1692,7 +1725,7 @@ function vRules(){
 
 /* 휴대폰 표 → 행 카드: 머리글을 각 칸 data-label로 복사 (.qtbl은 3열이라 제외) */
 function stackTables(root){
-  (root||document).querySelectorAll(".tbl table:not(.qtbl):not(.stack)").forEach(t=>{
+  (root||document).querySelectorAll(".tbl table:not(.qtbl):not(.mtbl):not(.stack)").forEach(t=>{
     const rows=[...t.rows]; if(!rows.length) return;
     const hr=rows[0]; if(![...hr.cells].some(c=>c.tagName==="TH")) return;
     hr.classList.add("hd");
