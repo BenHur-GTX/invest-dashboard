@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-14T04:38:43Z",
+ "generated": "2026-11-14T04:39:33Z",
  "w40": {
   "crosses": 79,
   "golden": 39,
@@ -147,7 +147,12 @@
    "end_man": 1271788,
    "lt_irr": 16.88,
    "lt_worst": -38.0,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "닷컴버블",
@@ -160,7 +165,12 @@
    "end_man": 1293916,
    "lt_irr": 17.02,
    "lt_worst": -32.6,
-   "signals": 79
+   "signals": 79,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "닷컴버블",
@@ -173,7 +183,48 @@
    "end_man": 1298803,
    "lt_irr": 16.85,
    "lt_worst": -36.1,
-   "signals": 79
+   "signals": 79,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "닷컴버블",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.23,
+   "total_worst": -36.2,
+   "total_mdd": -32.9,
+   "end_man": 1254283,
+   "lt_irr": 16.8,
+   "lt_worst": -41.4,
+   "signals": 0,
+   "sw40_trades": [
+    10,
+    19
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "닷컴버블",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.14,
+   "total_worst": -36.5,
+   "total_mdd": -32.6,
+   "end_man": 1234627,
+   "lt_irr": 16.71,
+   "lt_worst": -44.3,
+   "signals": 0,
+   "sw40_trades": [
+    10,
+    19
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "금융위기",
@@ -186,7 +237,12 @@
    "end_man": 564401,
    "lt_irr": 19.55,
    "lt_worst": -10.2,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "금융위기",
@@ -199,7 +255,12 @@
    "end_man": 591911,
    "lt_irr": 20.31,
    "lt_worst": -5.9,
-   "signals": 47
+   "signals": 47,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "금융위기",
@@ -212,7 +273,48 @@
    "end_man": 560095,
    "lt_irr": 19.42,
    "lt_worst": -10.7,
-   "signals": 47
+   "signals": 47,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.3,
+   "total_worst": -4.1,
+   "total_mdd": -28.8,
+   "end_man": 564327,
+   "lt_irr": 19.57,
+   "lt_worst": -11.0,
+   "signals": 0,
+   "sw40_trades": [
+    5,
+    10
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.3,
+   "total_worst": -4.1,
+   "total_mdd": -28.6,
+   "end_man": 564250,
+   "lt_irr": 19.59,
+   "lt_worst": -12.0,
+   "signals": 0,
+   "sw40_trades": [
+    5,
+    10
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "코로나",
@@ -225,7 +327,12 @@
    "end_man": 70134,
    "lt_irr": 23.04,
    "lt_worst": -9.6,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "코로나",
@@ -237,8 +344,13 @@
    "total_mdd": -18.3,
    "end_man": 67144,
    "lt_irr": 20.67,
-   "lt_worst": -12.4,
-   "signals": 11
+   "lt_worst": -12.3,
+   "signals": 11,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "코로나",
@@ -251,7 +363,48 @@
    "end_man": 66951,
    "lt_irr": 20.73,
    "lt_worst": -7.7,
-   "signals": 11
+   "signals": 11,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.6,
+   "total_worst": -13.2,
+   "total_mdd": -18.6,
+   "end_man": 70083,
+   "lt_irr": 23.13,
+   "lt_worst": -8.8,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    4
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.55,
+   "total_worst": -13.2,
+   "total_mdd": -18.5,
+   "end_man": 69952,
+   "lt_irr": 23.15,
+   "lt_worst": -7.8,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    4
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2022 금리인상·러우전쟁",
@@ -264,7 +417,12 @@
    "end_man": 45707,
    "lt_irr": 24.41,
    "lt_worst": -18.5,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2022 금리인상·러우전쟁",
@@ -277,7 +435,12 @@
    "end_man": 43733,
    "lt_irr": 20.38,
    "lt_worst": -10.6,
-   "signals": 9
+   "signals": 9,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2022 금리인상·러우전쟁",
@@ -290,7 +453,48 @@
    "end_man": 43920,
    "lt_irr": 21.24,
    "lt_worst": -13.9,
-   "signals": 9
+   "signals": 9,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.82,
+   "total_worst": -9.8,
+   "total_mdd": -16.8,
+   "end_man": 45646,
+   "lt_irr": 24.61,
+   "lt_worst": -18.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    4
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.72,
+   "total_worst": -8.9,
+   "total_mdd": -16.7,
+   "end_man": 45500,
+   "lt_irr": 24.65,
+   "lt_worst": -18.3,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    4
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2010~",
@@ -303,7 +507,12 @@
    "end_man": 426790,
    "lt_irr": 20.66,
    "lt_worst": -4.2,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2010~",
@@ -316,7 +525,12 @@
    "end_man": 434050,
    "lt_irr": 21.02,
    "lt_worst": -7.5,
-   "signals": 41
+   "signals": 41,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2010~",
@@ -329,7 +543,48 @@
    "end_man": 399886,
    "lt_irr": 19.76,
    "lt_worst": -4.2,
-   "signals": 41
+   "signals": 41,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.91,
+   "total_worst": -3.6,
+   "total_mdd": -27.4,
+   "end_man": 427264,
+   "lt_irr": 20.69,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    7
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.92,
+   "total_worst": -3.6,
+   "total_mdd": -27.3,
+   "end_man": 427758,
+   "lt_irr": 20.72,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    7
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2016~",
@@ -342,7 +597,12 @@
    "end_man": 169761,
    "lt_irr": 23.48,
    "lt_worst": -4.5,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2016~",
@@ -355,7 +615,12 @@
    "end_man": 167892,
    "lt_irr": 23.34,
    "lt_worst": -4.6,
-   "signals": 21
+   "signals": 21,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2016~",
@@ -368,7 +633,48 @@
    "end_man": 162330,
    "lt_irr": 22.42,
    "lt_worst": -4.1,
-   "signals": 21
+   "signals": 21,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.53,
+   "total_worst": -4.8,
+   "total_mdd": -21.1,
+   "end_man": 169504,
+   "lt_irr": 23.48,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    6
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.51,
+   "total_worst": -4.7,
+   "total_mdd": -21.1,
+   "end_man": 169240,
+   "lt_irr": 23.48,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    6
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2016-01~2018-09",
@@ -381,7 +687,12 @@
    "end_man": 21469,
    "lt_irr": 11.75,
    "lt_worst": -4.5,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2016-01~2018-09",
@@ -394,7 +705,12 @@
    "end_man": 22534,
    "lt_irr": 22.22,
    "lt_worst": -4.6,
-   "signals": 6
+   "signals": 6,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2016-01~2018-09",
@@ -407,7 +723,48 @@
    "end_man": 21411,
    "lt_irr": 11.1,
    "lt_worst": -4.1,
-   "signals": 6
+   "signals": 6,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.23,
+   "total_worst": -4.8,
+   "total_mdd": -5.2,
+   "end_man": 21473,
+   "lt_irr": 11.92,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.25,
+   "total_worst": -4.7,
+   "total_mdd": -5.1,
+   "end_man": 21478,
+   "lt_irr": 12.09,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    1
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2019-01~2021-12",
@@ -420,7 +777,12 @@
    "end_man": 29613,
    "lt_irr": 31.8,
    "lt_worst": -1.8,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2019-01~2021-12",
@@ -433,7 +795,12 @@
    "end_man": 31165,
    "lt_irr": 41.61,
    "lt_worst": -0.5,
-   "signals": 5
+   "signals": 5,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2019-01~2021-12",
@@ -446,7 +813,48 @@
    "end_man": 29623,
    "lt_irr": 31.87,
    "lt_worst": -1.6,
-   "signals": 5
+   "signals": 5,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.68,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29619,
+   "lt_irr": 31.86,
+   "lt_worst": -1.8,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.69,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29625,
+   "lt_irr": 31.91,
+   "lt_worst": -1.8,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2023-01~2024-12",
@@ -459,7 +867,12 @@
    "end_man": 22704,
    "lt_irr": 40.25,
    "lt_worst": 0,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2023-01~2024-12",
@@ -472,7 +885,12 @@
    "end_man": 23196,
    "lt_irr": 43.78,
    "lt_worst": -1.2,
-   "signals": 3
+   "signals": 3,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "상승장 2023-01~2024-12",
@@ -484,8 +902,49 @@
    "total_mdd": -5.8,
    "end_man": 22618,
    "lt_irr": 38.66,
+   "lt_worst": 0,
+   "signals": 3,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.65,
+   "total_worst": -1.7,
+   "total_mdd": -5.9,
+   "end_man": 22693,
+   "lt_irr": 40.02,
    "lt_worst": -0.0,
-   "signals": 3
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.58,
+   "total_worst": -1.7,
+   "total_mdd": -5.9,
+   "end_man": 22676,
+   "lt_irr": 39.66,
+   "lt_worst": -0.7,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2018년 4분기 급락 2018-09~2019-12",
@@ -498,7 +957,12 @@
    "end_man": 14293,
    "lt_irr": 26.32,
    "lt_worst": -9.3,
-   "signals": 0
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2018년 4분기 급락 2018-09~2019-12",
@@ -511,7 +975,12 @@
    "end_man": 14234,
    "lt_irr": 26.15,
    "lt_worst": -9.2,
-   "signals": 4
+   "signals": 4,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
   },
   {
    "window": "2018년 4분기 급락 2018-09~2019-12",
@@ -524,7 +993,48 @@
    "end_man": 14227,
    "lt_irr": 22.93,
    "lt_worst": -8.2,
-   "signals": 4
+   "signals": 4,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "D25 40주선 아래면 장투 적립 25%를 스윙(QLD 단타)으로",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.6,
+   "total_worst": -10.7,
+   "total_mdd": -9.0,
+   "end_man": 14276,
+   "lt_irr": 25.63,
+   "lt_worst": -9.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "D50 40주선 아래면 장투 적립 50%를 스윙(QLD 단타)으로",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.47,
+   "total_worst": -10.6,
+   "total_mdd": -8.9,
+   "end_man": 14259,
+   "lt_irr": 24.92,
+   "lt_worst": -8.6,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    1
+   ],
+   "sw40_end_man": 0
   }
  ]
 }
