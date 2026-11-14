@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-14T04:39:33Z",
+ "generated": "2026-11-14T04:43:19Z",
  "w40": {
   "crosses": 79,
   "golden": 39,
@@ -216,7 +216,7 @@
    "total_irr": 14.14,
    "total_worst": -36.5,
    "total_mdd": -32.6,
-   "end_man": 1234627,
+   "end_man": 1234628,
    "lt_irr": 16.71,
    "lt_worst": -44.3,
    "signals": 0,
@@ -344,7 +344,7 @@
    "total_mdd": -18.3,
    "end_man": 67144,
    "lt_irr": 20.67,
-   "lt_worst": -12.3,
+   "lt_worst": -12.4,
    "signals": 11,
    "sw40_trades": [
     0,
