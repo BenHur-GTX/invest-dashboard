@@ -1,0 +1,1174 @@
+{
+ "generated": "2026-11-14T04:50:31Z",
+ "w40": {
+  "crosses": 79,
+  "golden": 39,
+  "dead": 40,
+  "whipsaw_8w": 52,
+  "from": "1999-12-10",
+  "list": [
+   [
+    "2011-12-02",
+    1
+   ],
+   [
+    "2011-12-16",
+    -1
+   ],
+   [
+    "2012-01-06",
+    1
+   ],
+   [
+    "2012-10-26",
+    -1
+   ],
+   [
+    "2012-11-30",
+    1
+   ],
+   [
+    "2012-12-07",
+    -1
+   ],
+   [
+    "2013-01-04",
+    1
+   ],
+   [
+    "2015-08-21",
+    -1
+   ],
+   [
+    "2015-10-16",
+    1
+   ],
+   [
+    "2016-01-08",
+    -1
+   ],
+   [
+    "2016-04-01",
+    1
+   ],
+   [
+    "2016-04-29",
+    -1
+   ],
+   [
+    "2016-05-27",
+    1
+   ],
+   [
+    "2016-06-17",
+    -1
+   ],
+   [
+    "2016-07-01",
+    1
+   ],
+   [
+    "2018-10-26",
+    -1
+   ],
+   [
+    "2019-02-15",
+    1
+   ],
+   [
+    "2019-03-08",
+    -1
+   ],
+   [
+    "2019-03-15",
+    1
+   ],
+   [
+    "2020-03-13",
+    -1
+   ],
+   [
+    "2020-04-09",
+    1
+   ],
+   [
+    "2022-01-21",
+    -1
+   ],
+   [
+    "2023-01-27",
+    1
+   ],
+   [
+    "2023-03-10",
+    -1
+   ],
+   [
+    "2023-03-17",
+    1
+   ],
+   [
+    "2025-03-07",
+    -1
+   ],
+   [
+    "2025-05-16",
+    1
+   ],
+   [
+    "2026-03-20",
+    -1
+   ],
+   [
+    "2026-04-10",
+    1
+   ],
+   [
+    "2026-11-06",
+    -1
+   ]
+  ]
+ },
+ "confirm_events": [
+  {
+   "confirm": "2000-11-10",
+   "dd_at_confirm": -39.1,
+   "golden": "2001-12-07",
+   "weeks_to_golden": 53,
+   "further_fall_pct": -60.7,
+   "low_date": "2001-09-21",
+   "dd_at_low": -76.1,
+   "ret_to_golden_pct": -41.8,
+   "ret_6m_pct": -37.1,
+   "ret_12m_pct": -45.1
+  },
+  {
+   "confirm": "2002-05-10",
+   "dd_at_confirm": -74.9,
+   "golden": "2002-11-29",
+   "weeks_to_golden": 28,
+   "further_fall_pct": -32.1,
+   "low_date": "2002-10-09",
+   "dd_at_low": -83.0,
+   "ret_to_golden_pct": -6.2,
+   "ret_6m_pct": -13.6,
+   "ret_12m_pct": -2.4
+  },
+  {
+   "confirm": "2004-09-03",
+   "dd_at_confirm": -71.0,
+   "golden": "2004-10-01",
+   "weeks_to_golden": 4,
+   "further_fall_pct": 0.0,
+   "low_date": "2004-09-03",
+   "dd_at_low": -71.0,
+   "ret_to_golden_pct": 5.7,
+   "ret_6m_pct": 11.5,
+   "ret_12m_pct": 13.6
+  },
+  {
+   "confirm": "2005-05-13",
+   "dd_at_confirm": -64.7,
+   "golden": "2005-05-20",
+   "weeks_to_golden": 1,
+   "further_fall_pct": 0.0,
+   "low_date": "2005-05-13",
+   "dd_at_low": -64.7,
+   "ret_to_golden_pct": 3.9,
+   "ret_6m_pct": 12.0,
+   "ret_12m_pct": 10.8
+  },
+  {
+   "confirm": "2006-07-07",
+   "dd_at_confirm": -17.4,
+   "golden": "2006-09-15",
+   "weeks_to_golden": 10,
+   "further_fall_pct": -5.3,
+   "low_date": "2006-07-21",
+   "dd_at_low": -18.7,
+   "ret_to_golden_pct": 6.4,
+   "ret_6m_pct": 16.4,
+   "ret_12m_pct": 28.6
+  },
+  {
+   "confirm": "2008-02-29",
+   "dd_at_confirm": -22.0,
+   "golden": "2008-05-02",
+   "weeks_to_golden": 9,
+   "further_fall_pct": -3.9,
+   "low_date": "2008-03-10",
+   "dd_at_low": -25.0,
+   "ret_to_golden_pct": 13.6,
+   "ret_6m_pct": 9.7,
+   "ret_12m_pct": -38.0
+  },
+  {
+   "confirm": "2008-10-24",
+   "dd_at_confirm": -46.4,
+   "golden": "2009-05-01",
+   "weeks_to_golden": 26,
+   "further_fall_pct": -13.4,
+   "low_date": "2008-11-20",
+   "dd_at_low": -53.6,
+   "ret_to_golden_pct": 16.5,
+   "ret_6m_pct": 13.5,
+   "ret_12m_pct": 45.7
+  },
+  {
+   "confirm": "2016-03-04",
+   "dd_at_confirm": -8.2,
+   "golden": "2016-04-01",
+   "weeks_to_golden": 4,
+   "further_fall_pct": -1.4,
+   "low_date": "2016-03-08",
+   "dd_at_low": -9.6,
+   "ret_to_golden_pct": 4.4,
+   "ret_6m_pct": 10.5,
+   "ret_12m_pct": 23.7
+  },
+  {
+   "confirm": "2018-12-21",
+   "dd_at_confirm": -21.0,
+   "golden": "2019-02-15",
+   "weeks_to_golden": 7,
+   "further_fall_pct": -2.8,
+   "low_date": "2018-12-24",
+   "dd_at_low": -23.2,
+   "ret_to_golden_pct": 16.5,
+   "ret_6m_pct": 25.3,
+   "ret_12m_pct": 43.5
+  },
+  {
+   "confirm": "2022-03-18",
+   "dd_at_confirm": -13.0,
+   "golden": "2023-01-27",
+   "weeks_to_golden": 43,
+   "further_fall_pct": -26.0,
+   "low_date": "2022-12-28",
+   "dd_at_low": -35.6,
+   "ret_to_golden_pct": -15.7,
+   "ret_6m_pct": -17.2,
+   "ret_12m_pct": -11.7
+  },
+  {
+   "confirm": "2025-05-02",
+   "dd_at_confirm": -9.4,
+   "golden": "2025-05-16",
+   "weeks_to_golden": 2,
+   "further_fall_pct": -1.5,
+   "low_date": "2025-05-06",
+   "dd_at_low": -10.8,
+   "ret_to_golden_pct": 6.7,
+   "ret_6m_pct": 28.7,
+   "ret_12m_pct": 39.4
+  }
+ ],
+ "notes": [
+  "전체 = 5계좌 합산(월 330만), 장투 = 장투 계좌 단독",
+  "worst = 평가액/누적 원금 최저",
+  "신호는 주 마지막 거래일 종가로 판정, 그날 종가에 매매",
+  "세금·수수료·환전 스프레드 제외"
+ ],
+ "rows": [
+  {
+   "window": "닷컴버블",
+   "strategy": "A 지금 규칙",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.3,
+   "total_worst": -35.6,
+   "total_mdd": -33.2,
+   "end_man": 1271788,
+   "lt_irr": 16.88,
+   "lt_worst": -38.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "닷컴버블",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.26,
+   "total_worst": -36.4,
+   "total_mdd": -33.0,
+   "end_man": 1262348,
+   "lt_irr": 16.85,
+   "lt_worst": -41.4,
+   "signals": 0,
+   "sw40_trades": [
+    5,
+    6
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "닷컴버블",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.21,
+   "total_worst": -37.0,
+   "total_mdd": -32.9,
+   "end_man": 1249776,
+   "lt_irr": 16.79,
+   "lt_worst": -44.3,
+   "signals": 0,
+   "sw40_trades": [
+    5,
+    6
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "닷컴버블",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.2,
+   "total_worst": -35.6,
+   "total_mdd": -32.9,
+   "end_man": 1247430,
+   "lt_irr": 16.75,
+   "lt_worst": -38.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "닷컴버블",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2000-03-27",
+   "end": "2026-11-13",
+   "total_irr": 14.11,
+   "total_worst": -37.0,
+   "total_mdd": -32.6,
+   "end_man": 1227980,
+   "lt_irr": 16.67,
+   "lt_worst": -44.3,
+   "signals": 0,
+   "sw40_trades": [
+    5,
+    6
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "A 지금 규칙",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.3,
+   "total_worst": -4.1,
+   "total_mdd": -28.9,
+   "end_man": 564401,
+   "lt_irr": 19.55,
+   "lt_worst": -10.2,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.3,
+   "total_worst": -4.1,
+   "total_mdd": -28.8,
+   "end_man": 564374,
+   "lt_irr": 19.57,
+   "lt_worst": -10.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    2
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.3,
+   "total_worst": -4.1,
+   "total_mdd": -28.7,
+   "end_man": 564344,
+   "lt_irr": 19.59,
+   "lt_worst": -10.3,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    2
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.12,
+   "total_worst": -4.1,
+   "total_mdd": -28.5,
+   "end_man": 551329,
+   "lt_irr": 19.28,
+   "lt_worst": -10.2,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "금융위기",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2007-10-31",
+   "end": "2026-11-13",
+   "total_irr": 16.12,
+   "total_worst": -4.1,
+   "total_mdd": -28.3,
+   "end_man": 551811,
+   "lt_irr": 19.33,
+   "lt_worst": -10.3,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    2
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "A 지금 규칙",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.61,
+   "total_worst": -13.2,
+   "total_mdd": -18.6,
+   "end_man": 70134,
+   "lt_irr": 23.04,
+   "lt_worst": -9.6,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.58,
+   "total_worst": -13.2,
+   "total_mdd": -18.6,
+   "end_man": 70037,
+   "lt_irr": 23.07,
+   "lt_worst": -9.0,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.53,
+   "total_worst": -13.2,
+   "total_mdd": -18.5,
+   "end_man": 69895,
+   "lt_irr": 23.05,
+   "lt_worst": -8.4,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.15,
+   "total_worst": -13.2,
+   "total_mdd": -18.5,
+   "end_man": 68818,
+   "lt_irr": 22.12,
+   "lt_worst": -9.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "코로나",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2020-02-19",
+   "end": "2026-11-13",
+   "total_irr": 17.13,
+   "total_worst": -13.2,
+   "total_mdd": -18.4,
+   "end_man": 68759,
+   "lt_irr": 22.27,
+   "lt_worst": -8.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "A 지금 규칙",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.87,
+   "total_worst": -10.6,
+   "total_mdd": -16.9,
+   "end_man": 45707,
+   "lt_irr": 24.41,
+   "lt_worst": -18.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.81,
+   "total_worst": -10.0,
+   "total_mdd": -16.8,
+   "end_man": 45623,
+   "lt_irr": 24.51,
+   "lt_worst": -18.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.69,
+   "total_worst": -9.4,
+   "total_mdd": -16.7,
+   "end_man": 45458,
+   "lt_irr": 24.46,
+   "lt_worst": -18.6,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.37,
+   "total_worst": -9.9,
+   "total_mdd": -16.7,
+   "end_man": 45012,
+   "lt_irr": 23.19,
+   "lt_worst": -15.2,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2022 금리인상·러우전쟁",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2021-11-19",
+   "end": "2026-11-13",
+   "total_irr": 16.32,
+   "total_worst": -8.9,
+   "total_mdd": -16.6,
+   "end_man": 44953,
+   "lt_irr": 23.58,
+   "lt_worst": -15.7,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "A 지금 규칙",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.9,
+   "total_worst": -3.6,
+   "total_mdd": -27.4,
+   "end_man": 426790,
+   "lt_irr": 20.66,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.9,
+   "total_worst": -3.6,
+   "total_mdd": -27.4,
+   "end_man": 426563,
+   "lt_irr": 20.66,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.89,
+   "total_worst": -3.6,
+   "total_mdd": -27.3,
+   "end_man": 426336,
+   "lt_irr": 20.66,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.69,
+   "total_worst": -3.6,
+   "total_mdd": -27.0,
+   "end_man": 416727,
+   "lt_irr": 20.34,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2010~",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2010-01-04",
+   "end": "2026-11-13",
+   "total_irr": 16.68,
+   "total_worst": -3.6,
+   "total_mdd": -26.9,
+   "end_man": 416648,
+   "lt_irr": 20.34,
+   "lt_worst": -4.2,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "A 지금 규칙",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.55,
+   "total_worst": -4.8,
+   "total_mdd": -21.1,
+   "end_man": 169761,
+   "lt_irr": 23.48,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.54,
+   "total_worst": -4.8,
+   "total_mdd": -21.1,
+   "end_man": 169581,
+   "lt_irr": 23.48,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.52,
+   "total_worst": -4.8,
+   "total_mdd": -21.1,
+   "end_man": 169400,
+   "lt_irr": 23.47,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.16,
+   "total_worst": -4.8,
+   "total_mdd": -21.0,
+   "end_man": 165321,
+   "lt_irr": 22.83,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2016~",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2016-01-04",
+   "end": "2026-11-13",
+   "total_irr": 18.15,
+   "total_worst": -4.8,
+   "total_mdd": -21.0,
+   "end_man": 165226,
+   "lt_irr": 22.86,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    1,
+    1
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "A 지금 규칙",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.22,
+   "total_worst": -4.8,
+   "total_mdd": -5.2,
+   "end_man": 21469,
+   "lt_irr": 11.75,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.26,
+   "total_worst": -4.8,
+   "total_mdd": -5.2,
+   "end_man": 21482,
+   "lt_irr": 11.92,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.29,
+   "total_worst": -4.8,
+   "total_mdd": -5.2,
+   "end_man": 21496,
+   "lt_irr": 12.09,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.22,
+   "total_worst": -4.8,
+   "total_mdd": -5.2,
+   "end_man": 21469,
+   "lt_irr": 11.75,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2016-01~2018-09",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2016-01-04",
+   "end": "2018-09-28",
+   "total_irr": 9.29,
+   "total_worst": -4.8,
+   "total_mdd": -5.2,
+   "end_man": 21496,
+   "lt_irr": 12.09,
+   "lt_worst": -4.5,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "A 지금 규칙",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.67,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29613,
+   "lt_irr": 31.8,
+   "lt_worst": -1.8,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.66,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29608,
+   "lt_irr": 31.77,
+   "lt_worst": -1.8,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.65,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29603,
+   "lt_irr": 31.74,
+   "lt_worst": -1.8,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.67,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29610,
+   "lt_irr": 31.78,
+   "lt_worst": -1.6,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2019-01~2021-12",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2019-01-02",
+   "end": "2021-12-31",
+   "total_irr": 22.65,
+   "total_worst": -0.7,
+   "total_mdd": -11.4,
+   "end_man": 29602,
+   "lt_irr": 31.73,
+   "lt_worst": -1.6,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "A 지금 규칙",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.69,
+   "total_worst": -1.7,
+   "total_mdd": -5.9,
+   "end_man": 22704,
+   "lt_irr": 40.25,
+   "lt_worst": 0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.65,
+   "total_worst": -1.7,
+   "total_mdd": -5.9,
+   "end_man": 22693,
+   "lt_irr": 40.02,
+   "lt_worst": -0.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.58,
+   "total_worst": -1.7,
+   "total_mdd": -5.9,
+   "end_man": 22676,
+   "lt_irr": 39.66,
+   "lt_worst": -0.7,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.55,
+   "total_worst": -1.7,
+   "total_mdd": -5.9,
+   "end_man": 22665,
+   "lt_irr": 39.44,
+   "lt_worst": 0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "상승장 2023-01~2024-12",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2023-01-03",
+   "end": "2024-12-31",
+   "total_irr": 30.49,
+   "total_worst": -1.7,
+   "total_mdd": -5.8,
+   "end_man": 22651,
+   "lt_irr": 39.16,
+   "lt_worst": -0.8,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "A 지금 규칙",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.72,
+   "total_worst": -10.7,
+   "total_mdd": -9.0,
+   "end_man": 14293,
+   "lt_irr": 26.32,
+   "lt_worst": -9.3,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "E25 데드 8주 지속 구간: 장투 적립 25% → 스윙 대기(SGOV)·QLD 단타",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.62,
+   "total_worst": -10.7,
+   "total_mdd": -9.0,
+   "end_man": 14278,
+   "lt_irr": 25.68,
+   "lt_worst": -9.3,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "E50 데드 8주 지속 구간: 장투 적립 50% → 스윙 대기·QLD 단타",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.51,
+   "total_worst": -10.7,
+   "total_mdd": -9.0,
+   "end_man": 14264,
+   "lt_irr": 25.03,
+   "lt_worst": -9.3,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "F 데드 8주 지속 구간: 레버리지 신규 매수만 중단(1배로)",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.33,
+   "total_worst": -10.7,
+   "total_mdd": -9.0,
+   "end_man": 14240,
+   "lt_irr": 23.58,
+   "lt_worst": -9.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  },
+  {
+   "window": "2018년 4분기 급락 2018-09~2019-12",
+   "strategy": "G = E50 + F (보수+스윙 위주)",
+   "start": "2018-09-04",
+   "end": "2019-12-31",
+   "total_irr": 13.18,
+   "total_worst": -10.7,
+   "total_mdd": -9.0,
+   "end_man": 14220,
+   "lt_irr": 22.71,
+   "lt_worst": -9.0,
+   "signals": 0,
+   "sw40_trades": [
+    0,
+    0
+   ],
+   "sw40_end_man": 0
+  }
+ ]
+}

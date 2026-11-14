@@ -975,7 +975,7 @@ function vToday(){
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
   if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 살 수 있는 주수만큼 최대 4주에 나눠 삽니다(예: 2주면 1·3주차에 1주씩). 이번 달 매수 탭에 주차별로 나옵니다.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
-  { const x=w40Info(); if(x) todo.push(x.fresh? `<b>40주선 ${x.w.cross==="golden"? "골든 크로스":"데드 크로스"}</b> (경보): ${x.txt}. ${x.w.cross==="golden"? "추세 회복 신호, 규칙대로 적립을 이어갑니다." : "하락 추세 경계, 규칙(낙폭 사다리)은 그대로입니다."}` : `40주선: ${x.txt}.`); }
+  { const x=w40Info(); if(x) todo.push(x.fresh? `<b>40주선 ${x.w.cross==="golden"? "골든 크로스":"데드 크로스"}</b> (경보): ${x.txt}. ${x.w.cross==="golden"? "추세 회복 신호, 규칙대로 적립을 이어갑니다." : "하락 추세 경계, 규칙(낙폭 사다리)은 그대로입니다."}` : x.long? `<b>40주선 하락 지속 경계</b>: ${x.txt}. 과거 11번 중 4번은 이후 10% 넘게 더 빠졌고 7번은 바닥 근처였습니다. 규칙(낙폭 사다리)은 그대로입니다.` : `40주선: ${x.txt}.`); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
   { const cl=candList(); if(cl.length) todo.push(`<b>매수 후보 ${cl.length}개</b>: ${cl.slice(0,4).map(([t,s,b])=>`${esc(t)}(${esc(acctFor(t,s).a)})`).join(", ")} — 아래 '어느 계좌에서' 표 참고.`); }
   { const bc=bigCut(E.M.macro||{}); if(bc) todo.push(`<b>빅컷 ${bc.days}일째</b>: 아래 '빅컷 안전장치' 단계대로 계좌별 주식 비중을 낮춥니다.`); }
@@ -1473,11 +1473,15 @@ function w40Info(){
   const txt = `QQQ 주봉 종가 ${num(w.close,2)} · 40주선 ${num(w.ma,2)} (${w.gap>0?"+":""}${num(w.gap,1)}%) → <b>${w.up? "40주선 위":"40주선 아래"}</b>`
     + (w.cross? ` · 마지막 ${w.cross==="golden"? "골든":"데드"} ${esc(w.cross_date)} (${w.weeks}주 전)` : "")
     + (w.live_up!==w.up? ` · 이번 주 진행 중 ${w.live_up? "위로 올라옴":"아래로 내려감"}(${w.live_gap>0?"+":""}${num(w.live_gap,1)}%), 금요일 종가로 확정` : "");
-  return {w, fresh, txt, c: w.up? "g":"r"};
+  // 11-14 Ben 결정: 데드 뒤 8주(마감 주) 지속 = '하락 지속 경계' 단계 표시만. 백테스트 data/w40c_bt.json: 2000~ 11번 중 이후 10%+ 추가 하락 4번
+  const dead = w.cross==="dead" && !w.up && w.weeks!=null;
+  const long = dead && w.weeks>=8;
+  const stage = !dead? "" : long? `<b>하락 지속 경계 (데드 ${w.weeks}주째)</b>` : `데드 ${w.weeks}/8주`;
+  return {w, fresh, long, stage, txt: txt + (stage? ` · ${stage}` : ""), c: w.up? "g":"r"};
 }
 function w40HTML(){
   const x=w40Info(); if(!x) return "";
-  return `<div class="panel"><p><span class="dot ${x.c}"></span> ${x.txt}</p><p class="muted">경보용입니다. 데드면 하락 추세 경계, 골든이면 추세 회복 신호로 참고하고 매매 규칙(낙폭 사다리·적립)은 바꾸지 않습니다. 백테스트에서 40주선을 우선해 사고팔면 닷컴·금융위기 최대 낙폭은 줄었지만 코로나·2022 같은 V자 반등에서 연 1~1.4%p를 놓쳤고, 1999년 이후 신호 79번 중 66%가 8주 안에 뒤집혔습니다.</p></div>`;
+  return `<div class="panel"><p><span class="dot ${x.c}"></span> ${x.txt}</p><p class="muted">경보용입니다. 데드면 하락 추세 경계, 골든이면 추세 회복 신호로 참고하고 매매 규칙(낙폭 사다리·적립)은 바꾸지 않습니다. 백테스트에서 40주선을 우선해 사고팔면 닷컴·금융위기 최대 낙폭은 줄었지만 코로나·2022 같은 V자 반등에서 연 1~1.4%p를 놓쳤고, 1999년 이후 신호 79번 중 66%가 8주 안에 뒤집혔습니다.</p><p class="muted">데드 크로스 뒤 8주(주 마감 기준) 동안 40주선 아래에 머물면 '하락 지속 경계'로 표시합니다. 2000년 이후 11번 있었고, 그 뒤 10% 넘게 더 떨어진 건 4번(2000·2002·2008·2022년)입니다. 나머지 7번은 바닥 근처였습니다. 이때 적립을 스윙 대기로 돌리거나 레버리지를 멈추는 방안도 백테스트했지만, 연 0.03~0.5%p 손해에 최악 손실은 거의 줄지 않아 규칙은 바꾸지 않습니다.</p></div>`;
 }
 function vMacro(){
   const m=E.M.macro||{};
