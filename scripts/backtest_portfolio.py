@@ -1017,7 +1017,7 @@ def park_verify(D):
                    "lt_worst": round(worst * 100, 1), "lt_end_man": round(ltc[-1][0] / MAN), "lt_paid_man": round(-sum(v for _, v in ltf) / MAN),
                    "normal_pct": round(norm * 100), "sgov_avg": round(sum(sg) / len(sg) * 100) if sg else None, "sgov_end": round(ltc[-1][1] / ltc[-1][0] * 100) if ltc[-1][0] else None,
                    "total_irr": xirr(r["flows"], dates[end], r["curve"][-1]), "qqq_dca_irr": xirr(qf, dates[end], qv),
-                   "b_month_pct": round(r["sw"][0] / sum(r["sw"]) * 100) if sum(r["sw"]) else None, "total_worst": metrics(D, r, bench(D, i0, "QQQ"), bench(D, i0, "SPY"))["underwater"].get("worst_vs_principal_pct")}
+                   "b_month_pct": round(r["sw"][0] / sum(r["sw"]) * 100) if sum(r["sw"]) else None, "total_worst": round(min(min(cv / pv - 1 for cv, pv in zip(r["curve"], r["prin"])), 0) * 100, 1)}
             out["rows"].append(row); print("PV", json.dumps(row, ensure_ascii=False), flush=True)
     json.dump(out, open(os.path.join(B.DATA, "park_verify.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
