@@ -951,6 +951,7 @@ function vToday(){
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
   if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 살 수 있는 주수만큼 최대 4주에 나눠 삽니다(예: 2주면 1·3주차에 1주씩). 이번 달 매수 탭에 주차별로 나옵니다.");
   if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
+  { const x=w40Info(); if(x) todo.push(x.fresh? `<b>40주선 ${x.w.cross==="golden"? "골든 크로스":"데드 크로스"}</b> (경보): ${x.txt}. ${x.w.cross==="golden"? "추세 회복 신호, 규칙대로 적립을 이어갑니다." : "하락 추세 경계, 규칙(낙폭 사다리)은 그대로입니다."}` : `40주선: ${x.txt}.`); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
   { const cl=candList(); if(cl.length) todo.push(`<b>매수 후보 ${cl.length}개</b>: ${cl.slice(0,4).map(([t,s,b])=>`${esc(t)}(${esc(acctFor(t,s).a)})`).join(", ")} — 아래 '어느 계좌에서' 표 참고.`); }
   { const bc=bigCut(E.M.macro||{}); if(bc) todo.push(`<b>빅컷 ${bc.days}일째</b>: 아래 '빅컷 안전장치' 단계대로 계좌별 주식 비중을 낮춥니다.`); }
@@ -1441,11 +1442,25 @@ function bindMarket(){
     const y=scrollY; render(); scrollTo({top:y}); });
 }
 
+/* QQQ 주봉 40주선 (11-14 Ben 결정: 매매 규칙은 그대로, 경보만). 백테스트 data/w40_bt.json: 1999~ 크로스 79회 중 66%가 8주 안에 반대 신호 */
+function w40Info(){
+  const w=E.S.QQQ?.w40; if(!w) return null;
+  const fresh = w.weeks!=null && w.weeks<=1;
+  const txt = `QQQ 주봉 종가 ${num(w.close,2)} · 40주선 ${num(w.ma,2)} (${w.gap>0?"+":""}${num(w.gap,1)}%) → <b>${w.up? "40주선 위":"40주선 아래"}</b>`
+    + (w.cross? ` · 마지막 ${w.cross==="golden"? "골든":"데드"} ${esc(w.cross_date)} (${w.weeks}주 전)` : "")
+    + (w.live_up!==w.up? ` · 이번 주 진행 중 ${w.live_up? "위로 올라옴":"아래로 내려감"}(${w.live_gap>0?"+":""}${num(w.live_gap,1)}%), 금요일 종가로 확정` : "");
+  return {w, fresh, txt, c: w.up? "g":"r"};
+}
+function w40HTML(){
+  const x=w40Info(); if(!x) return "";
+  return `<div class="panel"><p><span class="dot ${x.c}"></span> ${x.txt}</p><p class="muted">경보용입니다. 데드면 하락 추세 경계, 골든이면 추세 회복 신호로 참고하고 매매 규칙(낙폭 사다리·적립)은 바꾸지 않습니다. 백테스트에서 40주선을 우선해 사고팔면 닷컴·금융위기 최대 낙폭은 줄었지만 코로나·2022 같은 V자 반등에서 연 1~1.4%p를 놓쳤고, 1999년 이후 신호 79번 중 66%가 8주 안에 뒤집혔습니다.</p></div>`;
+}
 function vMacro(){
   const m=E.M.macro||{};
   const cards = E.L.map(l=>`<div class="light"><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
   const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
   return `<h2>금리 한눈에</h2>${ratesHTML(m)}
+  <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
   <h2>거시 신호등 · 현재 모드: ${pill(E.mode.name,E.mode.c)}</h2>
   <div class="lights">${cards}</div>
   <p class="note">거시 지표는 매수 시점이 아니라 공격·수비 모드를 정합니다. 빨강 2개 이상 → 수비(신규 레버리지 중단, 현금 1배로만), 빨강 1개 또는 노랑 2개 이상 → 중립. 장기금리(10년물)는 5% 이상이면 <b>경고</b>(빨강)로 표시합니다. 다만 모드 판정에서는 5.0~5.5%를 노랑 1개, 5.5% 이상을 빨강 1개로 셉니다. 1995~2000년엔 10년물이 5~7%였는데도 나스닥이 5배 올라서, 5%만으로 수비 모드까지 가는 건 근거가 약합니다. 데이터: FRED(무료). PMI·EPS 전망은 무료 소스가 없어 수동 확인 항목입니다.</p>
