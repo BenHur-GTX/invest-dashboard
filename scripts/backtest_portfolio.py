@@ -357,6 +357,7 @@ def run(D, i0, end=None, cfg=None):
             else:
                 # 장투
                 row = next(r for r in MONTHLY_RULES if dd > r[0])
+                if cfg.get("m10") and row[0] == -15: row = (-15,) + tuple(cfg["m10"])
                 al = {"QQQ": row[1], "SPY": row[2], "QLD": row[3], "TQQQ": row[4]}
                 if cfg.get("div") and stage == 0:   # 평상 구간: 1배 일부를 배당 ETF로
                     b = cfg["div"]; al["QQQ"] -= b[0]; al["SPY"] -= b[1]; al["SCHD"] = b[0] + b[1]
@@ -982,6 +983,7 @@ def park_verify(D):
     V = [("A 현재 규칙(금17)", {**L, "gold": 17}),
          ("B 평상 7:3", {**L, "gold": 17, "normal": (0.7, 0.7)}),
          ("B' 평상 3:7·과열 7:3", {**L, "gold": 17, "normal": (0.3, 0.7)}),
+         ("B + −10% 구간 QQQM85·SPYM85·QLD30 (Ben 11-14)", {**L, "gold": 17, "normal": (0.7, 0.7), "m10": (85, 85, 30, 0)}),
          ("S1 점수: 차트4+거시2 중 2개↑ B, 0개 2달 A", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "score"}),
          ("S2 거시만: 거시 비정상 또는 10년물≥4.5 B", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "macro"}),
          ("S3 차트만: 과열·RSI≥65·%B≥80·200일선+8% 중 1개 B", {**L, "gold": 17, "normal": (0.7, 0.7), "switch": "chart"}),
