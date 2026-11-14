@@ -250,6 +250,23 @@ input.ro{background:#f3f2ee;color:var(--ink2)}
   th,td{padding:7px 6px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 환전 막대·장투 메모 (11-14 Ben) */
+.fxp h4{margin:0 0 8px;font-size:15px}
+.fxrow{margin:8px 0 12px}
+.fxhd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.fxg{font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;color:#fff}
+.k-a{background:#1d6b42} .k-g{background:#3f8f5f} .k-y{background:#b07d00} .k-r{background:#b3261e}
+.fxbar{display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:8px;margin:3px 0;font-size:13px}
+.fxbar .lb{color:var(--ink2)} .fxbar .tr{height:12px;background:#efede7;border-radius:6px;overflow:hidden}
+.fxbar .tr i{display:block;height:100%;border-radius:6px} .fxbar .tr i.avg{background:#b9b6ae}
+.fxbar .v{min-width:84px;text-align:right}
+.fxk{font-size:12px;margin:2px 0 0}
+.nlist{margin-top:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.nrow{display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
+.nrow:last-child{border-bottom:0}
+.ntag{flex:0 0 auto;min-width:64px;text-align:center;font-size:12px;font-weight:700;border-radius:4px;padding:1px 6px;background:#efede7;color:var(--ink)}
+.ntag.t-b{background:#dbe6f7;color:#1f3f7a} .ntag.t-s{background:#f6e3c8;color:#6b4200} .ntag.t-g{background:#f3e9c2;color:#5c4a00} .ntag.t-c{background:#e4dcf2;color:#3e2a6b} .ntag.t-y{background:#f6edc8;color:#5c4a00}
 </style>
 </head>
 <body>
@@ -616,7 +633,7 @@ function sideBuys(E){
     bito = need>base ? Math.min(hotBuy? 24 : 12, Math.ceil(need/(hotBuy? 3 : 6))) : base;
     why = need>base? `BITO 전체 1%(약 ${num(E.acc.total*0.01/1e4,0)}만)까지 6개월에 나눠 채우는 중(현재 ${num(share,1)}%). 월 12만${hotBuy? `, 이번 달은 매수 후보(${sig.label})라 최대 24만`:""}. ${ddTxt}.` : `BITO 월 ${base}만 적립(월 저축의 약 1%). ${ddTxt}.`;
   }
-  return {gold, goldExtra:!!s.gold_extra, bito, bitoSgov, bitoSell, bitoCap:cap, share, swing, swingOn, why};
+  return {gold, goldExtra:!!s.gold_extra, bito, bitoSgov, bitoSell, bitoCap:cap, bitoDD:bdd, share, swing, swingOn, why};
 }
 function planLongterm(E){
   const H=E.H, s=H?.settings||{}, fx=E.fx, S=E.S;
@@ -629,11 +646,12 @@ function planLongterm(E){
   if(E.stage===0){
     const stk = budget*(1-LT_NORMAL.sgov);
     alloc = {SGOV: budget*LT_NORMAL.sgov, ...Object.fromEntries(Object.entries(LT_NORMAL.mix).map(([t,w])=>[t, stk*w])), QLD:0, TQQQ:0};
-    notes.push(`평상 구간(QQQ 5년 고점 대비 ${pct(E.dd)}): B안 SGOV 70 : 주식 30. SGOV는 −10%부터 하락 사다리 실탄으로 씁니다.`);
-  } else notes.push(`하락 구간(${pct(E.dd)}): 신규 적립은 전액 주식(하락 사다리). 모아 둔 SGOV는 ${LT_POOL.filter(x=>E.dd<=x.lvl).map(x=>`${x.lvl}% ${x.pct}%`).join(", ")||"−"} 차수 투입 대상.`);
-  if(side.swing) notes.push(`스윙 매수 신호(${side.swingOn.map(x=>x.t).join("·")})가 있어 장투 몫에서 ${side.swing}만을 스윙 계좌로 보냅니다. 스윙 포지션을 다 정리했을 때 원금 대비 이익이면 이익의 50%를 장투로 옮깁니다.`);
-  if(side.gold && !side.goldExtra) notes.push(`금현물 1g(약 ${num(side.gold,1)}만)은 장투 몫에서 떼어 금현물 계좌로 보냅니다.`);
-  if(side.bito||side.bitoSgov||side.bitoSell) notes.push(`${side.bito? `BITO ${side.bito}만은 장투 계좌에서 먼저 삽니다. `:""}${side.why}`);
+    notes.push([`평상 ${pct(E.dd)}`, "SGOV 70 : 주식 30 · SGOV는 −10%부터 사다리 실탄", "n"]);
+  } else notes.push([`하락 ${pct(E.dd)}`, `신규 적립 전액 주식 · 모은 SGOV ${LT_POOL.filter(x=>E.dd<=x.lvl).map(x=>`${x.lvl}% 차수 ${x.pct}%`).join(", ")||"−"} 투입`, "b"]);
+  if(side.swing) notes.push(["스윙", `${side.swing}만 → 스윙 계좌 (${side.swingOn.map(x=>x.t).join("·")} 신호) · 정리 때 이익 50%는 장투로`, "s"]);
+  if(side.gold && !side.goldExtra) notes.push(["금 1g", `${num(side.gold,1)}만 → 금현물 계좌`, "g"]);
+  if(side.bito||side.bitoSgov||side.bitoSell) notes.push(["BITO", side.bitoSell? `${side.bitoSell}만 매도 → 장투 (비중 ${num(side.share,1)}%, 상한 ${side.bitoCap}%의 2배 초과)`
+      : `${side.bito}만${side.bitoSgov? ` + 장투 SGOV ${side.bitoSgov}만`:""} · 비중 ${num(side.share,1)}% / 상한 ${side.bitoCap}%${side.bitoDD!=null? ` (비트코인 ${num(side.bitoDD,0)}%)`:""}`, "c", side.why]);
   const q=E.q;
   const oh = overheat(E);
   const hot = oh.score>=2;
@@ -642,8 +660,8 @@ function planLongterm(E){
   const lev = ()=> (alloc.QLD||0)+(alloc.TQQQ||0);
   // ① 거시 모드 (공격/중립/수비) — 가격 우선 원칙: 1배는 낙폭 구간에서 계속 산다, 거시는 레버리지와 '비싼 구간'의 1배만 줄인다
   if(E.mode.name==="중립"){
-    if(E.stage===0){ mv("SPYM","SCHD",30*k200); mv("QLD","SGOV",(alloc.QLD||0)/2); notes.push("거시 중립 + 평상 구간: SPYM 30만 → SCHD, QLD 절반 → SGOV."); }
-    else { const l=lev()/2; mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",Math.max(0,l-(alloc.TQQQ||0))); notes.push("거시 중립 + 낙폭 구간: 1배는 그대로, 레버리지 절반만 QQQM으로."); }
+    if(E.stage===0){ mv("SPYM","SCHD",30*k200); mv("QLD","SGOV",(alloc.QLD||0)/2); notes.push(["거시 중립", "SPYM 30만 → SCHD · QLD 절반 → SGOV", "y"]); }
+    else { const l=lev()/2; mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",Math.max(0,l-(alloc.TQQQ||0))); notes.push(["거시 중립", "1배 그대로 · 레버리지 절반만 QQQM으로", "y"]); }
   } else if(E.mode.name==="수비" || (E.hy!=null && E.hy>=6)){
     const why = E.hy>=6 ? "HY 스프레드 6% 이상" : "거시 수비(빨강 2개 이상)";
     if(E.stage===4 && !priceFirst){
@@ -689,7 +707,7 @@ function planLongterm(E){
     for(const t of order){
       if((alloc[t]||0)>0 && alloc[t] < one(t)){
         const to = t==="SPYM"||t==="SCHD" ? "QQQM" : (t==="TQQQ" ? (alloc.QLD>=one("QLD")?"QLD":"QQQM") : "QQQM");
-        notes.push(`${t} 몫 ${num(alloc[t],1)}만은 1주(${num(one(t),1)}만)보다 작아 ${to}에 합쳤습니다.`);
+        notes.push(["1주 미만", `${t} ${num(alloc[t],1)}만 (1주 ${num(one(t),1)}만) → ${to}에 합침`, "n"]);
         mv(t,to,alloc[t]);
       }
     }
@@ -1037,14 +1055,22 @@ function mixText(m){ return Object.entries(m).map(([k,v])=>`${k} ${v}%`).join(" 
 
 /* 환전 타이밍 (11-14 Ben): 원/달러를 최근 3년 평균과 비교. 유리하면 월급 들어온 날 달러 몫 100% 환전.
    달러가 비쌀 땐 이번 달 매수 필요분만 환전하고, 엔화가 3년 평균보다 싸면 남는 원화 일부를 엔화로(2순위). */
+function fxGrade(dv){ return dv<=-3? {c:"g", t:"적극 환전", k:"a"} : dv<=0? {c:"g", t:"유리", k:"g"} : dv<=5? {c:"y", t:"보통", k:"y"} : {c:"r", t:"불리", k:"r"}; }
+function fxBars(name, cur, avg, unit, dig){
+  const dv=(cur/avg-1)*100, g=fxGrade(dv), lo=Math.min(cur,avg)*0.9, hi=Math.max(cur,avg)*1.02, w=v=>Math.max(4,(v-lo)/(hi-lo)*100);
+  return `<div class="fxrow"><div class="fxhd"><b>${name}</b><span class="fxg k-${g.k}">${g.t}</span><span class="muted">3년 평균 대비 <b class="${dv<=0?"dn":"up"}">${dv>0?"+":""}${num(dv,1)}%</b></span></div>
+    <div class="fxbar"><span class="lb">현재</span><span class="tr"><i class="k-${g.k}" style="width:${w(cur).toFixed(1)}%"></i></span><span class="v"><b>${num(cur,dig)}</b>${unit}</span></div>
+    <div class="fxbar"><span class="lb">3년 평균</span><span class="tr"><i class="avg" style="width:${w(avg).toFixed(1)}%"></i></span><span class="v">${num(avg,dig)}${unit}</span></div></div>`;
+}
 function fxHTML(){
   const u=E.S["KRW=X"], j=E.S["JPYKRW=X"];
   if(!u?.avg3y) return `<div class="panel"><p class="muted">환전 타이밍: 3년 평균 환율 데이터 대기(다음 갱신부터 표시).</p></div>`;
   const dv=(u.price/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
-  const g = dv<=0? {c:"g", t:"유리", a:"월급 들어온 날 달러 몫(장투·BITO)을 100% 환전합니다."}
-          : dv<=5? {c:"y", t:"보통", a:"이번 달 매수에 필요한 달러만 환전합니다."}
-          : {c:"r", t:"불리", a:`이번 달 매수 필요분만 환전하고 미리 바꿔 두지 않습니다.${jd!=null&&jd<=0? " 엔화가 3년 평균보다 싸니 남는 원화가 있으면 엔화로 바꿔 모아 둡니다(도쿄 1489 폭락 때 매수용)." : ""}`};
-  return `<div class="panel"><p><span class="dot ${g.c}"></span> <b>환전 ${g.t}</b> · 원/달러 <b>${num(u.price,1)}원</b> · 3년 평균 ${num(u.avg3y,1)}원 대비 <b>${dv>0?"+":""}${num(dv,1)}%</b> (3년 중 하위 ${num(u.pct3y,0)}%)${j?.avg3y? ` · 원/엔 100엔 ${num(j.price*100,1)}원, 3년 평균 대비 ${jd>0?"+":""}${num(jd,1)}%`:""}</p><p class="muted">${g.a} 기준: 3년 평균 이하 유리, +5%까지 보통, 그 위 불리.</p></div>`;
+  const act = dv<=0? "월급 날 달러 몫(장투·BITO) 100% 환전" : dv<=5? "이번 달 매수에 필요한 달러만 환전" : `필요분만 환전${jd!=null&&jd<=0? " · 남는 원화는 엔화로(1489 폭락 대비)" : ""}`;
+  return `<div class="panel fxp"><h4>환전 <span class="muted" style="font-weight:400">→ ${act}</span></h4>
+    ${fxBars("원/달러", u.price, u.avg3y, "원", 1)}
+    ${j?.avg3y? fxBars("원/엔 (100엔)", j.price*100, j.avg3y*100, "원", 1) : ""}
+    <p class="muted fxk">등급: 3년 평균 −3% 이하 적극 환전 · 평균 이하 유리 · +5%까지 보통 · 그 위 불리</p></div>`;
 }
 function vPlan(){ return calcHeaderHTML() + `<div id="plan_body">${planBody()}</div>`; }   // 11-14 Ben: 적립 계산기 + 이번 달 매수 통합, 첫 화면
 function planBody(){
@@ -1058,12 +1084,12 @@ function planBody(){
   ${fxHTML()}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
   <div class="tbl"><table>
-    <tr><th>종목</th><th>금액</th><th>달러</th><th>현재가</th><th>${E.H.settings.fractional?"주수(소수점)":"주수"}</th><th class="l">매수 방법</th></tr>
-    ${lt.rows.map(r=>`<tr><td><b>${r.t}</b></td><td>${num(r.man, r.man<10?1:0)}만</td><td>${usd(r.dollars,0)}</td><td>${usd(r.px)}</td><td>${r.sh!=null? num(r.sh, E.H.settings.fractional?2:0):"–"}</td><td class="l muted">${esc(r.how)}</td></tr>`).join("")}
-    <tr class="total"><td>합계</td><td>${num(tot,0)}만</td><td>${usd(tot*1e4/E.fx,0)}</td><td></td><td></td><td></td></tr>
+    <tr><th>종목</th><th>금액</th><th>달러</th><th>현재가</th><th>${E.H.settings.fractional?"주수(소수점)":"주수"}</th></tr>
+    ${lt.rows.map(r=>`<tr><td><b>${r.t}</b></td><td>${num(r.man, r.man<10?1:0)}만</td><td>${usd(r.dollars,0)}</td><td>${usd(r.px)}</td><td>${r.sh!=null? num(r.sh, E.H.settings.fractional?2:0):"–"}</td></tr>`).join("")}
+    <tr class="total"><td>합계</td><td>${num(tot,0)}만</td><td>${usd(tot*1e4/E.fx,0)}</td><td></td><td></td></tr>
   </table></div>
   ${candAcctHTML()}
-  ${lt.notes.length? `<div class="panel" style="margin-top:10px">${lt.notes.map(n=>`<p>· ${esc(n)}</p>`).join("")}</div>`:""}
+  ${lt.notes.length? `<div class="nlist">${lt.notes.map(n=>{ const [k,v,t,full]=Array.isArray(n)? n : ["참고", n, "n"]; return `<div class="nrow"${full? ` title="${esc(full)}"`:""}><span class="ntag t-${t}">${esc(k)}</span><span>${esc(v)}</span></div>`; }).join("")}</div>`:""}
   <h3>② 현금 계좌 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
   <div class="panel"><p>매달 SGOV로 적립합니다 (원하면 SGOV 80 + 엔화 20). 현재 잔액 ${won(am.bal)} · 집행 차수 ${am.done.length? am.done.join(", ")+"차":"없음"}.
   ${am.action? `<br><b>이번 달 현금 ${am.action.t.n}차 대상</b> — 폭락 대응 탭 참고.`:""}</p></div>
@@ -1631,7 +1657,7 @@ function allocBody(){
     ${accts.map(a=>`<tr class="acct"><td class="l"><b>${a.n}</b> <span class="muted">${a.sub}</span></td><td>${num(a.tot/G*100,0)}%</td><td><b>${w0(a.tot)}</b></td></tr>
     ${a.items.map(i=>`<tr><td class="l"><span class="tk">${esc(i.t)}</span>${i.why? ` <span class="why">${esc(i.why)}</span>`:""}</td><td>${num(a.tot? i.amt/a.tot*100:0,0)}%</td><td>${w0(i.amt)}</td></tr>`).join("")}`).join("")}
     <tr class="total"><td class="l">합계</td><td>100%</td><td>${w0(G)}</td></tr></table></div>
-    <p class="note">계좌 줄의 %는 전체 대비, 종목 줄은 계좌 안 비율. IRP는 월 적립이 없어 빠집니다. 주수·매수 방법은 아래 계좌별 표에 있습니다.</p>`;
+    <p class="note">계좌 줄의 %는 전체 대비, 종목 줄은 계좌 안 비율. IRP는 월 적립이 없어 빠집니다. 주수는 아래 계좌별 표에 있습니다.</p>`;
   const modeTxt = {공격:"레버리지 정상", 중립:"레버리지 절반만", 수비:"레버리지 멈춤"}[E.mode.name] || "";
   const tiles = [
     ["QQQ 낙폭", pct(E.dd), `${lt.row.label} 구간`],
