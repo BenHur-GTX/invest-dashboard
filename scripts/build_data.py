@@ -579,6 +579,16 @@ def main():
         dd = [(datetime.strptime(r[0], "%Y-%m-%d") - d0).days for r in rr]
         charts[sym] = {"d0": rr[0][0], "dd": [dd[0]] + [dd[i] - dd[i - 1] for i in range(1, len(dd))],
                        "c": [float(f"{r[4]:.5g}") if r[4] < 1000 else round(r[4], 1) for r in rr]}
+        # 주봉(ISO 주 마지막 거래일 종가) 최근 320주: 5년 + 40주선 계산분 (11-14 Ben: 40주선 장기 차트)
+        wk = {}
+        for r in rows:
+            wk[datetime.strptime(r[0], "%Y-%m-%d").isocalendar()[:2]] = (r[0], r[4])
+        ws = [wk[k] for k in sorted(wk)][-320:]
+        if len(ws) >= 2:
+            w0 = datetime.strptime(ws[0][0], "%Y-%m-%d")
+            wd = [(datetime.strptime(x[0], "%Y-%m-%d") - w0).days for x in ws]
+            charts[sym]["w"] = {"d0": ws[0][0], "dd": [wd[0]] + [wd[i] - wd[i - 1] for i in range(1, len(wd))],
+                                "c": [float(f"{x[1]:.5g}") if x[1] < 1000 else round(x[1], 1) for x in ws]}
     with open(os.path.join(DATA, "charts.json"), "w", encoding="utf-8") as f:
         json.dump({"generated": market["generated"], "s": charts}, f, ensure_ascii=False, separators=(",", ":"))
 
