@@ -776,12 +776,13 @@ function planBoost(E){
 /* 스윙 (11-14 Ben 확정, data/swing2_bt.json): 배수가 클수록 더 깊은 낙폭에서만 진입.
    진입 = 1년 고점 대비 낙폭 ≤ 빅테크 −30% / QLD −40% / TQQQ·SOXL −55% + 그 종목 RSI ≤ 30. 1회 계좌 25%, 동시 4개·종목당 2개, 같은 종목 5거래일 간격.
    청산 = +5% 절반 · +10% 나머지 · −10% 손절 · 10거래일 무조건. 신호 있는 달만 월 적립에서 20만 배정, 다 정리했을 때 이익의 50%는 장투로 이관. */
-const SWING_TH = {1:-30, 2:-40, 3:-55};
+const SWING_TH = {1:-30, 2:-40, 3:-55, g:-70};   // g = 성장주(IONQ·RKLB, 11-14 Ben): 모니터링 위주, 진짜 폭락장에서만 짧게. 1회 계좌 12.5%
+const SWING_GROWTH = ["IONQ","RKLB"], SWING_UNIT = {g:0.125};
 const SWING_BT = ["NVDA","AAPL","MSFT","AMZN","GOOGL","META","AVGO","TSLA","TSM"];
 const SWING_MONTHLY = 20;   // 만원, 신호 있는 달만
 const SWING_EXIT = "+5% 절반 · +10% 나머지 · −10% 손절 · 10거래일이면 무조건 청산";
 function swingSignals(E){
-  const S=E.S, list=[...SWING_BT.map(t=>[t,1,"빅테크 1배"]), ["QLD",2,"QLD 2배"], ["TQQQ",3,"TQQQ 3배"], ["SOXL",3,"SOXL 3배"]];
+  const S=E.S, list=[...SWING_BT.map(t=>[t,1,"빅테크 1배"]), ["QLD",2,"QLD 2배"], ["TQQQ",3,"TQQQ 3배"], ["SOXL",3,"SOXL 3배"], ...SWING_GROWTH.map(t=>[t,"g","성장주"])];
   return list.map(([t,m,group])=>{ const x=S[t]; if(!x) return null; const d=x.dd52??x.dd_ath, th=SWING_TH[m];
     const on = d!=null && x.rsi!=null && d<=th && x.rsi<=30, near = !on && d!=null && x.rsi!=null && d<=th+10 && x.rsi<=40;
     return {t, m, group, th, on, near, cond:`1년 고점 ${th}% 이하 + RSI ≤ 30`, now:`고점 ${pct(d,0)} · RSI ${num(x.rsi,0)}`, sell:SWING_EXIT}; }).filter(Boolean);
@@ -789,7 +790,7 @@ function swingSignals(E){
 function planSwing(E){
   const a = E.acc.list.find(x=>x.id==="swing"); if(!a) return null;
   const ix = E.S["^IXIC"];
-  const sig = swingSignals(E).map(s=>({...s, buy:`계좌 25% (${won(a.val*0.25)})`}));
+  const sig = swingSignals(E).map(s=>{ const u=SWING_UNIT[s.m]||0.25; return {...s, unit:a.val*u, buy:`계좌 ${num(u*100,1)}% (${won(a.val*u)})`}; });
   return {a, unit:a.val*0.25, scale:1, panic: ix?.minus3_23d>=4, m3: ix?.chg!=null && ix.chg<=-3, sig};
 }
 
@@ -808,7 +809,7 @@ function swingOrders(E){
     const t = s.t, x = S[t]; if(!x?.price) continue;
     if(slots<=0){ skip.push(`${t}: 동시 4개 한도`); continue; }
     if(hold(t) >= 0.45*val){ skip.push(`${t}: 이미 2회차까지 보유`); continue; }
-    const target = Math.min(sw.unit, cash);
+    const target = Math.min(s.unit||sw.unit, cash);
     const pxw = x.price*fx; let sh = Math.floor(target/pxw);
     if(sh<1 && pxw<=target*1.7 && pxw<=cash) sh = 1;
     if(sh<1){ skip.push(`${t}: 1주(${won(pxw)}) ${cash<pxw? "예수금 부족":"배정 금액보다 비쌈"}`); continue; }
@@ -1134,7 +1135,7 @@ function vCrash(){
   <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th class="l">구분</th><th class="l">조건</th><th class="l">현재</th><th>신호</th><th class="l">매수</th><th class="l">매도</th></tr>
   ${sw.sig.sort((x,y)=>y.on-x.on || y.near-x.near).map(s=>`<tr${s.on?' style="background:var(--accent-soft)"':""}><td><b>${s.t}</b></td><td class="l muted">${esc(s.group)}</td><td class="l">${esc(s.cond)}</td><td class="l">${s.now}</td><td>${s.on? pill("ON","r") : s.near? pill("근접","n") : pill("–","n")}</td><td class="l">${s.buy}</td><td class="l muted">${esc(s.sell)}</td></tr>`).join("")}
   </table></div>
-  <p class="note">레버리지가 클수록 더 깊이 빠졌을 때만 들어갑니다(빅테크 −30%, QLD −40%, TQQQ·SOXL −55%, 모두 그 종목 RSI ≤ 30). 1회 계좌 25%, 동시 4개, 종목당 2회. 백테스트(2010~): 연 7.7%, 최대 낙폭 −22%, 같은 돈을 QQQ에 넣으면 18%라 장기 수익용이 아니라 폭락장에서 짧게 먹고 나오는 용도입니다. 신호 있는 달만 월 적립 20만을 보내고, 다 정리했을 때 이익의 50%는 장투로 옮깁니다. ${sw.panic? "<b>현재 공황 구간: 신규 진입 중단.</b>" : sw.m3? "<b>나스닥 −3% 경보: 1회 금액 절반.</b>" : ""}</p>`:""}
+  <p class="note">레버리지가 클수록 더 깊이 빠졌을 때만 들어갑니다(빅테크 −30%, QLD −40%, TQQQ·SOXL −55%, 성장주 아이온큐·로켓랩 −70%, 모두 그 종목 RSI ≤ 30). 1회 계좌 25%(성장주는 12.5%), 동시 4개, 종목당 2회. 백테스트(2010~): 연 7.7%, 최대 낙폭 −22%, 같은 돈을 QQQ에 넣으면 18%라 장기 수익용이 아니라 폭락장에서 짧게 먹고 나오는 용도입니다. 신호 있는 달만 월 적립 20만을 보내고, 다 정리했을 때 이익의 50%는 장투로 옮깁니다. ${sw.panic? "<b>현재 공황 구간: 신규 진입 중단.</b>" : sw.m3? "<b>나스닥 −3% 경보: 1회 금액 절반.</b>" : ""}</p>`:""}
   ${bigCutHTML(false)}`;
 }
 function ddBar(dd){
@@ -1311,6 +1312,12 @@ function buySig(t, s){
     if(d!=null && r!=null && d<=-20 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
     return hot? {lv:-1, label:"과열·보류", why:`RSI ${num(s.rsi,0)} · 200일선 ${pct(s.vs200,0)}`} : null;
   }
+  if(s.group==="성장주"){   // 모니터링: −70% + RSI ≤ 30이면 스윙 후보, −60% + RSI ≤ 40이면 관찰
+    const d=s.dd52, r=s.rsi;
+    if(d!=null && r!=null && d<=-70 && r<=30) return {lv:2, label:"폭락 스윙 후보", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
+    if(d!=null && r!=null && d<=-60 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
+    return null;
+  }
   if(!BUY_ETF.includes(t) && !(t==="MAGS")) return null;
   const hits = [];
   if(s.rsi!=null && s.rsi<=35) hits.push(`RSI ${num(s.rsi,0)}`);
@@ -1341,6 +1348,7 @@ function acctFor(t, s){
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
   if(t==="1489.T") return {a:"직투 엔화 예수금", how:"모아 둔 엔화로만 삽니다(원화 환전 매수 안 함). MDD −15/−25%에서 보조지표(RSI ≤ 30, 200일선 −10%, 볼린저 하단) 2개 이상이면 1/3씩, −35%면 남은 전부. 3~5거래일 나눠서."};
   if(t==="BITO") return {a:"장투 계좌 (BITO 칸)", how:"월 적립 외 추가 매수는 매수 적기일 때만, 전체 자산의 3% 상한 안에서. 업비트·해외 거래소 현물은 쓰지 않습니다."};
+  if(s?.group==="성장주") return {a:"스윙 계좌", how:"1회 계좌 12.5%만, 종목당 2회(5거래일 간격). +5% 절반·+10% 나머지 익절, −10% 손절, 10거래일 안에 정리."};
   if(s?.group==="빅테크"||s?.group==="섹터") return {a:"스윙 계좌", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
 }
@@ -1419,7 +1427,7 @@ function vMarket(){
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 시세만 보여주고 매수 후보·스윙 신호에서는 뺐습니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다.</p>
+  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 모니터링용: 1년 고점 −70% + RSI 30 이하일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI 40 이하면 관찰로 표시합니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다.</p>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table>
     <tr><th>종목</th><th>현재가</th><th>일간</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
     ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
@@ -1518,7 +1526,7 @@ function allocBody(){
     {n:"연금저축 계좌", sub:"국내상장", tot:pn.amt, items:pn.rows.map(r=>({t:r.name, amt:r.won, why:pnWhy(r.t)}))},
   ];
   if(side.gold) accts.push({n:"금현물 계좌", sub:side.goldExtra? "KRX · 월 저축 밖 추가" : "KRX · 장투 몫에서 이동", tot:side.gold*1e4, items:[{t:"금현물 1g", amt:side.gold*1e4, why:"가격 무관 매달 1g"}]});
-  if(side.swing) accts.push({n:"스윙 계좌", sub:"신호 있는 달만", tot:side.swing*1e4, items:[{t:"예수금", amt:side.swing*1e4, why:`${side.swingOn.map(x=>x.t).join("·")} 과대낙폭 신호 · 1회 계좌 25%`}]});
+  if(side.swing) accts.push({n:"스윙 계좌", sub:"신호 있는 달만", tot:side.swing*1e4, items:[{t:"예수금", amt:side.swing*1e4, why:`${side.swingOn.map(x=>x.t).join("·")} 과대낙폭 신호 · 1회 계좌 25%(성장주 12.5%)`}]});
   if(s.monthly_swing_krw>0) accts.push({n:"스윙 계좌", sub:"고정 적립", tot:s.monthly_swing_krw, items:[{t:"예수금", amt:s.monthly_swing_krw, why:"과대낙폭 신호 대기"}]});
   const G = accts.reduce((a,x)=>a+x.tot,0)||1, w0 = v=>won(Math.round(v/1e3)*1e3);
   const table = `<div class="tbl"><table class="qtbl"><tr><th class="l">계좌 · 종목 · 근거</th><th>비중</th><th>금액</th></tr>
