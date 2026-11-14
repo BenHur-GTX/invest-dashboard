@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if os.environ.get("ONLY_DIV") else []) + (["GC=F", "GLD"] if os.environ.get("ONLY_PARK") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if os.environ.get("ONLY_DIV") else []) + (["GC=F", "GLD"] if os.environ.get("ONLY_PARK") else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -97,6 +97,9 @@ def prep(y, f):
     for i in range(1, n):
         sg.append(sg[-1] * (1 + rf[i - 1] / 252))
     P["SGOV"] = sg
+    # SOXL 합성: SOXX 일간 3배 − (보수 0.95% + 차입 2×T-bill)
+    sxr = [0] + [P["SOXX"][k] / P["SOXX"][k - 1] - 1 for k in range(1, n)]
+    P["SOXL"] = splice(dates, sxr, [], 3, [(0.0095 + 2 * rf[k]) / 252 for k in range(n)])
     # 금: GLD(2004-11~) 수익률 우선, 그 전은 금 선물 GC=F, 그 전(2000-08 이전)은 첫 값으로 고정
     gc = dict((r[0], r[4]) for r in y.get("GC=F", []) if r[4])
     if gc:
@@ -104,7 +107,7 @@ def prep(y, f):
         gr = [0] + [gv[k] / gv[k - 1] - 1 for k in range(1, n)]
         P["GOLD"] = splice(dates, gr, [(r[0], r[5]) for r in y.get("GLD", [])])
     # 상장 이후만 존재하는 배당·커버드콜 ETF (상장 전 None)
-    for t in ("JEPI", "DIVO", "JEPQ"):
+    for t in ("JEPI", "DIVO", "JEPQ") + tuple(x for x in ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if x in y):
         mp = dict((r[0], r[5]) for r in y.get(t, []))
         P[t] = [mp.get(d) for d in dates]
         # 휴장 차이로 빈 날 직전값
@@ -1024,6 +1027,163 @@ def park_verify(D):
     json.dump(out, open(os.path.join(B.DATA, "park_verify.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def swing_study(D):
+    """단기 급락 스윙(짧게 사고 나오기) 규칙 비교 → data/swing_bt.json. 스윙 계좌 단독, 쉬는 돈은 SGOV"""
+    dates, P, c, rsi = D["dates"], D["P"], D["c"], D["rsi"]
+    n = len(dates)
+    def bbl(i):
+        if i < 19: return None
+        w = c[i - 19:i + 1]; mu = sum(w) / 20; sd = (sum((x - mu) ** 2 for x in w) / 20) ** 0.5
+        return mu - 2 * sd
+    def ret(i, k): return (c[i] / c[i - k] - 1) * 100 if i >= k else 0
+    SIG = {
+        "dip2": ("QQQ 하루 −2%↓ + RSI ≤ 40", lambda i: ret(i, 1) <= -2 and (rsi[i] or 99) <= 40),
+        "rsi30": ("QQQ RSI ≤ 30", lambda i: (rsi[i] or 99) <= 30),
+        "bb": ("QQQ 볼린저 하단 이탈 + RSI ≤ 35", lambda i: bbl(i) is not None and c[i] < bbl(i) and (rsi[i] or 99) <= 35),
+        "d3": ("QQQ 3일 −5%↓", lambda i: ret(i, 3) <= -5),
+        "d3r": ("QQQ 3일 −5%↓ + RSI ≤ 35", lambda i: ret(i, 3) <= -5 and (rsi[i] or 99) <= 35),
+    }
+    EXIT = {
+        "tp": ("+8% 절반·+15% 나머지 (손절·기간 없음 = 지금 규칙)", dict(tp1=8, tp2=15, stop=None, days=None, mr=False)),
+        "tp_s_t": ("+8% 절반·+15% 나머지, −12% 손절, 20거래일 청산", dict(tp1=8, tp2=15, stop=-12, days=20, mr=False)),
+        "fast": ("+5% 절반·+10% 나머지, −10% 손절, 10거래일 청산", dict(tp1=5, tp2=10, stop=-10, days=10, mr=False)),
+        "mr": ("RSI ≥ 50 또는 20일선 회복 시 전량, −12% 손절, 15거래일 청산", dict(tp1=None, tp2=None, stop=-12, days=15, mr=True)),
+        "mr_tp": ("+8% 절반 → 나머지는 RSI ≥ 55·20일선 회복, −12% 손절, 20거래일", dict(tp1=8, tp2=None, stop=-12, days=20, mr=True)),
+    }
+    def sim(i0, i1, inst, sig, ex, unit=1 / 3, lots=3, gap=5):
+        cash = 1.0; pos = []   # [qty, entry_px, entry_i, half_done]
+        f = SIG[sig][1]; e = EXIT[ex][1]; last = -99; trades = []; curve = []
+        sg = P["SGOV"]
+        for i in range(i0, i1 + 1):
+            if i > i0: cash *= sg[i] / sg[i - 1]
+            px = P[inst][i]
+            m20 = sum(c[i - 19:i + 1]) / 20 if i >= 19 else None
+            keep = []
+            for q, ep, ei, hd in pos:
+                g = (px / ep - 1) * 100; held = i - ei
+                out = 0
+                if e["stop"] is not None and g <= e["stop"]: out = 1
+                elif e["days"] is not None and held >= e["days"]: out = 1
+                elif e["tp2"] is not None and g >= e["tp2"]: out = 1
+                elif e["mr"] and (hd or e["tp1"] is None) and ((rsi[i] or 0) >= (55 if e["tp1"] else 50) or (m20 and c[i] > m20)) and held >= 2: out = 1
+                if not out and e["tp1"] is not None and not hd and g >= e["tp1"]:
+                    cash += q / 2 * px; q /= 2; hd = True
+                if out:
+                    cash += q * px; trades.append((ep, px, held, g))
+                else: keep.append([q, ep, ei, hd])
+            pos = keep
+            tot = cash + sum(p[0] * px for p in pos)
+            if f(i) and len(pos) < lots and i - last >= gap:
+                amt = min(cash, tot * unit)
+                if amt > 0: cash -= amt; pos.append([amt / px, px, i, False]); last = i
+            curve.append(cash + sum(p[0] * px for p in pos))
+        yrs = (i1 - i0) / 252
+        cagr = (curve[-1] ** (1 / yrs) - 1) * 100 if yrs > 0 else 0
+        pk = 0; mdd = 0
+        for v in curve: pk = max(pk, v); mdd = min(mdd, v / pk - 1)
+        exp = sum(1 for k in range(len(curve)) if True) and None
+        wins = [t for t in trades if t[1] > t[0]]
+        return {"cagr": round(cagr, 2), "mdd": round(mdd * 100, 1), "trades": len(trades), "win": round(len(wins) / len(trades) * 100) if trades else None,
+                "avg_hold": round(sum(t[2] for t in trades) / len(trades), 1) if trades else None,
+                "avg_ret": round(sum(t[3] for t in trades) / len(trades), 1) if trades else None,
+                "worst": round(min(t[3] for t in trades), 1) if trades else None}
+    def bh(i0, i1, t):
+        yrs = (i1 - i0) / 252; v = [P[t][k] / P[t][i0] for k in range(i0, i1 + 1)]
+        pk = 0; mdd = 0
+        for x in v: pk = max(pk, x); mdd = min(mdd, x / pk - 1)
+        return {"cagr": round((v[-1] ** (1 / yrs) - 1) * 100, 2), "mdd": round(mdd * 100, 1)}
+    def idx(d): return next((k for k, x in enumerate(dates) if x >= d), n - 1)
+    W = [("2000~", "2000-01-03", None), ("2008~", "2008-01-02", None), ("2016~", "2016-01-04", None), ("2020~", "2020-01-02", None),
+         ("닷컴 2000-03~2002-12", "2000-03-01", "2002-12-31"), ("금융위기 2007-10~2009-06", "2007-10-01", "2009-06-30"),
+         ("2022", "2022-01-03", "2022-12-30"), ("2025-02~06", "2025-02-03", "2025-06-30")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "notes": ["스윙 계좌 단독, 1회 계좌 1/3, 최대 3묶음, 5거래일 간격", "쉬는 돈은 SGOV(단기채 금리)", "QLD·TQQQ 상장 전은 QQQ 일간 2·3배 합성", "세금·수수료 제외"],
+           "signals": {k: v[0] for k, v in SIG.items()}, "exits": {k: v[0] for k, v in EXIT.items()}, "rows": [], "bench": []}
+    for wn, a, b in W:
+        i0 = idx(a); i1 = idx(b) if b else n - 1
+        out["bench"].append({"window": wn, "SGOV": bh(i0, i1, "SGOV"), "QQQ": bh(i0, i1, "QQQ"), "QLD": bh(i0, i1, "QLD")})
+        for inst in ("QLD", "TQQQ"):
+            for sk in SIG:
+                for ek in EXIT:
+                    r = sim(i0, i1, inst, sk, ek)
+                    out["rows"].append({"window": wn, "inst": inst, "sig": sk, "exit": ek, **r})
+        print("SWING", wn, flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "swing_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def swing_study2(D):
+    """Ben 11-14 스윙 설계: 배수가 클수록 더 깊은 낙폭에서 진입, 신호 있는 달만 월 적립 일부 배정, 수익권이면 이익 일부 장투 이관 → data/swing2_bt.json"""
+    dates, P = D["dates"], D["P"]; n = len(dates)
+    BT = [t for t in ("NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA") if t in P]
+    INST = [(t, 1) for t in BT] + [("QLD", 2), ("TQQQ", 3), ("SOXL", 3)]
+    R = {t: B.rsi_series([x if x is not None else 0 for x in P[t]]) for t, _ in INST}
+    def dd52(t, i):
+        w = [x for x in P[t][max(0, i - 251):i + 1] if x is not None]
+        return (P[t][i] / max(w) - 1) * 100 if w and P[t][i] is not None else 0
+    DDS = {"A": {1: -25, 2: -30, 3: -40}, "B": {1: -30, 2: -40, 3: -55}, "C": {1: -35, 2: -50, 3: -65}}
+    EX = {"fast": (5, 10, -10, 10), "mid": (8, 15, -12, 20), "wide": (15, 30, -20, 40)}
+    def sim(i0, i1, dk, ek, monthly, unit=0.25, maxpos=4, xfer=0.5):
+        cash = 400.0; paid = 400.0; flows = [(dates[i0], -400.0)]; pos = []; last = {}; trades = []; curve = []; moved = 0.0; lastm = None; sig_recent = -999
+        tp1, tp2, st, days = EX[ek]
+        for i in range(i0, i1 + 1):
+            if i > i0: cash *= P["SGOV"][i] / P["SGOV"][i - 1]
+            d = dates[i]
+            # 월 배정: 최근 20거래일 안에 진입 신호가 있었던 달만
+            if monthly and d[:7] != lastm and int(d[8:]) >= 25:
+                lastm = d[:7]
+                if i - sig_recent <= 20: cash += monthly; paid += monthly; flows.append((d, -monthly))
+            keep = []; closed = False
+            for p in pos:
+                t = p["t"]; px = P[t][i]; g = (px / p["ep"] - 1) * 100; held = i - p["i"]
+                if not p["h"] and g >= tp1: cash += p["q"] / 2 * px; p["q"] /= 2; p["h"] = True
+                if g <= st or held >= days or g >= tp2:
+                    cash += p["q"] * px; trades.append((g, held, p["m"])); closed = True
+                else: keep.append(p)
+            pos = keep
+            val = cash + sum(p["q"] * P[p["t"]][i] for p in pos)
+            # 수익권이면(납입 원금 대비 +) 포지션이 없을 때 이익의 xfer만큼 장투로 이관
+            if closed and not pos and val > paid and xfer:
+                out = (val - paid) * xfer; cash -= out; moved += out; flows.append((d, out)); val -= out
+            for t, m in INST:
+                if P[t][i] is None or R[t][i] is None: continue
+                if dd52(t, i) <= DDS[dk][m] and R[t][i] <= 30:
+                    sig_recent = i
+                    if len(pos) < maxpos and i - last.get(t, -99) >= 5 and sum(1 for p in pos if p["t"] == t) < 2:
+                        amt = min(cash, val * unit)
+                        if amt > 1: cash -= amt; pos.append({"t": t, "m": m, "q": amt / P[t][i], "ep": P[t][i], "i": i, "h": False}); last[t] = i
+            curve.append(cash + sum(p["q"] * P[p["t"]][i] for p in pos))
+        pk = 0; mdd = 0
+        for v in curve: pk = max(pk, v); mdd = min(mdd, v / pk - 1)
+        irr = xirr(flows, dates[i1], curve[-1])
+        # 같은 돈을 같은 날 QQQ에 넣었을 때 (이관분은 같은 날 회수)
+        q = 0.0; qf = []
+        for fd, fv in flows:
+            k = dates.index(fd); q += -fv / P["QQQ"][k]; qf.append((fd, fv))
+        qirr = xirr(qf, dates[i1], q * P["QQQ"][i1])
+        bym = {}
+        for g, h, m in trades: bym.setdefault(m, []).append(g)
+        return {"irr": irr, "qqq_same_flows_irr": qirr, "mdd": round(mdd * 100, 1), "trades": len(trades), "win": round(sum(1 for t in trades if t[0] > 0) / len(trades) * 100) if trades else None,
+                "avg_hold": round(sum(t[1] for t in trades) / len(trades), 1) if trades else None, "worst": round(min(t[0] for t in trades), 1) if trades else None,
+                "paid": round(paid), "moved_to_lt": round(moved), "end": round(curve[-1]), "by_mult": {str(m): [len(v), round(sum(v) / len(v), 1)] for m, v in bym.items()}}
+    def idx(d): return next((k for k, x in enumerate(dates) if x >= d), n - 1)
+    W = [("2000~", "2000-01-03", None), ("2010~", "2010-01-04", None), ("2016~", "2016-01-04", None),
+         ("닷컴 2000-03~2002-12", "2000-03-01", "2002-12-31"), ("금융위기 2007-10~2009-06", "2007-10-01", "2009-06-30"), ("2022", "2022-01-03", "2022-12-30"), ("2025-02~06", "2025-02-03", "2025-06-30")]
+    out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "bigtech": BT,
+           "notes": ["시작 400만, 1회 계좌 25%, 동시 최대 4개(종목당 2개), 같은 종목 5거래일 간격", "진입: 1년 고점 대비 낙폭(배수별 기준) + 그 종목 RSI ≤ 30",
+                     "월 배정: 최근 20거래일 안에 신호가 있던 달만 적립일에 배정", "이관: 포지션을 다 정리했고 원금 대비 이익이면 이익의 50%를 장투로",
+                     "SOXL은 SOXX 3배 합성, 빅테크는 상장 이후만", "세금·수수료 제외"],
+           "dd_sets": DDS, "exits": {k: f"+{v[0]}% 절반·+{v[1]}% 나머지, {v[2]}% 손절, {v[3]}거래일" for k, v in EX.items()}, "rows": []}
+    for wn, a, b in W:
+        i0 = idx(a); i1 = idx(b) if b else n - 1
+        for dk in DDS:
+            for ek in EX:
+                for mo in (0, 20, 40):
+                    r = sim(i0, i1, dk, ek, mo)
+                    out["rows"].append({"window": wn, "dd": dk, "exit": ek, "monthly": mo, **r})
+        print("SWING2", wn, flush=True)
+    json.dump(out, open(os.path.join(B.DATA, "swing2_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
 def main():
     y, f = load()
     D = prep(y, f)
@@ -1032,6 +1192,8 @@ def main():
         margin_study(D); print("ok"); return
     if os.environ.get("ONLY_DIV"):
         div_study(D); print("ok"); return
+    if os.environ.get("ONLY_SWING"):
+        swing_study2(D); swing_study(D); print("ok"); return
     if os.environ.get("ONLY_PARKV"):
         park_verify(D); print("ok"); return
     if os.environ.get("ONLY_PARK"):
