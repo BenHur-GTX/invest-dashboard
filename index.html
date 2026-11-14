@@ -1285,7 +1285,7 @@ function vAccounts(){
 }
 
 const MSORT = {};   // 시세 탭 정렬 상태 {그룹: {k, dir}} — 1회 내림, 2회 오름, 3회 원래 순서
-const MSORT_GROUPS = ["섹터","빅테크","배당"];
+const MSORT_GROUPS = ["섹터","빅테크","성장주","배당"];
 const MSORT_KEYS = {dd:s=>s.dd_ath ?? s.dd52, v200:s=>s.vs200, rsi:s=>s.rsi, bb:s=>s.bb_pctb};
 function rsiCls(v){ return v==null? "" : v<=30? "dn" : v>=70? "up" : ""; }
 // 매수 후보 하이라이트 (11-13 Ben). 장투·적립 후보 ETF는 4개 신호 중 개수, 개별 빅테크는 큰 낙폭 + 과매도일 때만
@@ -1410,7 +1410,7 @@ function drawPopup(n){
 function vMarket(){
   const S=E.S; const groups={};
   for(const [t,s] of Object.entries(S)){ (groups[s.group]=groups[s.group]||[]).push([t,s]); }
-  const order=["지수","1배 지수","섹터","레버리지","빅테크","배당","금·비트코인","현금·채권","국내","기타"];
+  const order=["지수","1배 지수","섹터","레버리지","빅테크","성장주","배당","금·비트코인","현금·채권","국내","기타"];
   const th=(g,k,label)=>{ if(!MSORT_GROUPS.includes(g)) return `<th>${label}</th>`;
     const st=MSORT[g]; const on=st&&st.k===k; const arrow=on? (st.dir<0?" ▼":" ▲") : "";
     return `<th class="sortable${on?" on":""}"><button type="button" class="sortbtn" data-g="${g}" data-k="${k}" aria-label="${label} 정렬">${label}${arrow||'<span class="hint"> ↕</span>'}</button></th>`; };
@@ -1419,7 +1419,7 @@ function vMarket(){
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다.</p>
+  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 이름을 누르면 가격·50일선·200일선 차트가 열립니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 시세만 보여주고 매수 후보·스윙 신호에서는 뺐습니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다.</p>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table>
     <tr><th>종목</th><th>현재가</th><th>일간</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
     ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td><td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
