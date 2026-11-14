@@ -18,11 +18,11 @@ jobs:
       - run: python -u scripts/backtest_portfolio.py
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-          ONLY_GAP: "1"
+          ONLY_GSW: "1"
       - run: |
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"
-          touch data/w40c_bt.json data/n2_bt.json data/btc_bt.json data/btc_core_bt.json data/gap40_bt.json; git add data/park_bt.json data/park_verify.json data/swing_bt.json data/swing2_bt.json data/w40_bt.json data/w40c_bt.json data/n2_bt.json data/btc_bt.json data/btc_core_bt.json data/gap40_bt.json
+          touch data/w40c_bt.json data/n2_bt.json data/btc_bt.json data/btc_core_bt.json data/gap40_bt.json data/gapswing_bt.json; git add data/park_bt.json data/park_verify.json data/swing_bt.json data/swing2_bt.json data/w40_bt.json data/w40c_bt.json data/n2_bt.json data/btc_bt.json data/btc_core_bt.json data/gap40_bt.json data/gapswing_bt.json
           git diff --cached --quiet || git commit -m "backtest: park"
           git pull --rebase origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref_name }}
