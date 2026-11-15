@@ -25,12 +25,13 @@ header .wrap{padding-top:14px;padding-bottom:0}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .top h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.2px}
 .top .meta{font-size:12px;color:#c9dcdc}
-.hero{display:grid;grid-template-columns:1.3fr repeat(6,1fr);gap:1px;background:rgba(255,255,255,.14);margin:14px 0 0;border-radius:var(--r) var(--r) 0 0;overflow:hidden}
+.hero{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:rgba(255,255,255,.14);margin:14px 0 0;border-radius:var(--r) var(--r) 0 0;overflow:hidden}
 .hero>div{background:var(--brand);padding:12px 14px}
 .hero .k{font-size:12px;color:#b8d0d0}
 .hero .v{font-size:20px;font-weight:700;margin-top:2px}
 .hero .s{font-size:12px;color:#d7e6e6}
-.hero .state .v{font-size:24px}
+.hero .state{grid-column:span 2}
+.hero .state .v,.hero .mode .v{font-size:22px}
 .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14)}
 .stages>div{background:var(--brand);padding:8px 14px;font-size:12.5px;color:#d7e6e6;line-height:1.45}
 .stages b{color:#fff;font-weight:600}
@@ -262,8 +263,9 @@ footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
 button:disabled{opacity:.45;cursor:not-allowed}
 input.ro{background:#f3f2ee;color:var(--ink2)}
 @media (max-width:860px){
-  .hero{grid-template-columns:repeat(3,1fr)}
-  .hero .state{grid-column:1/-1}
+  .hero{grid-template-columns:repeat(12,1fr)}
+  .hero>div{grid-column:span 4;padding:10px 10px} .hero .mode,.hero .state{grid-column:1/-1}
+  .hero>div:nth-child(2),.hero>div:nth-child(3),.hero>div:nth-child(4),.hero>div:nth-child(5){grid-column:span 3}
   .grid2{grid-template-columns:1fr}
   .lights{grid-template-columns:1fr 1fr}
 }
@@ -1050,6 +1052,8 @@ function stagesHTML(E){
   const row=(c,name,val,lv,nx)=>`<div><span class="hdot ${c}"></span><b>${name} ${val}</b><span class="lv">${lv}</span><span class="nx">${nx}</span></div>`;
   const t10r = t10==null? "" : row(t10>=5.5?"r":t10>=5?"y":t10>=4.5?"y":"g", "10년물", num(t10,2)+"%", t10>=5.5?"빨강":t10>=5?"노랑 (경고)":t10>=4.5?"주의":"안정", t10>=5.5? "5.5%↑ 수비 1표" : t10>=5? `빨강까지 +${num(5.5-t10,2)}%p` : `노랑까지 +${num(5-t10,2)}%p`);
   const hyr = hy==null? "" : row(hy>=5?"r":hy>=4?"y":"g", "하이일드", num(hy,2)+"%", hy>=6?"위기":hy>=5?"경계":hy>=4?"주의":"안정", hy>=6? "신규 레버리지 중단" : hy>=5? `6% 위기까지 +${num(6-hy,2)}%p` : `노랑(4%)까지 +${num(4-hy,2)}%p`);
+  const Ll=E.L.find(l=>l.t==="유동성"), nl=m.netliq;
+  const liq = !Ll||!nl? "" : row(Ll.c, "유동성", `4주 ${nl.chg4w>0?"+":""}${num(nl.chg4w,0)}B$`, Ll.st, nl.weeks_down? `${nl.weeks_down}주 연속 감소 (13주면 빨강)` : "연준 자산 − TGA − 역레포");
   return cell("RSI",q.rsi,R,Rn,1) + t10r + hyr;
 }
 function renderHero(){
@@ -1060,14 +1064,18 @@ function renderHero(){
   const D=c=>`<span class="hdot ${c}"></span>`;
   const cS={1:"g",2:"y",3:"y",4:"r",5:"g"}[E.state], cDD=E.dd==null?"n": E.dd<=RULES.tranches[0].dd? "r" : E.dd<=-10? "y":"g";
   const cMA=q.vs200==null?"n": q.vs200>=0? "g" : q.vs200>-5? "y":"r", cV=E.vix==null?"n": E.vix>=30? "r" : E.vix>=20? "y":"g";
-  const nx=RULES.tranches.find(t=>E.dd==null || E.dd>t.dd), cNX = !nx? "r" : E.dd!=null && E.dd-nx.dd<=10? "y" : "n";
+  // 11-15 Ben: 다음 현금 차수·200일선 칸 대신 금리(10년물 + 기준금리)·고용
+  const mm=E.M.macro||{}, LL=Object.fromEntries(E.L.map(l=>[l.t,l])), Lr=LL["금리 사이클"], Lt=LL["장기금리 (미 10년물)"], Le=LL["고용"], Ll=LL["유동성"], Lc=LL["신용"], nl=mm.netliq;
+  const rk={r:3,y:2,g:1,n:0}, cR=[Lr?.c||"n", Lt?.mode??Lt?.c??"n"].sort((a,b)=>rk[b]-rk[a])[0];
   const cF=E.fng==null?"n": E.fng<=25? "r" : E.fng<=45? "y" : E.fng>=80? "r" : "g";
   $("#hero").innerHTML = `
+    <div class="mode"><div class="k">${D(E.mode.c)}거시 모드</div><div class="v">${esc(E.mode.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
+    <div><div class="k">${D(cR)}금리 10Y</div><div class="v">${mm.dgs10?.v!=null? num(mm.dgs10.v,2)+"%":"–"}</div><div class="s">기준 ${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}<br>${esc(Lr?.st||"–")}</div></div>
+    <div><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
+    <div><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
+    <div><div class="k">${D(Lc?.c||"n")}신용</div><div class="v">${mm.hy?.v!=null? num(mm.hy.v,2)+"%":"–"}</div><div class="s">하이일드<br>${esc(Lc?.st||"–")}</div></div>
     <div class="state"><div class="k">${D(cS)}QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${E.state}. ${st.name}</div><div class="s">${esc(st.desc)}</div></div>
-    <div><div class="k">${D(E.mode.c)}거시 모드</div><div class="v">${esc(E.mode.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
     <div><div class="k">${D(cDD)}고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">QQQ 5년 고점</div></div>
-    <div><div class="k">${D(cNX)}다음 현금 차수</div><div class="v">${nx? nx.n+"차 "+nx.dd+"%" : "전부 도달"}</div><div class="s">${nx? "남은 "+num(E.dd-nx.dd,1)+"%p" : "사다리 끝"}</div></div>
-    <div><div class="k">${D(cMA)}200일선 대비</div><div class="v">${pct(q.vs200,1)}</div><div class="s">${q.vs200!=null&&q.vs200<0? "아래":"위"}</div></div>
     <div><div class="k">${D(cV)}VIX</div><div class="v">${num(E.vix,1)}</div><div class="s">${E.vix==null?"–":E.vix>=30?"공포":E.vix>=20?"불안":E.vix>=15?"보통":"방심"}</div></div>
     <div><div class="k">${D(cF)}공포탐욕</div><div class="v">${E.fng!=null? num(E.fng,0) : `<a href="${RULES.fngLink}" style="color:#ffd8b8" target="_blank" rel="noopener">확인</a>`}</div><div class="s">${E.fng==null? "자산제곱" : E.fng>=80?"극단적 탐욕":E.fng>=55?"탐욕":E.fng>=45?"중립":E.fng>25?"공포":"극단적 공포"}</div></div>`;
   $("#stages").innerHTML = stagesHTML(E);
