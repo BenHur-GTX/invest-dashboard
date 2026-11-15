@@ -261,6 +261,23 @@ input.ro{background:#f3f2ee;color:var(--ink2)}
 .fxbar .lb{color:var(--ink2)} .fxbar .tr{height:12px;background:#efede7;border-radius:6px;overflow:hidden}
 .fxbar .tr i{display:block;height:100%;border-radius:6px} .fxbar .tr i.avg{background:#b9b6ae}
 .fxbar .v{min-width:84px;text-align:right}
+/* 11-15 Ben: 오늘 탭 거시 신호등·현금 투입 보조지표 게이지 */
+.gz{display:grid;gap:14px}
+.gzrow .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:14px}
+.gzrow .hd b{font-weight:700} .gzrow .hd .st{font-size:12px;font-weight:700;padding:1px 7px;border-radius:4px;color:#fff}
+.gzrow .hd .st.g{background:var(--ok)} .gzrow .hd .st.y{background:#b07800} .gzrow .hd .st.r{background:var(--bad)} .gzrow .hd .st.n{background:#8a877f}
+.gzrow .hd .vv{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700}
+.gtr{position:relative;height:10px;border-radius:5px;margin:7px 0 2px;display:flex;overflow:hidden}
+.gtr span{display:block;height:100%} .gtr .g{background:#cfe6d9} .gtr .y{background:#f3e2b3} .gtr .r{background:#f2c9c5} .gtr .n{background:#e6e4de}
+.gtr .on.g{background:var(--ok)} .gtr .on.y{background:#d99a00} .gtr .on.r{background:var(--bad)}
+.gwrap{position:relative} .gmk{position:absolute;top:-3px;width:4px;height:16px;margin-left:-2px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 2px #fff}
+.gtk{position:relative;height:15px;font-size:11px;color:var(--ink2)} .gtk i{position:absolute;transform:translateX(-50%);font-style:normal;white-space:nowrap}
+.gtk i:first-child{transform:none} .gtk i:last-child{transform:translateX(-100%)}
+.gseg{display:flex;gap:3px;margin:7px 0 2px} .gseg span{flex:1;height:10px;border-radius:3px;background:#e6e4de}
+.gseg span.on.g{background:var(--ok)} .gseg span.on.y{background:#d99a00} .gseg span.on.r{background:var(--bad)}
+.gsegl{display:flex;gap:3px;font-size:11px;color:var(--ink2)} .gsegl i{flex:1;font-style:normal;text-align:center} .gsegl i.on{color:var(--ink);font-weight:700}
+.gzrow .d{font-size:12px;color:var(--ink2);margin-top:2px}
+.gsum{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:14px} .gsum .gseg{flex:1;margin:0}
 .fxk{font-size:12px;margin:2px 0 0}
 .nlist{margin-top:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .nrow{display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
@@ -1043,6 +1060,10 @@ function vToday(){
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
   ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#plan">이번 달 매수</a> 탭 맨 위에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
+  <h2>거시 신호등 · <span class="${E.mode.c}">${esc(E.mode.name)} 모드</span></h2>
+  <div class="panel"><div class="gz">${macroGauges()}</div><p class="note">빨강 2개 이상이면 수비 모드: 신규 레버리지 중단, 현금은 1배로만. 빨강 1개 또는 노랑 2개면 중립.</p></div>
+  <h2>현금 투입 보조지표</h2>
+  <div class="panel">${auxGauges()}</div>
   <div class="alerts">${alerts}</div>
   ${humanSummary()}
   <h2>오늘 할 일</h2>
@@ -1050,17 +1071,49 @@ function vToday(){
   ${bigCutHTML(true)}
   ${candAcctHTML()}
   ${ordersHTML()}
-  <div class="grid2">
-    <div class="panel"><h3 style="margin-top:0">현금 투입 보조지표 (${E.aux.length}개 중 2개)</h3>
-      <table>${E.aux.map(a=>`<tr><td class="l">${a.ok?'<span class="dot g"></span>':'<span class="dot n"></span>'}${esc(a.k)}</td><td>${esc(a.v)}</td></tr>`).join("")}</table>
-      <p class="note">충족 ${E.auxN}/${E.aux.length} · 공포탐욕은 <a href="${RULES.fngLink}" target="_blank" rel="noopener">자산제곱 대시보드</a> 값을 기준으로 봅니다.</p>
-    </div>
-    <div class="panel"><h3 style="margin-top:0">거시 신호등</h3>
-      <table>${E.L.map(l=>`<tr><td class="l"><span class="dot ${l.c}"></span>${esc(l.t)}</td><td>${esc(l.st)}</td></tr>`).join("")}</table>
-      <p class="note">빨강 2개 이상이면 수비 모드: 신규 레버리지 중단, 현금은 1배로만.</p>
-    </div>
-  </div>
   ${E.acc.list.length? `<h2>계좌 요약</h2>${accountsTable(true)}`:""}`;
+}
+// 11-15 Ben: 게이지. zones=[[끝값,색]...] (min부터 순서대로), ticks=[값...]
+function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt}){
+  const P=x=>Math.max(0,Math.min(100,(x-min)/(max-min)*100));
+  let prev=min; const segs=zones.map(([e,col])=>{ const w=P(e)-P(prev); prev=e; return `<span class="${col}" style="width:${w.toFixed(2)}%"></span>`; }).join("");
+  const f=fmt||(x=>x);
+  return `<div class="gzrow"><div class="hd"><b>${esc(t)}</b><span class="st ${c}">${esc(st)}</span><span class="vv">${vtxt}</span></div>
+    <div class="gwrap"><div class="gtr">${segs}</div>${v!=null? `<span class="gmk" style="left:${P(v).toFixed(2)}%"></span>`:""}</div>
+    <div class="gtk">${[min,...(ticks||[]),max].map(x=>`<i style="left:${P(x).toFixed(2)}%">${f(x)}</i>`).join("")}</div>
+    ${d? `<div class="d">${d}</div>`:""}</div>`;
+}
+function segGauge({t, c, st, vtxt, labels, idx, cols, d}){
+  return `<div class="gzrow"><div class="hd"><b>${esc(t)}</b><span class="st ${c}">${esc(st)}</span>${vtxt? `<span class="vv">${vtxt}</span>`:""}</div>
+    <div class="gseg">${labels.map((_,i)=>`<span class="${i===idx? "on "+cols[i]:""}"></span>`).join("")}</div>
+    <div class="gsegl">${labels.map((l,i)=>`<i class="${i===idx?"on":""}">${esc(l)}</i>`).join("")}</div>${d? `<div class="d">${d}</div>`:""}</div>`;
+}
+function macroGauges(){
+  const m=E.M.macro||{}, L=Object.fromEntries(E.L.map(l=>[l.t,l])), out=[];
+  { const l=L["금리 사이클"]; const lab=["인하기","동결","고점 동결","인상기","침체형 인하","긴급 인하"], cols=["g","g","y","y","r","r"];
+    out.push(segGauge({t:"금리 사이클", c:l.c, st:l.st, labels:["인하","동결","고점 동결","인상","침체 인하","긴급 인하"], idx:lab.indexOf(l.st), cols, d:esc(l.d)})); }
+  { const l=L["장기금리 (미 10년물)"], v=m.dgs10?.v;
+    out.push(gauge({t:"장기금리 (미 10년물)", c:l.c, st:l.st, vtxt:v!=null? num(v,2)+"%":"–", v, min:3, max:6.5, zones:[[4.5,"g"],[5,"y"],[5.5,"r"],[6.5,"r"]], ticks:[4.5,5,5.5], fmt:x=>x+"%", d:"판정: 5~5.5% 노랑, 5.5%↑ 빨강 · 화면 경고는 5%↑"})); }
+  { const l=L["고용"], v=m.sahm?.v, ic=m.icsa?.avg4??m.icsa?.v;
+    out.push(gauge({t:"고용 (샴 룰)", c:l.c, st:l.st, vtxt:v!=null? num(v,2):"–", v, min:-0.2, max:0.8, zones:[[0.3,"g"],[0.5,"y"],[0.8,"r"]], ticks:[0.3,0.5], d:`실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"} (25만↑ 노랑, 30만↑ 빨강) · 실업률 ${num(m.unrate?.v,1)}%`})); }
+  { const l=L["유동성"], nl=m.netliq, lab=["증가","4주 감소","13주 연속 감소","자금시장 경색"];
+    out.push(segGauge({t:"유동성 (순유동성)", c:l.c, st:l.st, vtxt:nl?.chg4w!=null? `4주 ${nl.chg4w>0?"+":""}${num(nl.chg4w,0)}B$`:"", labels:["증가","4주 감소","13주 연속↓","경색"], idx:lab.indexOf(l.st), cols:["g","y","r","r"], d:esc(l.d)})); }
+  { const l=L["신용"], v=m.hy?.v;
+    out.push(gauge({t:"신용 (하이일드 스프레드)", c:l.c, st:l.st, vtxt:v!=null? num(v,2)+"%":"–", v, min:2, max:8, zones:[[4,"g"],[5,"y"],[8,"r"]], ticks:[4,5,6], fmt:x=>x+"%", d:"6%↑ 위기: 신규 레버리지 중단"})); }
+  return out.join("");
+}
+function auxGauges(){
+  const q=E.q, n=E.auxN, A=E.aux, ok=k=>A.find(a=>a.k.startsWith(k))?.ok, out=[], gc=b=>b? "g":"n";
+  out.push(gauge({t:"QQQ RSI", c:gc(ok("QQQ RSI")), st:ok("QQQ RSI")? "충족":"미충족", vtxt:q.rsi!=null? num(q.rsi,1):"–", v:q.rsi, min:0, max:100, zones:[[40,"g"],[100,"n"]], ticks:[30,40,70], d:"40 이하 충족"}));
+  out.push(gauge({t:"VIX", c:gc(ok("VIX")), st:ok("VIX")? "충족":"미충족", vtxt:E.vix!=null? num(E.vix,1):"–", v:E.vix, min:10, max:45, zones:[[20,"n"],[45,"g"]], ticks:[20,30], d:"20 이상 충족 · 30↑ 공포 구간"}));
+  out.push(gauge({t:"공포탐욕", c:gc(ok("공포탐욕")), st:E.fng!=null? (ok("공포탐욕")? "충족":"미충족") : "확인 필요", vtxt:E.fng!=null? num(E.fng,0):"자산제곱 확인", v:E.fng, min:0, max:100, zones:[[45,"g"],[100,"n"]], ticks:[25,45,75], d:`45 이하 충족 · <a href="${RULES.fngLink}" target="_blank" rel="noopener">자산제곱 대시보드</a> 기준`}));
+  { const tc=q.touch||{}, lab=["60일","120일","200일"], hit=["ma60","ma120","ma200"].map(k=>!!tc[k]), any=hit.some(Boolean);
+    out.push(`<div class="gzrow"><div class="hd"><b>이동평균선 터치</b><span class="st ${gc(any)}">${any? "충족":"미충족"}</span><span class="vv">${q.vs200!=null? "200일선 "+pct(q.vs200,1):""}</span></div>
+      <div class="gseg">${hit.map(h=>`<span class="${h? "on g":""}"></span>`).join("")}</div><div class="gsegl">${lab.map((l,i)=>`<i class="${hit[i]?"on":""}">${l}선</i>`).join("")}</div><div class="d">하나라도 닿으면 충족</div></div>`); }
+  out.push(gauge({t:"볼린저 %B", c:gc(ok("QQQ 볼린저")), st:ok("QQQ 볼린저")? "충족":"미충족", vtxt:q.bb_pctb!=null? num(q.bb_pctb,0):"–", v:q.bb_pctb, min:-20, max:120, zones:[[0,"g"],[120,"n"]], ticks:[0,50,100], d:"0 아래(하단 이탈)면 충족"}));
+  { const h=ok("인간지표"); out.push(segGauge({t:"인간지표 공포", c:gc(h), st:h? "충족":"미충족", labels:["평상","공포 (반대매매 급증·AAII 비관 극단)"], idx:h?1:0, cols:["n","g"], d:esc(humanFearText(E.M))})); }
+  const sum=`<div class="gsum"><b>충족 ${n} / ${A.length}</b><div class="gseg">${A.map((_,i)=>`<span class="${i<n? "on "+(n>=2?"g":"y"):""}"></span>`).join("")}</div><span class="muted">2개면 집행</span></div>`;
+  return sum+`<div class="gz">${out.join("")}</div>`;
 }
 function mixText(m){ return Object.entries(m).map(([k,v])=>`${k} ${v}%`).join(" + "); }
 
