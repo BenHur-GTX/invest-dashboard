@@ -32,7 +32,7 @@ header .wrap{padding-top:14px;padding-bottom:0}
 .hero .s{font-size:12px;color:#d7e6e6}
 .hero .state{grid-column:span 2}
 .hero .state .v,.hero .mode .v{font-size:22px}
-.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14)}
+.stages{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14)}
 .stages>div{background:var(--brand);padding:8px 14px;font-size:12.5px;color:#d7e6e6;line-height:1.45}
 .stages b{color:#fff;font-weight:600}
 .hdot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:0;background:#8a877f;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
@@ -1048,13 +1048,10 @@ function stagesHTML(E){
     const i=levels.findIndex(l=>l[0](val)), l=levels[i];
     return `<div><span class="hdot ${l[2]==="buy"?"g":l[2]==="hot"?(name==="VIX"?"y":"r"):"n"}"></span><b>${name} ${num(val,d)}</b><span class="lv ${l[2]||""}">${l[1]}</span><span class="nx">다음 ${nexts[i]}</span></div>`; };
   // 11-15 Ben: 위 칸과 겹치는 공포탐욕·VIX 줄은 빼고, 모드를 바꾸는 10년물·하이일드를 다음 경계까지 거리와 함께
-  const m=E.M.macro||{}, t10=m.dgs10?.v, hy=m.hy?.v;
+  const m=E.M.macro||{}, t10=m.dgs10?.v;
   const row=(c,name,val,lv,nx)=>`<div><span class="hdot ${c}"></span><b>${name} ${val}</b><span class="lv">${lv}</span><span class="nx">${nx}</span></div>`;
   const t10r = t10==null? "" : row(t10>=5.5?"r":t10>=5?"y":t10>=4.5?"y":"g", "10년물", num(t10,2)+"%", t10>=5.5?"빨강":t10>=5?"노랑 (경고)":t10>=4.5?"주의":"안정", t10>=5.5? "5.5%↑ 수비 1표" : t10>=5? `빨강까지 +${num(5.5-t10,2)}%p` : `노랑까지 +${num(5-t10,2)}%p`);
-  const hyr = hy==null? "" : row(hy>=5?"r":hy>=4?"y":"g", "하이일드", num(hy,2)+"%", hy>=6?"위기":hy>=5?"경계":hy>=4?"주의":"안정", hy>=6? "신규 레버리지 중단" : hy>=5? `6% 위기까지 +${num(6-hy,2)}%p` : `노랑(4%)까지 +${num(4-hy,2)}%p`);
-  const Ll=E.L.find(l=>l.t==="유동성"), nl=m.netliq;
-  const liq = !Ll||!nl? "" : row(Ll.c, "유동성", `4주 ${nl.chg4w>0?"+":""}${num(nl.chg4w,0)}B$`, Ll.st, nl.weeks_down? `${nl.weeks_down}주 연속 감소 (13주면 빨강)` : "연준 자산 − TGA − 역레포");
-  return cell("RSI",q.rsi,R,Rn,1) + t10r + hyr;
+  return cell("RSI",q.rsi,R,Rn,1) + t10r;
 }
 function renderHero(){
   const q=E.q, st=RULES.states[E.state];
@@ -1074,7 +1071,7 @@ function renderHero(){
     <div><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
     <div><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
     <div><div class="k">${D(Lc?.c||"n")}신용</div><div class="v">${mm.hy?.v!=null? num(mm.hy.v,2)+"%":"–"}</div><div class="s">하이일드<br>${esc(Lc?.st||"–")}</div></div>
-    <div class="state"><div class="k">${D(cS)}QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${E.state}. ${st.name}</div><div class="s">${esc(st.desc)}</div></div>
+    <div class="state"><div class="k">${D(cS)}QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${st.name}</div><div class="s">${esc(st.desc)}</div></div>
     <div><div class="k">${D(cDD)}고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">QQQ 5년 고점</div></div>
     <div><div class="k">${D(cV)}VIX</div><div class="v">${num(E.vix,1)}</div><div class="s">${E.vix==null?"–":E.vix>=30?"공포":E.vix>=20?"불안":E.vix>=15?"보통":"방심"}</div></div>
     <div><div class="k">${D(cF)}공포탐욕</div><div class="v">${E.fng!=null? num(E.fng,0) : `<a href="${RULES.fngLink}" style="color:#ffd8b8" target="_blank" rel="noopener">확인</a>`}</div><div class="s">${E.fng==null? "자산제곱" : E.fng>=80?"극단적 탐욕":E.fng>=55?"탐욕":E.fng>=45?"중립":E.fng>25?"공포":"극단적 공포"}</div></div>`;
