@@ -1,0 +1,29 @@
+name: macro-long
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 22 * * 5"
+  push:
+    branches: [claude/project-thread-dtaczx]
+    paths: [scripts/macro_long.py, .github/workflows/macro-long.yml]
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -u scripts/macro_long.py
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      - run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/macro_long.json
+          git diff --cached --quiet || git commit -m "data: macro_long"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
