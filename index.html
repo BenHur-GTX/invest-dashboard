@@ -166,10 +166,29 @@ tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var
 .mtbl td:first-child,.mtbl th:first-child{position:sticky;left:0;z-index:1}
 .mtbl tr:not(.buy2):not(.buy1):not(.hot) td:first-child,.mtbl th:first-child{background:var(--surface)}
 .mtbl td:first-child{box-shadow:inset -1px 0 0 var(--line)}
-@media(max-width:640px){ .mtbl{min-width:720px} .mtbl td:first-child{min-width:0;width:124px;max-width:124px;white-space:normal;line-height:1.3} .mtbl .symbtn .muted{display:block;font-size:12px} .mtbl .sig{display:table;margin:3px 0 0} }
+@media(max-width:640px){ .mtbl{min-width:0} .mtbl td,.mtbl th{padding:8px 5px;font-size:13px} .mtbl td:first-child{min-width:0;width:104px;max-width:104px;white-space:normal;line-height:1.25} .mtbl .symbtn .muted{display:block;font-size:11.5px} .mtbl .sig{display:table;margin:3px 0 0;font-size:11px} }
+.ddc{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px} .ddc i{display:block;width:34px;height:4px;background:#ebe9e3;border-radius:2px;overflow:hidden} .ddc i b{display:block;height:100%;margin-left:auto}
+.rc{display:inline-block;min-width:26px;padding:1px 4px;border-radius:4px;text-align:center;font-weight:600;background:#f0eee8}
+.rc.lo{background:var(--down);color:#fff} .rc.lo2{background:#dbe6fb;color:#1d3f99} .rc.hi{background:var(--bad);color:#fff}
+.mtbl td.px{color:var(--ink2)}
 .sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 .sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
 .cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cl-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .cl-v{font-size:26px;font-weight:800;color:var(--dn,#1d4ed8)}
+.cl{position:relative;margin:14px 0 2px;height:14px} .cl-tr{display:flex;height:14px;border-radius:7px;overflow:hidden} .cl-tr .z0{background:#eef3ef} .cl-tr .z1{background:#f6ecd0} .cl-tr .z2{background:#f6dcd8}
+.cl-mk{position:absolute;top:-4px;width:5px;height:22px;margin-left:-2.5px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 2px #fff}
+.cl-t{position:absolute;top:0;width:1px;height:14px;background:rgba(0,0,0,.25)} .cl-t.ca{background:rgba(180,35,24,.55)}
+.cl-lb{position:relative;height:16px;font-size:11px;color:var(--ink2)} .cl-lb i{position:absolute;transform:translateX(-50%);font-style:normal} .cl-lb i:first-child{transform:none} .cl-lb i:last-child{transform:translateX(-100%)}
+.cl-st{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:10px;font-size:13.5px}
+.pill2{display:inline-block;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;background:#ebe9e3;color:var(--ink2);margin-right:4px} .pill2.on{background:var(--accent);color:#fff}
+.trg{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px} .trg .tr{border-radius:8px;padding:6px 4px;text-align:center;background:#f3f2ee;border:1px solid var(--line)}
+.trg .a{font-size:11.5px;color:var(--ink2)} .trg .b{font-weight:800;font-size:15px} .trg .c{font-size:12.5px} .trg .d{font-size:11.5px;font-weight:700;color:var(--ink2);margin-top:2px}
+.trg .done{background:#e6f2eb;border-color:#b9dbc7} .trg .done .d{color:var(--ok)} .trg .go{background:var(--accent);border-color:var(--accent);color:#fff} .trg .go .a,.trg .go .d{color:#fff} .trg .wait{background:#fdf0e6;border-color:#f0c9a8} .trg .wait .d{color:var(--accent)}
+.crs{display:grid;gap:6px;margin-top:12px;font-size:13.5px;line-height:1.45}
+.stp{display:flex;gap:4px;margin:0 0 8px;overflow-x:auto} .stp span{flex:1;min-width:64px;text-align:center;font-size:12px;padding:6px 2px;border-radius:6px;background:#ebe9e3;color:var(--ink2);white-space:nowrap} .stp span.on{background:var(--brand);color:#fff;font-weight:700}
+dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act dt{font-size:12.5px;color:var(--ink2);font-weight:700} dl.act dd{margin:0;font-size:14px}
+.swt{display:grid;font-size:13px;margin-top:4px} .swt>div{display:grid;grid-template-columns:64px 1fr auto;gap:6px;padding:5px 0;border-bottom:1px solid var(--line)} .swt .hd{font-size:11.5px;color:var(--ink2);font-weight:700}
+.swl{display:grid;gap:10px} .swl .sw{padding-bottom:8px;border-bottom:1px solid var(--line);font-size:13.5px} .swl .sw.on{background:var(--accent-soft);padding:8px;border-radius:8px} .swl .h{display:flex;align-items:center;gap:6px} .swl .h .pill2{margin-left:auto}
 .lgd{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12.5px;margin-top:10px} .lgd .sig{margin-left:0} .lgd.muted{margin-top:6px;color:var(--ink2)} .lsep{color:var(--line)}
 .mlgd{margin:2px 0 4px;color:var(--ink2)} .mlgd>span{white-space:nowrap}
 .lc{display:inline-block;padding:1px 8px;border-radius:4px;color:var(--ink)} .lc.buy{background:#e6f2eb;box-shadow:inset 4px 0 0 var(--ok)} .lc.hot{background:#fdf1ef;box-shadow:inset 4px 0 0 var(--bad)}
@@ -1259,30 +1278,39 @@ function vCrash(){
   const stIdx = E.state;
   return `
   <h2>현재 위치</h2>
+  <div class="panel">${crashLadder(am)}</div>
+  <h2>현금 ${RULES.tranches.length}차 투입 <span class="muted" style="font-size:15px;font-weight:500">잔액 ${won(am.bal)}</span></h2>
   <div class="panel">
-    <p class="lead">QQQ 고점 대비 <b>${pct(E.dd)}</b> · 200일선 ${pct(E.q.vs200)} · RSI ${num(E.q.rsi,1)} · 상태 <b>${E.state}. ${RULES.states[E.state].name}</b></p>
-    ${ddBar(E.dd)}
+    <div class="trg">${am.list.map(t=>{ const isNow = am.action && am.action.t.n===t.n;
+      const st = t.done? ["done","완료"] : isNow? (am.action.ready? ["go","집행"] : am.action.pre? ["go","절반 선집행"] : ["wait","대기"]) : t.reached? ["wait","도달"] : ["off","미도달"];
+      return `<div class="tr ${st[0]}"><div class="a">${t.n}차</div><div class="b">${t.dd}%</div><div class="c">${t.pct}%</div><div class="d">${st[1]}</div></div>`; }).join("")}</div>
+    <p class="muted" style="margin:8px 0 0">칸 = 차수 · QQQ 고점 대비 · 모아둔 돈 중 투입 비율 · 상태. 집행은 보조지표 2개 충족일에 3~5거래일 분할.</p>
+    ${am.action? `<p style="margin:8px 0 0"><b>지금: ${am.action.t.n}차 ${am.action.ready? "집행" : "보조지표 대기"}</b> · ${mixText(am.action.t.mix)}</p>` : ""}
+    ${(()=>{const bo=planBoost(E); return `<div class="crs">
+      <div><span class="pill2 ${bo.fire?"on":""}">반등 가속</span> −20%↓ 뒤 200일선 +3% 2일 회복 → 장투 SGOV 50%(${won(bo.amt)}) → QLD, 재이탈 시 그 몫만 손절</div>
+      <div><span class="pill2 ${am.settle?"on":""}">회복 정산</span> 전고점 회복 → 현금으로 산 종목(${won(am.invVal||0)}) 절반 SGOV, 절반 장투로</div>
+      <div><span class="pill2">집행 순서</span> ① 현금(SGOV) → ② IRP 안전자산 → ③ 기존 1배 일부 전환(4단계만)</div></div>`;})()}
+    <details class="mexp"><summary><b>세부 규칙 보기</b></summary><ul class="mx">
+      <li><b>차수별 종목</b> ${am.list.map(t=>`${t.n}차 ${mixText(t.mix)}`).join(" · ")}. ${RULES.tranches.length}차는 남은 잔액 전부, 나머지는 그 시점 잔액 대비 비율로 계산합니다.</li>
+      <li><b>반등 가속</b> QQQ가 5년 고점 대비 −20% 이상 빠진 뒤 200일선을 +3% 위로 2일 연속 회복하면 장투 현금 풀 SGOV의 50%를 QLD로 옮깁니다. 현금 계좌는 ${RULES.tranches.map(t=>t.dd).join("/")}% 규칙만 따릅니다. 다시 추세이탈하면 그 몫만 SGOV로 되돌립니다.</li>
+      <li><b>회복 정산</b> 매도분은 해외주식 양도세 대상(연 250만 공제 후 22%, 직투 계좌 합산). 큰 차익은 배우자 증여(10년 6억 공제, 3개월 내 신고) 후 매도, 단 증여 후 1년 안에 팔면 이월과세. 이관은 미래에셋 해외주식 대체 출고로 가능하면 세금이 없습니다. 정산 후 1차부터 다시 시작합니다.</li>
+      <li><b>위험 제한</b> 장투 1배·QLD는 가격 손절하지 않고 QLD 30% 상한, TQQQ 총자산 10% 상한, HY 6% 규칙으로 제한합니다. 전고점 회복 시 차수를 초기화하고 TQQQ는 전량 QLD·QQQM으로, 2층 QLD는 절반을 QQQM으로 옮깁니다.</li>
+    </ul></details>
   </div>
-  <h2>현금 ${RULES.tranches.length}차 투입 (잔액 ${won(am.bal)})</h2>
-  <div class="panel"><ol class="steps">
-    ${am.list.map(t=>{ const isNow = am.action && am.action.t.n===t.n; return `<li class="${t.done?"done":""} ${isNow?"now":""}">
-      <b>${t.n}차 · QQQ ${t.dd}%${t.n===RULES.tranches.length?" 이하":""}</b> — ${"모아둔 돈의 "+t.pct+"%"+(t.n===RULES.tranches.length? " = 남은 잔액 전부":" = 그 시점 잔액의 "+t.rem+"%")} · ${mixText(t.mix)}
-      <div class="muted">${t.done? "집행 완료" : t.reached? (isNow? (am.action.ready? "도달 · 보조지표 충족 → 이번 주 3~5거래일 분할 집행" : "도달 · 보조지표 2개 충족일까지 대기") : "도달") : (isNow && am.action.pre? "RSI 30 선도착 → 절반 선집행" : "미도달")}</div></li>`; }).join("")}
-  </ol>
-  ${(()=>{const bo=planBoost(E); return `<p><b>반등 가속</b> — QQQ가 5년 고점 대비 −20% 이상 빠진 뒤 200일선을 +3% 위로 2일 연속 회복하면, 장투 현금 풀 SGOV의 50%(지금 기준 ${won(bo.amt)})를 QLD로 옮깁니다. 현금 계좌는 ${RULES.tranches.map(t=>t.dd).join("/")}% 규칙만 따릅니다. 다시 추세이탈하면 그 몫만 SGOV로 되돌리고, 전고점을 회복하면 초기화합니다(한 사이클 2회까지). 현재: 이번 사이클 최저 ${pct(bo.cm,1)} · ${bo.fire? "<b>지금 실행 조건</b>" : bo.stop? "<b>손절 조건</b>" : bo.deep? "−20% 도달, 회복 신호 대기" : "−20% 미도달 (대기)"}${bo.held? " · 가속분 보유 중":""}.</p>`})()}
-  <p><b>회복 정산</b> — QQQ가 전고점을 되찾으면 현금으로 산 종목(현재 ${won(am.invVal||0)})의 <b>절반은 매도해 SGOV로</b> 다시 현금화하고, <b>나머지 절반은 장투 계좌로</b> 옮깁니다. 이후 1차부터 다시 시작합니다. ${am.settle? "<b>지금 정산 대상입니다.</b>" : ""}<br><span class="muted">매도분은 해외주식 양도세 대상(연 250만 공제 후 22%, 직투 계좌 합산). 큰 차익은 배우자 증여(10년 6억 공제, 3개월 내 증여세 신고) 후 매도 — 단 증여 후 1년 안에 팔면 원래 취득가로 과세(이월과세). 이관은 미래에셋 해외주식 대체 출고로 가능하면 세금이 없습니다.</span></p>
-  <p class="note">집행 순서: ① 현금(SGOV) → ② IRP 안전자산 → ③ 마지막으로 기존 1배 일부 전환(직투는 양도세 22% 발생, 4단계에서만). 장투 1배·QLD는 가격 손절하지 않습니다. 대신 QLD 30% 상한, TQQQ 총자산 10% 상한, HY 6% 규칙으로 위험을 제한합니다. QQQ가 전고점을 회복하면 차수를 초기화하고 TQQQ는 전량 QLD·QQQM으로, 2층 QLD는 절반을 QQQM으로 옮깁니다.</p></div>
 
-  <h2>상황별 행동표</h2>
-  <div class="tbl"><table style="min-width:720px">
-    <tr><th>상태</th><th class="l">1배 지수 (장투·연금)</th><th class="l">QLD (장투)</th><th class="l">스윙 (직투 700만·IRP)</th><th class="l">현금</th></tr>
-    ${[[1,"평소 적립. IRP 위험 55~60%","−2% 음봉일 적립. 과열 2개↑면 보류→SGOV","지수 −2% 음봉·섹터 급락 소액 매수","대기·적립 (SGOV)"],
+  ${(()=>{ const R=[[1,"평소 적립. IRP 위험 55~60%","−2% 음봉일 적립. 과열 2개↑면 보류→SGOV","지수 −2% 음봉·섹터 급락 소액 매수","대기·적립 (SGOV)"],
        [2,"적립 유지","적립 비중 확대 (낙폭표)","빅테크 200일선 −5% 이하 1차 사다리 시작","대기"],
        [3,"계속 산다. IRP 62~65%","최대 4주에 나눠 매수(주수 기준). 손절 없음, 30% 상한","QLD·섹터 ETF 분할 매수, 빅테크 2·3차","−25% 1차 5%, −30% 2차 10% (보조지표 확인)"],
        [4,"계속 산다. IRP 70%","적립금 대부분 QLD, TQQQ 소량","3배는 하루 −30%·고점 −80%에서만 관심","−35/−40/−50/−60%에 15/15/25/30%"],
-       [5,"평소 적립 복귀. IRP 55~60%","평소 규칙. 30% 초과분 QQQM","평소","전고점 회복 시 차수 초기화"]]
-      .map(r=>`<tr${r[0]===stIdx?' style="background:var(--accent-soft)"':""}><td><b>${r[0]}. ${RULES.states[r[0]].name}</b></td>${r.slice(1).map(c=>`<td class="l">${c}</td>`).join("")}</tr>`).join("")}
-  </table></div>
+       [5,"평소 적립 복귀. IRP 55~60%","평소 규칙. 30% 초과분 QQQM","평소","전고점 회복 시 차수 초기화"]];
+    const cur=R.find(r=>r[0]===stIdx)||R[0], lab=["1배 지수 (장투·연금)","QLD (장투)","스윙","현금"];
+    return `<h2>지금 상태에서 할 일</h2>
+  <div class="stp">${R.map(r=>`<span class="${r[0]===stIdx?"on":""}">${r[0]}. ${RULES.states[r[0]].name}</span>`).join("")}</div>
+  <div class="panel"><dl class="act">${lab.map((l,i)=>`<dt>${l}</dt><dd>${cur[i+1]}</dd>`).join("")}</dl>
+  <details class="mexp"><summary><b>상태별 전체 표 보기</b></summary><div class="tbl"><table style="min-width:720px">
+    <tr><th>상태</th><th class="l">1배 지수 (장투·연금)</th><th class="l">QLD (장투)</th><th class="l">스윙 (직투 700만·IRP)</th><th class="l">현금</th></tr>
+    ${R.map(r=>`<tr${r[0]===stIdx?' style="background:var(--accent-soft)"':""}><td><b>${r[0]}. ${RULES.states[r[0]].name}</b></td>${r.slice(1).map(c=>`<td class="l">${c}</td>`).join("")}</tr>`).join("")}
+  </table></div></details></div>`; })()}
 
   ${irp? `<h2>IRP 위험자산 비중</h2>
   <div class="panel">
@@ -1296,11 +1324,29 @@ function vCrash(){
   </div>`:""}
 
   ${sw? `<h2>스윙 계좌 (${won(sw.a.val)})</h2>
-  <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th class="l">구분</th><th class="l">조건</th><th class="l">현재</th><th>신호</th><th class="l">매수</th><th class="l">매도</th></tr>
-  ${sw.sig.sort((x,y)=>y.on-x.on || y.near-x.near).map(s=>`<tr${s.on?' style="background:var(--accent-soft)"':""}><td><b>${s.t}</b></td><td class="l muted">${esc(s.group)}</td><td class="l">${esc(s.cond)}</td><td class="l">${s.now}</td><td>${s.on? pill("ON","r") : s.near? pill("근접","n") : pill("–","n")}</td><td class="l">${s.buy}</td><td class="l muted">${esc(s.sell)}</td></tr>`).join("")}
-  </table></div>
-  <p class="note">레버리지가 클수록 더 깊이 빠졌을 때만 들어갑니다(빅테크 −30%, QLD −40%, TQQQ·SOXL −55%, 성장주 아이온큐·로켓랩 −70%, 모두 그 종목 RSI ≤ 30). 1회 계좌 25%(성장주는 12.5%), 동시 4개, 종목당 2회. 백테스트(2010~): 연 7.7%, 최대 낙폭 −22%, 같은 돈을 QQQ에 넣으면 18%라 장기 수익용이 아니라 폭락장에서 짧게 먹고 나오는 용도입니다. 신호 있는 달만 월 적립 20만을 보내고, 다 정리했을 때 이익의 50%는 장투로 옮깁니다. ${sw.panic? "<b>현재 공황 구간: 신규 진입 중단.</b>" : sw.m3? "<b>나스닥 −3% 경보: 1회 금액 절반.</b>" : ""}</p>`:""}
-  ${bigCutHTML(false)}`;
+  ${(()=>{ const L=sw.sig.slice().sort((x,y)=>y.on-x.on || y.near-x.near), hot=L.filter(x=>x.on||x.near), wait=L.filter(x=>!x.on&&!x.near);
+    return `<div class="panel swl">${hot.map(s=>`<div class="sw ${s.on?"on":"near"}"><div class="h"><b>${s.t}</b> <span class="muted">${esc(s.group)}</span><span class="pill2 ${s.on?"on":""}">${s.on?"ON":"근접"}</span></div><div class="n">${s.now}</div><div class="muted">${esc(s.cond)} · ${s.buy}</div></div>`).join("") || `<p class="muted" style="margin:0">진입·근접 신호 없음</p>`}
+    ${wait.length? `<div class="swt"><div class="hd"><span>대기</span><span>지금</span><span>진입 기준</span></div>${wait.map(s=>`<div><b>${s.t}</b><span>${s.now}</span><span class="muted">${s.th!=null? s.th+"%":""}${s.m==="b"? " 이격":""} · RSI 30</span></div>`).join("")}</div>`:""}`; })()}
+  <details class="mexp"><summary><b>매도 규칙·설명 보기</b></summary><ul class="mx">
+    <li><b>일반 스윙 (빅테크·레버리지·성장주)</b> ${esc(SWING_EXIT)}</li>
+    <li><b>QLD 반등 (40주)</b> ${esc(BOUNCE_EXIT)}</li>
+    <li>레버리지가 클수록 더 깊이 빠졌을 때만 들어갑니다(빅테크 −30%, QLD −40%, TQQQ·SOXL −55%, 성장주 −70%, 모두 그 종목 RSI ≤ 30). 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회.</li>
+    <li>백테스트(2010~): 연 7.7%, 최대 낙폭 −22%(같은 돈을 QQQ에 넣으면 18%). 장기 수익용이 아니라 폭락장에서 짧게 먹고 나오는 용도입니다. 신호 있는 달만 월 적립 20만, 다 정리했을 때 이익 50%는 장투로.</li>
+  </ul></details></div>
+  ${sw.panic? `<div class="alert bad">현재 공황 구간: 스윙 신규 진입 중단.</div>` : sw.m3? `<div class="alert">나스닥 −3% 경보: 스윙 1회 금액 절반.</div>` : ""}`:""}
+  ${bigCutHTML(true) || `<details class="panel mexp"><summary><b>빅컷 안전장치 · 대기 중 (규칙 보기)</b></summary>${bigCutHTML(false)}</details>`}`;
+}
+// 11-15 Ben: 폭락 대응 현재 위치 사다리. 0~−60%, 장투 하락 단계(−10/−15/−20/−30)와 현금 차수(−25~−60) 표시
+function crashLadder(am){
+  const dd=E.dd??0, v=Math.min(60,Math.max(0,-dd)), P=x=>x/60*100;
+  const lt=[-10,-15,-20,-30], ca=RULES.tranches.map(t=>t.dd);
+  return `<div class="cl-hd"><span class="cl-v">${pct(dd,1)}</span><span class="muted">QQQ 5년 고점 대비</span><span class="pill2 on">${E.state}. ${esc(RULES.states[E.state].name)}</span></div>
+    <div class="cl"><div class="cl-tr"><span style="width:${P(10)}%" class="z0"></span><span style="width:${P(15)}%" class="z1"></span><span style="width:${P(35)}%" class="z2"></span></div>
+      <i class="cl-mk" style="left:${P(v).toFixed(1)}%"></i>
+      ${lt.map(x=>`<i class="cl-t lt" style="left:${P(-x)}%"></i>`).join("")}${ca.map(x=>`<i class="cl-t ca" style="left:${P(-x)}%"></i>`).join("")}</div>
+    <div class="cl-lb">${[0,-10,-20,-30,-40,-50,-60].map(x=>`<i style="left:${P(-x)}%">${x}</i>`).join("")}</div>
+    <div class="lgd"><span class="lc" style="background:#eef3ef">평상</span><span class="lc" style="background:#f6ecd0">장투 하락 단계 (−10·−15·−20·−30)</span><span class="lc" style="background:#f6dcd8">현금 사다리 (${ca.join("·")})</span></div>
+    <div class="cl-st"><span>200일선 <b>${pct(E.q.vs200,1)}</b></span><span>RSI <b>${num(E.q.rsi,1)}</b></span><span>다음 현금 차수 <b>${(()=>{const n=am.list.find(t=>!t.reached); return n? n.n+"차 "+n.dd+"% (남은 "+num(dd-n.dd,1)+"%p)" : "모두 도달";})()}</b></span></div>`;
 }
 function ddBar(dd){
   const marks=[-10,-15,-20,-30]; const w=v=>Math.min(100,Math.abs(v)/40*100);
@@ -1630,10 +1676,10 @@ function vMarket(){
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <b class="dn">≤30</b> · <b class="up">≥70</b></span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
+  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <span class="rc lo">30↓</span> <span class="rc lo2">40↓</span> <span class="rc hi">70↑</span></span><span>40주 ▲골든 ▼데드</span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table class="mtbl">
-    <tr><th>종목</th><th>현재가</th><th>일간</th><th>40주선</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
-    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td>${w40Cell(s.w40)}<td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
+    <tr><th>종목</th><th>일간</th>${th(g,"dd","고점")}${th(g,"v200","200일")}${th(g,"rsi","RSI")}<th>40주</th>${th(g,"bb","%B")}<th>현재가</th><th class="l">6개월</th></tr>
+    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${cpct(s.chg,1)}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
   <details class="panel mexp"><summary><b>표·지표 설명 보기</b></summary>
     <ul class="mx">
@@ -1650,10 +1696,14 @@ function vMarket(){
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
 }
 // 11-14 Ben: 종목별 주봉 40주선. 마지막 크로스 종류 + 경과 주수(마감 주 기준), 이번 주 진행 중 뒤집히면 표시
+// 11-15 Ben: 시세 표 압축. 고점 대비는 숫자 + 작은 막대(−60%까지), RSI는 색 칩
+function ddCell(d){ if(d==null) return "–"; const w=Math.min(100,Math.abs(d)/60*100), c=d<=-30?"var(--bad)":d<=-10?"#d99a00":"#9bb8a8";
+  return `<span class="ddc"><span>${num(d,0)}%</span><i><b style="width:${w.toFixed(0)}%;background:${c}"></b></i></span>`; }
+function rsiChip(r){ if(r==null) return "–"; const c=r<=30?"lo":r<=40?"lo2":r>=70?"hi":""; return `<span class="rc ${c}">${num(r,0)}</span>`; }
 function w40Cell(w){
   if(!w) return `<td class="muted">–</td>`;
-  const lab = w.cross? `${w.cross==="golden"?"골든":"데드"} ${w.weeks? w.weeks+"주":"신규"}` : (w.up?"위":"아래");
-  const flip = w.live_up!==w.up? ` <span class="muted" title="이번 주 진행 중 40주선 ${w.live_up?"위로":"아래로"}, 금요일 종가로 확정">(이번 주 ${w.live_up?"↑":"↓"})</span>` : "";
+  const lab = w.cross? `${w.cross==="golden"?"▲":"▼"}${w.weeks? w.weeks+"주":"신규"}` : (w.up?"위":"아래");
+  const flip = w.live_up!==w.up? `<span class="muted" title="이번 주 진행 중 40주선 ${w.live_up?"위로":"아래로"}, 금요일 종가로 확정">→${w.live_up?"↑":"↓"}</span>` : "";
   return `<td class="${w.up?"up":"dn"}" title="40주선 ${num(w.ma,2)} · 종가 ${num(w.close,2)} (${w.gap>0?"+":""}${num(w.gap,1)}%)"${w.weeks!=null&&w.weeks<=1?' style="font-weight:700"':""}>${lab}${flip}</td>`;
 }
 function bindMarket(){
