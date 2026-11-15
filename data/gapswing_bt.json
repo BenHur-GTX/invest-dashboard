@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-15T09:01:57Z",
+ "generated": "2026-11-15T09:03:55Z",
  "notes": [
   "전체 = 5계좌 합산, 장투 = 장투 계좌 + 스윙으로 돌린 몫 제외",
   "스윙 진입: 스윙 모드 중 QQQ 일봉 RSI ≤ 30이면 계좌 25%씩(최대 4개, 5거래일 간격)",
@@ -16,7 +16,7 @@
    "total_irr": 14.3,
    "total_worst": -35.6,
    "total_mdd": -33.2,
-   "end_man": 1271787,
+   "end_man": 1271788,
    "lt_irr": 16.88,
    "trades": 0,
    "win_pct": null,
@@ -594,7 +594,7 @@
    "total_irr": 18.51,
    "total_worst": -4.8,
    "total_mdd": -21.1,
-   "end_man": 169233,
+   "end_man": 169234,
    "lt_irr": 23.45,
    "trades": 2,
    "win_pct": 50,

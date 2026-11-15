@@ -170,6 +170,10 @@ tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var
 .sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 .sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
 .cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.lgd{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12.5px;margin-top:10px} .lgd .sig{margin-left:0} .lgd.muted{margin-top:6px;color:var(--ink2)} .lsep{color:var(--line)}
+.mlgd{margin:2px 0 4px;color:var(--ink2)} .mlgd>span{white-space:nowrap}
+.lc{display:inline-block;padding:1px 8px;border-radius:4px;color:var(--ink)} .lc.buy{background:#e6f2eb;box-shadow:inset 4px 0 0 var(--ok)} .lc.hot{background:#fdf1ef;box-shadow:inset 4px 0 0 var(--bad)}
+.mexp{margin-top:18px} .mexp summary{cursor:pointer} .mx{margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink2)} .mx li{margin:4px 0} .mx b{color:var(--ink)}
 .cands button{all:unset;cursor:pointer;font-size:13.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s ease,background-color .15s ease}
 .cands button:hover{border-color:var(--brand)} .cands button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
@@ -1496,7 +1500,8 @@ function candidatesHTML(S){
   return `<div class="panel"><b>지금 매수 후보</b> <span class="muted">· 누르면 차트</span>
     ${list.length? `<div class="cands">${list.map(([t,s,b])=>`<button type="button" class="s${b.lv}" data-chart="${esc(t)}" title="${esc(b.why)}"><b>${esc(t)}</b> ${esc(b.label)} <span class="muted">${esc(b.why)}</span></button>`).join("")}</div>`
       : `<p class="muted" style="margin:6px 0 0">조건을 채운 종목이 없습니다. 이번 달은 기존 적립 규칙대로 사면 됩니다.</p>`}
-    <p class="note">기준 · ETF(QQQM·SPYM·MGK·배당·O·금·BITO): RSI ≤ 35, 200일선 아래, 볼린저 하단, 1년 고점 −10% 이하 중 <b>3개↑ 매수 적기</b>, 2개 분할 매수 고려. 개별 빅테크: 1년 고점 −30% 이하 + RSI ≤ 30이면 <b>드문 매수 기회</b>(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰. RSI ≥ 70이면서 200일선 +10% 이상은 과열·보류. 레버리지·섹터는 기존 규칙(오늘·폭락 대응 탭)을 따릅니다. 표시 기준은 아직 백테스트 전 초안입니다.</p></div>`;
+    <div class="lgd"><span class="sig s2">매수 적기</span><span>4개 중 3개↑</span><span class="sig s1">분할 매수 고려</span><span>2개</span><span class="sig sh">과열·보류</span><span>RSI 70↑ + 200일선 +10%↑</span></div>
+    <div class="lgd muted">4개 = RSI ≤ 35 · 200일선 아래 · 볼린저 하단 · 1년 고점 −10%↓ · 빅테크·성장주 기준은 맨 아래 설명</div></div>`;
 }
 // 매수 후보 → 계좌 (계좌 역할 기준, 11-14 Ben). 후보는 돈을 더 넣는 게 아니라 그 계좌의 이번 달 몫·현금 안에서 우선순위를 바꿉니다
 function acctFor(t, s){
@@ -1625,11 +1630,23 @@ function vMarket(){
     return r; };
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <p class="muted">MDD = 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비). 상승 빨강, 하락 파랑. RSI 30 이하 파랑·70 이상 빨강. 볼린저 %B = 20일 밴드 안 위치(0 아래면 하단 이탈). 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서로 바뀝니다. 종목 줄을 누르면 차트가 열립니다(기본 3년 주봉 + 40주선과 골든▲·데드▼ 지점, 6개월·1년은 일봉 50·200일선). 뒤로 가기로 닫힙니다. 초록 줄은 매수 후보, 빨강 줄은 과열입니다. 성장주(아이온큐·로켓랩)는 모니터링용: 1년 고점 −70% + RSI 30 이하일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI 40 이하면 관찰로 표시합니다. 스페이스X(SPCX)는 2026년 6월 상장이라 200일선이 아직 없습니다. 40주선 = 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈) 크로스와 경과 주수(마감 주 기준), 신규는 지난주 마감에서 막 바뀐 것, 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 이번 주에 반대로 넘어간 상태(금요일 종가로 확정). 휴대폰에서는 표를 옆으로 밀어서 보세요.</p>
+  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <b class="dn">≤30</b> · <b class="up">≥70</b></span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table class="mtbl">
     <tr><th>종목</th><th>현재가</th><th>일간</th><th>40주선</th>${th(g,"dd","고점 대비")}${th(g,"v200","200일선")}${th(g,"rsi","RSI")}${th(g,"bb","볼린저 %B")}<th class="l">6개월</th></tr>
     ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td>${cpct(s.chg,2)}</td>${w40Cell(s.w40)}<td>${cpct(s.dd_ath ?? s.dd52,1)}</td><td>${cpct(s.vs200,1)}</td><td class="${rsiCls(s.rsi)}"${s.rsi!=null&&(s.rsi<=30||s.rsi>=70)?' style="font-weight:700"':""}>${num(s.rsi,0)}</td><td${s.bb_break?' class="dn"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0)+(s.bb_break?" 이탈":""):"–"}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
+  <details class="panel mexp"><summary><b>표·지표 설명 보기</b></summary>
+    <ul class="mx">
+      <li><b>매수 후보 (ETF: QQQM·SPYM·MGK·배당·O·금·BITO)</b> RSI ≤ 35, 200일선 아래, 볼린저 하단, 1년 고점 −10% 이하 중 3개↑ 매수 적기, 2개 분할 매수 고려. RSI ≥ 70이면서 200일선 +10% 이상은 과열·보류. 레버리지·섹터는 오늘·폭락 대응 탭 규칙을 따릅니다. 아직 백테스트 전 초안 기준입니다.</li>
+      <li><b>빅테크</b> 1년 고점 −30% 이하 + RSI ≤ 30이면 드문 매수 기회(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰.</li>
+      <li><b>성장주 (아이온큐·로켓랩)</b> 모니터링용. 1년 고점 −70% + RSI ≤ 30일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI ≤ 40이면 관찰.</li>
+      <li><b>고점 대비</b> 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비).</li>
+      <li><b>볼린저 %B</b> 20일 밴드 안 위치. 0 아래면 하단 이탈.</li>
+      <li><b>40주선</b> 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈)와 경과 주수(마감 주 기준). 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 주에 반대로 넘어간 상태(금요일 종가로 확정).</li>
+      <li><b>차트</b> 기본 3년 주봉 + 40주선, 골든▲·데드▼ 지점, 이격도·RSI 패널. 6개월·1년은 일봉 50·200일선. 뒤로 가기로 닫힙니다.</li>
+      <li><b>정렬</b> 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서.</li>
+      <li><b>SPCX</b> 2026년 6월 상장이라 200일선이 아직 없습니다.</li>
+    </ul></details>
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
 }
 // 11-14 Ben: 종목별 주봉 40주선. 마지막 크로스 종류 + 경과 주수(마감 주 기준), 이번 주 진행 중 뒤집히면 표시
