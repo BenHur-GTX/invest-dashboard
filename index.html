@@ -1063,11 +1063,10 @@ function renderHero(){
   const cMA=q.vs200==null?"n": q.vs200>=0? "g" : q.vs200>-5? "y":"r", cV=E.vix==null?"n": E.vix>=30? "r" : E.vix>=20? "y":"g";
   // 11-15 Ben: 다음 현금 차수·200일선 칸 대신 금리(10년물 + 기준금리)·고용
   const mm=E.M.macro||{}, LL=Object.fromEntries(E.L.map(l=>[l.t,l])), Lr=LL["금리 사이클"], Lt=LL["장기금리 (미 10년물)"], Le=LL["고용"], Ll=LL["유동성"], Lc=LL["신용"], nl=mm.netliq;
-  const rk={r:3,y:2,g:1,n:0}, cR=[Lr?.c||"n", Lt?.mode??Lt?.c??"n"].sort((a,b)=>rk[b]-rk[a])[0];
   const cF=E.fng==null?"n": E.fng<=25? "r" : E.fng<=45? "y" : E.fng>=80? "r" : "g";
   $("#hero").innerHTML = `
     <div class="mode"><div class="k">${D(E.mode.c)}거시 모드</div><div class="v">${esc(E.mode.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
-    <div><div class="k">${D(cR)}금리 10Y</div><div class="v">${mm.dgs10?.v!=null? num(mm.dgs10.v,2)+"%":"–"}</div><div class="s">기준 ${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}<br>${esc(Lr?.st||"–")}</div></div>
+    <div><div class="k">${D(Lr?.c||"n")}기준금리</div><div class="v">${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}</div><div class="s">연준<br>${esc(Lr?.st||"–")}</div></div>
     <div><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
     <div><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
     <div><div class="k">${D(Lc?.c||"n")}신용</div><div class="v">${mm.hy?.v!=null? num(mm.hy.v,2)+"%":"–"}</div><div class="s">하이일드<br>${esc(Lc?.st||"–")}</div></div>
