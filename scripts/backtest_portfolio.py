@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC") or os.environ.get("ONLY_GSW")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_DUMP") or os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC") or os.environ.get("ONLY_GSW")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -1634,10 +1634,21 @@ def swing_study2(D):
     json.dump(out, open(os.path.join(B.DATA, "swing2_bt.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+def dump_series(D):
+    """11-14: 반등 스윙 규칙 최적화용 일별 시계열 덤프 → data/_series.json (분석 후 삭제)"""
+    P = D["P"]
+    out = {"dates": D["dates"], "c": [round(x, 4) for x in D["c"]], "qqq": [round(x, 5) for x in P["QQQ"]],
+           "qld": [round(x, 5) for x in P["QLD"]], "tqqq": [round(x, 6) for x in P["TQQQ"]], "sgov": [round(x, 5) for x in P["SGOV"]],
+           "rsi": [round(x, 2) if x is not None else None for x in D["rsi"]], "wrsi": [round(x, 2) if x is not None else None for x in D["wrsi"]]}
+    json.dump(out, open(os.path.join(B.DATA, "_series.json"), "w"), separators=(",", ":"))
+
+
 def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_DUMP"):
+        dump_series(D); print("ok"); return
     if os.environ.get("ONLY_GSW"):
         gapswing_study(D); print("ok"); return
     if os.environ.get("ONLY_GAP"):
