@@ -1643,7 +1643,21 @@ def dump_series(D):
     json.dump(out, open(os.path.join(B.DATA, "_series.json"), "w"), separators=(",", ":"))
 
 
+def dump_years():
+    """11-15: 연봉 연구용 지수 일봉 → data/_years.json (분석 후 삭제)"""
+    out = {}
+    for s in ["^GSPC", "^IXIC", "^NDX", "^DJI"]:
+        try:
+            r = B.yahoo(s, "max"); out[s] = [(x[0], x[4]) for x in r if x[4]]; print("yahoo", s, len(r), flush=True)
+        except Exception as e:
+            print("yahoo fail", s, e, flush=True)
+        time.sleep(0.4)
+    json.dump(out, open(os.path.join(B.DATA, "_years.json"), "w"), separators=(",", ":"))
+
+
 def main():
+    if os.environ.get("ONLY_YEARS"):
+        dump_years(); print("ok"); return
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]

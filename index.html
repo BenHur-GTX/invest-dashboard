@@ -277,6 +277,13 @@ input.ro{background:#f3f2ee;color:var(--ink2)}
 .gseg span.on.g{background:var(--ok)} .gseg span.on.y{background:#d99a00} .gseg span.on.r{background:var(--bad)}
 .gsegl{display:flex;gap:3px;font-size:11px;color:var(--ink2)} .gsegl i{flex:1;font-style:normal;text-align:center} .gsegl i.on{color:var(--ink);font-weight:700}
 .gzrow .d{font-size:12px;color:var(--ink2);margin-top:2px}
+.msum{display:flex;align-items:center;gap:14px;padding:4px 0 14px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tlamp{display:flex;flex-direction:column;gap:4px;background:#2b2a27;padding:6px;border-radius:10px;flex:none}
+.tlamp i{width:18px;height:18px;border-radius:50%;background:#4a4843}
+.tlamp i.on.r{background:#e5483b;box-shadow:0 0 8px #e5483b} .tlamp i.on.y{background:#f0b400;box-shadow:0 0 8px #f0b400} .tlamp i.on.g{background:#2fb36b;box-shadow:0 0 8px #2fb36b}
+.msum .mn{font-size:22px;font-weight:800;line-height:1.15} .msum .mn.r{color:var(--bad)} .msum .mn.y{color:#9a6a00} .msum .mn.g{color:var(--ok)} .msum .mn.n{color:var(--ink2)}
+.msum .mc{font-size:13px;color:var(--ink2);margin-top:2px} .msum .ma{font-size:13px;margin-top:4px}
+.mdots{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-size:12px;color:var(--ink2)} .mdots span{display:inline-flex;align-items:center;gap:4px}
 .gsum{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:14px} .gsum .gseg{flex:1;margin:0}
 .fxk{font-size:12px;margin:2px 0 0}
 .nlist{margin-top:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
@@ -1060,8 +1067,8 @@ function vToday(){
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
   ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#plan">이번 달 매수</a> 탭 맨 위에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
-  <h2>거시 신호등 · <span class="${E.mode.c}">${esc(E.mode.name)} 모드</span></h2>
-  <div class="panel"><div class="gz">${macroGauges()}</div><p class="note">빨강 2개 이상이면 수비 모드: 신규 레버리지 중단, 현금은 1배로만. 빨강 1개 또는 노랑 2개면 중립.</p></div>
+  <h2>거시 신호등</h2>
+  <div class="panel">${macroSummary()}<div class="gz">${macroGauges()}</div></div>
   <h2>현금 투입 보조지표</h2>
   <div class="panel">${auxGauges()}</div>
   <div class="alerts">${alerts}</div>
@@ -1088,12 +1095,21 @@ function segGauge({t, c, st, vtxt, labels, idx, cols, d}){
     <div class="gseg">${labels.map((_,i)=>`<span class="${i===idx? "on "+cols[i]:""}"></span>`).join("")}</div>
     <div class="gsegl">${labels.map((l,i)=>`<i class="${i===idx?"on":""}">${esc(l)}</i>`).join("")}</div>${d? `<div class="d">${d}</div>`:""}</div>`;
 }
+function macroSummary(){
+  const lc=l=>l.mode??l.c, L=E.L, r=L.filter(l=>lc(l)==="r").length, y=L.filter(l=>lc(l)==="y").length, g=L.filter(l=>lc(l)==="g").length, m=E.mode;
+  const act = m.name==="수비"? "신규 레버리지 중단, 현금 투입은 1배 지수로만" : m.name==="중립"? "규칙대로 적립. −10% 구간 QLD 몫은 절반을 QQQM으로" : m.name==="공격"? "규칙대로 적립·레버리지 허용" : "데이터 갱신 대기";
+  const short={"금리 사이클":"금리","장기금리 (미 10년물)":"10년물","고용":"고용","유동성":"유동성","신용":"신용"};
+  return `<div class="msum"><div class="tlamp" aria-hidden="true"><i class="${m.c==="r"?"on r":""}"></i><i class="${m.c==="y"?"on y":""}"></i><i class="${m.c==="g"?"on g":""}"></i></div>
+    <div><div class="mn ${m.c}">${esc(m.name)} 모드</div><div class="mc">빨강 ${r} · 노랑 ${y} · 초록 ${g} <br>빨강 2개↑ 수비 · 빨강 1개 또는 노랑 2개↑ 중립</div>
+    <div class="ma"><b>${act}</b></div>
+    <div class="mdots">${L.map(l=>`<span><span class="dot ${lc(l)}"></span>${esc(short[l.t]||l.t)}</span>`).join("")}</div></div></div>`;
+}
 function macroGauges(){
   const m=E.M.macro||{}, L=Object.fromEntries(E.L.map(l=>[l.t,l])), out=[];
   { const l=L["금리 사이클"]; const lab=["인하기","동결","고점 동결","인상기","침체형 인하","긴급 인하"], cols=["g","g","y","y","r","r"];
     out.push(segGauge({t:"금리 사이클", c:l.c, st:l.st, labels:["인하","동결","고점 동결","인상","침체 인하","긴급 인하"], idx:lab.indexOf(l.st), cols, d:esc(l.d)})); }
   { const l=L["장기금리 (미 10년물)"], v=m.dgs10?.v;
-    out.push(gauge({t:"장기금리 (미 10년물)", c:l.c, st:l.st, vtxt:v!=null? num(v,2)+"%":"–", v, min:3, max:6.5, zones:[[4.5,"g"],[5,"y"],[5.5,"r"],[6.5,"r"]], ticks:[4.5,5,5.5], fmt:x=>x+"%", d:"판정: 5~5.5% 노랑, 5.5%↑ 빨강 · 화면 경고는 5%↑"})); }
+    out.push(gauge({t:"장기금리 (미 10년물)", c:l.c, st:l.st, vtxt:v!=null? num(v,2)+"%":"–", v, min:3, max:6.5, zones:[[4.5,"g"],[5.5,"y"],[6.5,"r"]], ticks:[4.5,5,5.5], fmt:x=>x+"%", d:"판정: 5~5.5% 노랑, 5.5%↑ 빨강 · 화면 경고는 5%↑"})); }
   { const l=L["고용"], v=m.sahm?.v, ic=m.icsa?.avg4??m.icsa?.v;
     out.push(gauge({t:"고용 (샴 룰)", c:l.c, st:l.st, vtxt:v!=null? num(v,2):"–", v, min:-0.2, max:0.8, zones:[[0.3,"g"],[0.5,"y"],[0.8,"r"]], ticks:[0.3,0.5], d:`실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"} (25만↑ 노랑, 30만↑ 빨강) · 실업률 ${num(m.unrate?.v,1)}%`})); }
   { const l=L["유동성"], nl=m.netliq, lab=["증가","4주 감소","13주 연속 감소","자금시장 경색"];
