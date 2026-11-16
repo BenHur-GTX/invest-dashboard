@@ -1106,8 +1106,15 @@ function swingOrdersHTML(so, title){
   ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
   </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회까지. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>`;
 }
+// 11-16 Ben: 장투+스윙(+현금 계좌) 레버리지 합산 노출. 규칙 변경 없이 표시·경고만 (직투 자산 30% 초과 시 노랑)
+const LEV_T = ["QLD","TQQQ","SOXL"];
+function levExposure(E){
+  const ids=["longterm","swing","ammo"], by={};
+  let v=0; E.acc.list.filter(a=>ids.includes(a.id)).forEach(a=>(a.pos||[]).forEach(p=>{ if(LEV_T.includes(p.t) && p.v>0){ v+=p.v; by[a.id]=(by[a.id]||0)+p.v; } }));
+  const tot=E.acc.directTotal||0; return tot>0? {v, tot, pct:v/tot*100, by} : null;
+}
 function vTrade(){
-  const sig = swingSignals(E), sw = planSwing(E), so = swingOrders(E);
+  const sig = swingSignals(E), sw = planSwing(E), so = swingOrders(E), lx = levExposure(E);
   const on = sig.filter(s=>s.on), near = sig.filter(s=>s.near);
   const st = (s)=> s.on? `<span class="sig s2">진입</span>` : s.near? `<span class="sig s1">근접</span>` : `<span class="muted">–</span>`;
   const row = s=>`<tr class="${s.on?"buy2":s.near?"buy1":""}"><td class="l"><button type="button" class="symbtn" data-chart="${esc(s.t)}"><b>${esc(s.t)}</b></button> <span class="muted">${esc(s.group)}</span></td><td>${st(s)}</td><td class="l">${esc(s.now)}</td><td class="l muted">${esc(s.cond)}</td></tr>`;
@@ -1127,6 +1134,7 @@ function vTrade(){
   <h2>지금 신호</h2>
   <div class="panel"><p><b>진입 ${on.length}</b> · 근접 ${near.length} · 감시 ${sig.length}종목 · 거시 ${esc(E.mode.name)}${sw?.scale<1? " (1회 금액 절반)":""}${sw?.panic? ` · <b class="dn">공황 구간(나스닥 −3%일 23일 내 4회↑)</b>`:""}</p>
   ${on.length||near.length? `<div class="tbl"><table>${head}${[...on,...near].map(row).join("")}</table></div>` : `<p class="muted">진입·근접 신호 없음. 스윙은 폭락기에만 켜집니다(2000년 이후 평균 연 12회, 평균 보유 6일).</p>`}
+  ${lx? `<p class="${lx.pct>30?"alert":"muted"}">레버리지 합산 (장투+스윙+현금 계좌): <b>${won(lx.v)}</b> = 직투 자산의 <b>${pct(lx.pct,1,false)}</b>${lx.pct>30? " — 30% 초과. 새 QLD·3배 진입 전에 한 번 더 확인하세요(규칙은 그대로).":""}${Object.keys(lx.by).length? " · "+Object.entries(lx.by).map(([k,v])=>`${ACC_LABEL[k]} ${won(v)}`).join(" · "):""}</p>`:""}
   <details class="mexp sm"><summary>감시 종목 전체 보기</summary><div class="tbl"><table>${head}${sig.map(row).join("")}</table></div></details></div>
   ${so? swingOrdersHTML(so, "오늘 주문 — 스윙 계좌") : `<p class="note">스윙 계좌 보유 내역이 열리면 오늘 살 주수까지 계산합니다(규칙 탭 맨 아래 키 등록).</p>`}
 
