@@ -327,7 +327,10 @@ td .inline input{width:78px}
 .ntag{flex:0 0 auto;min-width:64px;text-align:center;font-size:12px;font-weight:700;border-radius:4px;padding:1px 6px;background:#efede7;color:var(--ink)}
 .ntag.t-b{background:#dbe6f7;color:#1f3f7a} .ntag.t-s{background:#f6e3c8;color:#6b4200} .ntag.t-g{background:#f3e9c2;color:#5c4a00} .ntag.t-c{background:#e4dcf2;color:#3e2a6b} .ntag.t-y{background:#f6edc8;color:#5c4a00}
 
-.lfc{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a}
+.lfc{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#6250d6} .lfc [hidden]{display:none!important}
+.lfk{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:10px}
+.lfk>div{background:#fff;padding:8px 10px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px} .lfk .muted{flex-basis:100%;font-size:12px} .lfk b{font-size:17px} .lfk b.us{font-size:14px;color:var(--ink2);font-weight:600}
+@media (max-width:560px){.lfk{grid-template-columns:1fr}}
 .lfc .lfbar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px}
 .lfc .lfbar button{font:inherit;font-size:12.5px;padding:5px 10px;border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:999px;cursor:pointer;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
 .lfc .lfbar button:hover{border-color:#b9b6ad}
@@ -1982,7 +1985,7 @@ function vMacro(){
   const cards = E.L.map(l=>`<div class="light"><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
   const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
   return `<h2>금리 한눈에</h2>${ratesHTML(m)}
-  <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
+  <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
   <h2>거시 신호등 · 현재 모드: ${pill(E.mode.name,E.mode.c)}</h2>
   <div class="lights">${cards}</div>
@@ -2008,7 +2011,11 @@ function ratesHTML(m){
 }
 function liqInflChart(el, d, opt={}){
   const M=d.months, yoy=a=>a.map((v,i)=>i<12||v==null||a[i-12]==null? null : (v/a[i-12]-1)*100);
-  const S={ff:d.ff, m2:yoy(d.m2), cpi:yoy(d.cpi), core:yoy(d.core)};
+  const S={ff:d.ff, m2:yoy(d.m2), cpi:yoy(d.cpi), core:yoy(d.core), kr:d.krm2? yoy(d.krm2) : M.map(()=>null)};
+  // 11-16 Ben: 한·미 M2 비교 (한국은행 ECOS 161Y005, 평잔·계절조정)
+  const lastBoth=(()=>{for(let i=M.length-1;i>=0;i--) if(d.krm2?.[i]!=null && d.m2[i]!=null) return i; return -1;})(), i22=M.indexOf("2022-01");
+  const cum=a=>lastBoth>0&&i22>=0&&a[i22]? (a[lastBoth]/a[i22]-1)*100 : null, cKR=cum(d.krm2||[]), cUS=cum(d.m2);
+  const krHTML= lastBoth<0? `<p class="muted">한국 M2 데이터 없음</p>` : `<div class="lfk"><div><span class="muted">2022.1 → ${esc(M[lastBoth])} 누적</span><b>한국 +${num(cKR,1)}%</b><b class="us">미국 ${cUS>=0?"+":""}${num(cUS,1)}%</b>${cUS>0? `<span class="pill y">${num(cKR/cUS,0)}배</span>`:""}</div><div><span class="muted">지금 증가율 (전년 대비)</span><b>한국 ${num(S.kr[lastBoth],1)}%</b><b class="us">미국 ${num(S.m2[lastBoth],1)}%</b></div></div>`;
 
   // 11-15 Ben: 과열 배지 (경고용, 매매 판정 미사용)
   const lastOf=a=>{for(let i=a.length-1;i>=0;i--) if(a[i]!=null) return [a[i],M[i]]; return [null,null];};
@@ -2017,7 +2024,7 @@ function liqInflChart(el, d, opt={}){
   const H3=[["M2 증가율",vm,gr(vm,8,12),"8% 주의 · 12% 과열"],["CPI",vc,gr(vc,3,4),"3% 주의 · 4% 과열"],["근원 CPI",vk,gr(vk,3,4),"3% 주의 · 4% 과열"]];
   const rk={r:3,y:2,g:1,n:0}, all=H3.map(h=>h[2]).sort((a,b)=>rk[b]-rk[a])[0];
   const heatHTML=`<div class="lfh"><div class="tot"><span class="hdot2 ${all}"></span>물가·통화 <b>${GL[all]}</b><span class="muted"> · ${esc(dc||dm||"")} 기준</span></div>${H3.map(([n,v,c,t])=>`<div><span class="hdot2 ${c}"></span>${n} <b>${num(v,1)}%</b> ${pill(GL[c],c)}<span class="muted">${t}</span></div>`).join("")}</div>`;
-  let yrs=opt.yrs||10, shift=opt.shift||0;
+  let yrs=opt.yrs||10, shift=opt.shift||0, mode=opt.mode||"us";
   const LAG=18;
   // 시차 상관 (M2 YoY를 LAG개월 뒤 CPI YoY와 비교)
   const corr=(a,b)=>{const P=[];for(let i=LAG;i<M.length;i++){if(M[i]<a||M[i]>b)continue;const x=S.m2[i-LAG],y=S.cpi[i];if(x!=null&&y!=null)P.push([x,y]);}
@@ -2025,16 +2032,18 @@ function liqInflChart(el, d, opt={}){
   const eras=[["1960~89","1960-01","1989-12"],["1990~2007","1990-01","2007-12"],["2008~19","2008-01","2019-12"],["2020~","2020-01","2099-12"]].map(([n,a,b])=>[n,corr(a,b)]);
   function draw(){
     const last=M.length-1, i0=Math.max(0,M.findIndex(m=>m>=String(+M[last].slice(0,4)-yrs)+M[last].slice(4)));
-    const W=Math.max(320,Math.min(900,el.clientWidth||720)),H=W<560?250:320,L=30,R=46,T=10,B=24, n=last-i0+(shift?shift:0);
+    const sh0 = mode==="us"? shift : 0;
+    const W=Math.max(320,Math.min(900,el.clientWidth||720)),H=W<560?250:320,L=30,R=46,T=10,B=24, n=last-i0+sh0;
     const xs=i=>L+(i-i0)/(n)*(W-L-R);
     const m2s=i=>S.m2[i]; // M2 점은 i+shift 위치에 찍음
-    const lines=[["ff","기준금리","var(--s1)",i=>S.ff[i],0],["cpi","CPI","var(--s2)",i=>S.cpi[i],0],["core","근원 CPI","var(--s2)",i=>S.core[i],0,"d"],["m2",shift?`M2 (${shift}개월 앞당김)`:"M2","var(--s3)",m2s,shift]];
+    const lines= mode==="kr"? [["m2","미국 M2","var(--s3)",i=>S.m2[i],0],["kr","한국 M2","var(--s4)",i=>S.kr[i],0]]
+      : [["ff","기준금리","var(--s1)",i=>S.ff[i],0],["cpi","CPI","var(--s2)",i=>S.cpi[i],0],["core","근원 CPI","var(--s2)",i=>S.core[i],0,"d"],["m2",sh0?`M2 (${sh0}개월 앞당김)`:"M2","var(--s3)",m2s,sh0]];
     let lo=0,hi=0; for(const[,, ,f]of lines)for(let i=i0;i<=last;i++){const v=f(i);if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}}
     lo=Math.floor(lo/2)*2; hi=Math.ceil(hi/2)*2; const step=hi-lo>16?4:2;
     const ys=v=>T+(hi-v)/(hi-lo)*(H-T-B);
     let g=""; for(let v=lo;v<=hi;v+=step) g+=`<line x1="${L}" x2="${W-R}" y1="${ys(v)}" y2="${ys(v)}" stroke="${v===0?"#b9b6ad":"#ecebe6"}" stroke-width="1"/><text x="${L-6}" y="${ys(v)+4}" text-anchor="end" font-size="11" fill="#55534e">${v}</text>`;
-    const yStep=yrs>15?10:2; for(let i=i0;i<=last+shift;i++){const mo=i<=last?M[i]:null; const y=mo?+mo.slice(0,4):null; if(mo&&mo.endsWith("-01")&&y%yStep===0) g+=`<text x="${xs(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#55534e">${y}</text><line x1="${xs(i)}" x2="${xs(i)}" y1="${H-B}" y2="${H-B+4}" stroke="#b9b6ad"/>`;}
-    if(shift){ g+=`<rect x="${xs(last)}" y="${T}" width="${xs(last+shift)-xs(last)}" height="${H-T-B}" fill="#1baf7a" opacity=".06"/><text x="${(xs(last)+xs(last+shift))/2}" y="${T+12}" text-anchor="middle" font-size="10.5" fill="#55534e">M2가 가리키는 앞날</text>`; }
+    const yStep=yrs>15?10:2; for(let i=i0;i<=last+sh0;i++){const mo=i<=last?M[i]:null; const y=mo?+mo.slice(0,4):null; if(mo&&mo.endsWith("-01")&&y%yStep===0) g+=`<text x="${xs(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#55534e">${y}</text><line x1="${xs(i)}" x2="${xs(i)}" y1="${H-B}" y2="${H-B+4}" stroke="#b9b6ad"/>`;}
+    if(sh0){ g+=`<rect x="${xs(last)}" y="${T}" width="${xs(last+sh0)-xs(last)}" height="${H-T-B}" fill="#1baf7a" opacity=".06"/><text x="${(xs(last)+xs(last+sh0))/2}" y="${T+12}" text-anchor="middle" font-size="10.5" fill="#55534e">M2가 가리키는 앞날</text>`; }
     let paths="", ends=[];
     for(const[k,name,col,f,sh,dash]of lines){ let p="",pen=false,lv=null,lx=null;
       for(let i=i0-sh;i<=last;i++){ if(i<0)continue; const v=f(i); const X=i+sh; if(X<i0){continue;} if(v==null){pen=false;continue;} p+=(pen?"L":"M")+xs(X).toFixed(1)+","+ys(v).toFixed(1); pen=true; lv=v; lx=X; }
@@ -2047,20 +2056,24 @@ function liqInflChart(el, d, opt={}){
     const svg=el.querySelector("svg"), tip=el.querySelector(".tip"), ch=svg.querySelector(".ch");
     const mv=ev=>{const r=svg.getBoundingClientRect(), px=(ev.clientX-r.left)/r.width*W; let i=Math.round(i0+(px-L)/(W-L-R)*n); i=Math.max(i0,Math.min(last,i));
       ch.setAttribute("x1",xs(i));ch.setAttribute("x2",xs(i));ch.setAttribute("opacity",".5");
-      tip.innerHTML=`<b>${M[i]}</b><br>기준금리 ${num(S.ff[i],2)}% · CPI ${num(S.cpi[i],1)}% · 근원 ${num(S.core[i],1)}%<br>M2 ${num(S.m2[i-shift],1)}%${shift?` <span style="opacity:.7">(${M[i-shift]||""} 값)</span>`:""}`;
+      tip.innerHTML= mode==="kr"? `<b>${M[i]}</b><br>한국 M2 ${num(S.kr[i],1)}% · 미국 M2 ${num(S.m2[i],1)}%` : `<b>${M[i]}</b><br>기준금리 ${num(S.ff[i],2)}% · CPI ${num(S.cpi[i],1)}% · 근원 ${num(S.core[i],1)}%<br>M2 ${num(S.m2[i-sh0],1)}%${sh0?` <span style="opacity:.7">(${M[i-sh0]||""} 값)</span>`:""}`;
       tip.style.opacity=1; const tx=xs(i)/W*r.width; tip.style.left=Math.min(tx+10, r.width-tip.offsetWidth-4)+"px"; tip.style.top="8px";};
     svg.addEventListener("pointermove",mv); svg.addEventListener("pointerleave",()=>{tip.style.opacity=0;ch.setAttribute("opacity",0)});
     el.querySelectorAll("[data-y]").forEach(b=>b.classList.toggle("on",+b.dataset.y===yrs));
     el.querySelectorAll("[data-s]").forEach(b=>b.classList.toggle("on",+b.dataset.s===shift));
-    el.querySelector(".lgm").textContent= shift? `M2 (${shift}개월 앞당김)` : "M2";
+    el.querySelector(".lg").innerHTML = lines.map(([k,name,col,,,dash])=>`<span><i ${dash?'class="d"':""} style="border-color:${col}"></i>${esc(name)}</span>`).join("");
+    el.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
+    el.querySelectorAll(".uso").forEach(x=>x.hidden= mode!=="us"); el.querySelectorAll(".kro").forEach(x=>x.hidden= mode!=="kr");
   }
-  el.innerHTML=`<div class="lfc">${heatHTML}<div class="lfbar"><button data-y="10">10년</button><button data-y="30">30년</button><button data-y="66">1960~</button><span style="width:8px"></span><button data-s="0">M2 그대로</button><button data-s="${LAG}">M2 ${LAG}개월 앞당김</button></div>
-  <div class="lg"><span><i style="border-color:var(--s1)"></i>기준금리</span><span><i style="border-color:var(--s2)"></i>CPI</span><span><i class="d" style="border-color:var(--s2)"></i>근원 CPI</span><span><i style="border-color:var(--s3)"></i><span class="lgm">M2</span></span></div>
+  el.innerHTML=`<div class="lfc">${heatHTML}<div class="lfbar"><button data-m="us">금리·물가</button><button data-m="kr">한·미 M2</button><span style="width:8px"></span><button data-y="10">10년</button><button data-y="30">30년</button><button data-y="66">1960~</button><span class="uso" style="display:contents"><span style="width:8px"></span><button data-s="0">M2 그대로</button><button data-s="${LAG}">M2 ${LAG}개월 앞당김</button></span></div>
+  <div class="lg"></div>
   <div class="lfw"></div>
-  <div class="muted" style="margin-top:8px">M2 증가율과 ${LAG}개월 뒤 CPI의 상관계수 (1 = 같이 움직임, 0 = 무관)</div>
-  <div class="rt">${eras.map(([n,r])=>`<div class="${r>=0.5?"hi":r<0.2?"lo":""}">${n}<b>${r>=0?"+":""}${num(r,2)}</b></div>`).join("")}</div><details class="mexp sm"><summary>설명 보기</summary><p>기준: M2는 1960~2019년 상위 20%(8%↑)를 주의, 1970년대·2020년에만 넘은 12%↑를 과열로 봤습니다(12%↑ 뒤 18개월 CPI 평균 6.8% vs 평소 3.5%). CPI·근원은 연준 목표 2%의 1.5배(3%)·2배(4%). M2와 물가의 시차 상관은 2020년 한 번을 빼면 약해서 경고용으로만 씁니다. 매매 판정에는 넣지 않습니다.</p></details></div>`;
+  <div class="kro">${krHTML}<details class="mexp sm"><summary>설명 보기</summary><p>한국은행 ECOS 161Y005(M2 평잔, 계절조정)와 미국 FRED M2SL 비교입니다. 한국은행이 2026년부터 통화량 통계 기준을 바꿔 지금 값은 새 기준입니다. 책에 나온 한국 +21.8%(2022.1→2025.8)는 옛 기준이고, 새 기준으로는 +17.1%입니다(같은 기간 미국 +2.0%).</p></details></div>
+  <div class="uso"><div class="muted" style="margin-top:8px">M2 증가율과 ${LAG}개월 뒤 CPI의 상관계수 (1 = 같이 움직임, 0 = 무관)</div>
+  <div class="rt">${eras.map(([n,r])=>`<div class="${r>=0.5?"hi":r<0.2?"lo":""}">${n}<b>${r>=0?"+":""}${num(r,2)}</b></div>`).join("")}</div><details class="mexp sm"><summary>설명 보기</summary><p>기준: M2는 1960~2019년 상위 20%(8%↑)를 주의, 1970년대·2020년에만 넘은 12%↑를 과열로 봤습니다(12%↑ 뒤 18개월 CPI 평균 6.8% vs 평소 3.5%). CPI·근원은 연준 목표 2%의 1.5배(3%)·2배(4%). M2와 물가의 시차 상관은 2020년 한 번을 빼면 약해서 경고용으로만 씁니다. 매매 판정에는 넣지 않습니다.</p></details></div></div>`;
   el.querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{yrs=+b.dataset.y;draw();});
   el.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{shift=+b.dataset.s;draw();});
+  el.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
   draw();
 }
 function lineChart(arr, th=[], h=140){
