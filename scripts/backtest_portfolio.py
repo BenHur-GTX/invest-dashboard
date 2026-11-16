@@ -54,7 +54,7 @@ def splice(dates, base_ret, real, k=1.0, cost=None):
 
 def load():
     y = {}
-    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_DUMP") or os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC") or os.environ.get("ONLY_GSW")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if os.environ.get("ONLY_SWING") else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
+    for s in ["QQQ", "SPY", "QLD", "TQQQ", "SCHD", "DVY", "JEPI", "DIVO", "JEPQ", "SOXX", "^SOX", "^VIX", "^IRX"] + (["^BXM", "^BXN"] if (os.environ.get("ONLY_DIV") or os.environ.get("ONLY_N2")) else []) + (["GC=F", "GLD"] if (os.environ.get("ONLY_DUMP") or os.environ.get("ONLY_PARK") or os.environ.get("ONLY_W40") or os.environ.get("ONLY_N2") or os.environ.get("ONLY_BTC") or os.environ.get("ONLY_GSW")) else []) + (["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"] if (os.environ.get("ONLY_SWING") or os.environ.get("ONLY_SRDUMP")) else []) + (["BTC-USD", "BITO"] if os.environ.get("ONLY_BTC") else []):
         try:
             y[s] = B.yahoo(s, "max"); print("yahoo", s, len(y[s]), flush=True)
         except Exception as e:
@@ -1643,6 +1643,15 @@ def dump_series(D):
     json.dump(out, open(os.path.join(B.DATA, "_series.json"), "w"), separators=(",", ":"))
 
 
+def dump_sr(D):
+    """11-16: 지지·저항 스윙 연구용 일별 종가 덤프 → data/_sr.json (분석 후 삭제)"""
+    P = D["P"]; T = ["QQQ", "QLD", "TQQQ", "SOXL", "SGOV", "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"]
+    out = {"dates": D["dates"], "c": [round(x, 4) for x in D["c"]]}
+    for t in T:
+        if t in P: out[t] = [round(x, 5) if x is not None else None for x in P[t]]
+    json.dump(out, open(os.path.join(B.DATA, "_sr.json"), "w"), separators=(",", ":"))
+
+
 def dump_years():
     """11-15: 연봉 연구용 지수 일봉 → data/_years.json (분석 후 삭제)"""
     out = {}
@@ -1661,6 +1670,8 @@ def main():
     y, f = load()
     D = prep(y, f)
     dates = D["dates"]
+    if os.environ.get("ONLY_SRDUMP"):
+        dump_sr(D); print("ok"); return
     if os.environ.get("ONLY_DUMP"):
         dump_series(D); print("ok"); return
     if os.environ.get("ONLY_GSW"):

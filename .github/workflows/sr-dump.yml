@@ -1,0 +1,28 @@
+name: sr-dump
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-cwnqz2]
+    paths: [.github/workflows/sr-dump.yml]
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -u scripts/backtest_portfolio.py
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ONLY_SRDUMP: "1"
+      - run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add -f data/_sr.json
+          git diff --cached --quiet || git commit -m "data: sr dump"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
