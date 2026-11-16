@@ -20,6 +20,7 @@ jobs:
       - run: python -u scripts/macro_long.py
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ECOS_API_KEY: ${{ secrets.ECOS_API_KEY }}
       - run: |
           git config user.name "data-bot"
           git config user.email "data-bot@users.noreply.github.com"
