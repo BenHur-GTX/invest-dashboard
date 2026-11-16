@@ -1118,6 +1118,28 @@ function levExposure(E){
   let v=0; E.acc.list.filter(a=>ids.includes(a.id)).forEach(a=>(a.pos||[]).forEach(p=>{ if(LEV_T.includes(p.t) && p.v>0){ v+=p.v; by[a.id]=(by[a.id]||0)+p.v; } }));
   const tot=E.acc.directTotal||0; return tot>0? {v, tot, pct:v/tot*100, by} : null;
 }
+// 11-16 Ben: 찐반등 점검표 (참고용, 비중 반영 없음). 백테스트(1999~, 반등 시도 64회): 피보 23.6%↑ 회복 시 60일 +5.7% vs 미만 −3.4%(앞·뒤 구간 모두 같은 방향),
+// 상위 종목 50일선 위 ≥50%: +3.9% vs 0.0%. 저점→20일선 속도·거래대금 급증·장대음봉 고가 회복은 효과 없거나 반대라 제외. 1·2차 가속 신호일엔 진짜·가짜 구분 못 함.
+function reboundCheck(E){
+  const q=E.S.QQQ; if(!q?.spark?.length) return null;
+  const sp=q.spark, n=sp.length, w=sp.slice(n-60), lo=Math.min(...w), li=n-60+w.indexOf(lo);
+  const H=Math.max(q.high52||0, ...sp.slice(0,li+1)), rng=H-lo; if(!(rng>0)) return null;
+  const fib=(q.price-lo)/rng*100, dd=(lo/H-1)*100;
+  const lv=[23.6,38.2,50,61.8].map(p=>({p, px:lo+rng*p/100}));
+  const big=SWING_BT.map(t=>E.S[t]).filter(x=>x?.price && x.ma?.["50"]), up=big.filter(x=>x.price>x.ma["50"]).length;
+  return {fib, dd, lo, H, lv, up, nb:big.length, br: big.length? up/big.length*100 : null};
+}
+function reboundHTML(E){
+  const r=reboundCheck(E); if(!r) return "";
+  if(r.dd>-10) return `<h2>찐반등 점검 (참고)</h2><div class="panel"><p class="muted">최근 60일 저점이 1년 고점 대비 ${pct(r.dd,0)}라 점검 대상 아님 (−10% 이상 하락 뒤에만 봅니다).</p></div>`;
+  const ok1=r.fib>=23.6, ok2=r.br!=null && r.br>=50;
+  const nx=r.lv.find(x=>x.px>E.S.QQQ.price);
+  return `<h2>찐반등 점검 (참고)</h2><div class="panel">
+  <p><span class="tb ${ok1?"ok":"warn"}">피보 ${num(r.fib,0)}%</span> QQQ 되돌림 (저점 ${usd(r.lo)} → 고점 ${usd(r.H)})${nx? ` · 다음 ${nx.p}% ${usd(nx.px)}`:""}</p>
+  <p><span class="tb ${ok2?"ok":"warn"}">빅테크 ${r.up}/${r.nb}</span> 50일선 위</p>
+  <p class="muted">${ok1&&ok2? "두 항목 충족: 과거 반등 시도 중 60일 성과가 좋았던 쪽." : ok1||ok2? "1개 충족." : "미충족: 과거엔 60일 평균 −3%, 저점 재이탈 59%."} 매매 규칙·비중에는 반영하지 않습니다.</p>
+  <details class="mexp sm"><summary>설명 보기</summary><p>1999년 이후 QQQ가 −10% 넘게 빠진 뒤 처음 20일선 위로 올라선 반등 시도 64회를 검증했습니다. 피보나치 23.6% 이상 되돌린 반등은 60일 평균 +5.7%(상승 81%, 저점 재이탈 34%)였고, 그 미만은 −3.4%(상승 50%, 재이탈 59%)였습니다. 2012년 이전과 이후 모두 같은 방향입니다. 상위 종목 절반 이상이 50일선 위면 +3.9%, 아니면 0.0%였습니다.</p><p>추세선 돌파 속도(저점→20일선 7일 이내)는 +0.0% vs 늦은 반등 +5.3%, 거래대금 20일 평균 1.2배 이상은 −1.3% vs +1.6%, 장대음봉 고가 회복은 +0.0% vs +1.5%로 효과가 없거나 반대여서 뺐습니다. 반등 가속 1·2차 신호일(2001·2008·2022 가짜 포함)에는 두 항목 모두 진짜·가짜를 가르지 못해 비중에는 넣지 않았습니다.</p></details></div>`;
+}
 function vTrade(){
   const sig = swingSignals(E), sw = planSwing(E), so = swingOrders(E), lx = levExposure(E);
   const on = sig.filter(s=>s.on), near = sig.filter(s=>s.near);
@@ -1143,6 +1165,7 @@ function vTrade(){
   <details class="mexp sm"><summary>감시 종목 전체 보기</summary><div class="tbl"><table>${head}${sig.map(row).join("")}</table></div></details></div>
   ${so? swingOrdersHTML(so, "오늘 주문 — 스윙 계좌") : `<p class="note">스윙 계좌 보유 내역이 열리면 오늘 살 주수까지 계산합니다(규칙 탭 맨 아래 키 등록).</p>`}
 
+  ${reboundHTML(E)}
   <h2>보유 포지션</h2>
   <div class="panel">
   ${open.length? `<div class="tbl"><table style="min-width:900px"><tr><th class="l">포지션</th><th>현재</th><th class="l">익절가</th><th>손절가</th><th>만기일</th><th class="l">오늘 할 일</th><th class="l">기록</th></tr>${open.map(posRow).join("")}</table></div>` : `<p class="muted">기록된 스윙 포지션 없음. 사면 아래에 입력하세요.</p>`}
