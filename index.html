@@ -265,6 +265,12 @@ footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
 .check input{width:auto;margin-top:4px}
 button:disabled{opacity:.45;cursor:not-allowed}
 input.ro{background:#f3f2ee;color:var(--ink2)}
+.tb{display:inline-block;white-space:nowrap;font-size:12.5px;font-weight:600;border-radius:4px;padding:2px 7px;background:#efede7;color:var(--ink)}
+.tb.ok{background:var(--ok);color:#fff} .tb.bad{background:var(--bad);color:#fff} .tb.warn{background:#fbe7c6;color:#6b3d00} .tb.done{color:var(--ink2)}
+.tform{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+.tform label{display:flex;flex-direction:column;font-size:12.5px;color:var(--ink2);gap:3px}
+.tform input,.tform select{width:130px;min-height:38px;font:inherit;font-size:14px}
+td .inline input{width:78px}
 @media (max-width:860px){
   .hero{grid-template-columns:repeat(12,1fr)}
   .hero>div{grid-column:span 4;padding:10px 10px} .hero .mode,.hero .state{grid-column:1/-1}
@@ -947,8 +953,9 @@ function bounceSignal(S){
 function planSwing(E){
   const a = E.acc.list.find(x=>x.id==="swing"); if(!a) return null;
   const ix = E.S["^IXIC"];
-  const sig = swingSignals(E).map(s=>{ const u=SWING_UNIT[s.m]||0.25; return {...s, unit:a.val*u, buy:`계좌 ${num(u*100,1)}% (${won(a.val*u)})`}; });
-  return {a, unit:a.val*0.25, scale:1, panic: ix?.minus3_23d>=4, m3: ix?.chg!=null && ix.chg<=-3, sig};
+  const scale = E.mode.name==="수비"? 0.5 : 1;   // 11-16: 시나리오표 '거시 수비 = 1회 금액 절반'과 일치시킴
+  const sig = swingSignals(E).map(s=>{ const u=(SWING_UNIT[s.m]||0.25)*scale; return {...s, unit:a.val*u, buy:`계좌 ${num(u*100,1)}% (${won(a.val*u)})`}; });
+  return {a, unit:a.val*0.25*scale, scale, panic: ix?.minus3_23d>=4, m3: ix?.chg!=null && ix.chg<=-3, sig};
 }
 
 /* ---------- 오늘 주문표: IRP·스윙 ---------- */
@@ -990,10 +997,7 @@ function ordersHTML(){
   <div class="tbl"><table><tr><th>종목</th><th>금액</th><th>현재가</th><th>주수</th><th class="l">이유</th></tr>
   ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
   </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
-    const swT = so? `<h3>⑤ 스윙 계좌 — 오늘 기준 (예수금 ${won(so.cash0)})</h3>
-  <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
-  ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
-  </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 종목당 12%, 반도체 합계 30%, 3배 합계 10% 한도 적용. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>` : "";
+    const swT = so? swingOrdersHTML(so, "⑤ 스윙 계좌 — 오늘 기준") : "";
     return irpT + swT;
 }
 
@@ -1051,9 +1055,151 @@ function buyWindow(day=25){
 }
 
 /* ============================================================
+   트레이딩 탭 (11-16 Ben): 스윙 신호 · 보유 포지션 청산가 · 성과 vs QQQM
+   포지션은 이 기기(localStorage "swing_pos")에만 저장. 다른 기기는 내보내기/가져오기.
+   ============================================================ */
+const TRADE_RULES = {
+  A:{n:"일반 스윙", tp1:5, tp1q:"절반", tp2:10, sl:-10, days:10},
+  C:{n:"QLD 반등 C안", tp1:5, tp1q:"1/3", tp2:10, sl:-15, days:60, trail:2}
+};
+const TRADE_TICKERS = [...SWING_BT, "QLD","TQQQ","SOXL", ...SWING_GROWTH];
+function tpLoad(){ try{ const a=JSON.parse(localStorage.getItem("swing_pos")||"[]"); return Array.isArray(a)? a : []; }catch(e){ return []; } }
+function tpSave(a){ try{ localStorage.setItem("swing_pos", JSON.stringify(a)); }catch(e){} }
+const ymd = d => d.toISOString().slice(0,10);
+function todayYmd(){ const n=new Date(); return ymd(new Date(Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()))); }
+// 거래일 = 평일 (미국 휴장일 미반영)
+function tdAdd(s, n){ const d=new Date(s+"T00:00:00Z"); let k=0; while(k<n){ d.setUTCDate(d.getUTCDate()+1); const w=d.getUTCDay(); if(w&&w<6) k++; } return ymd(d); }
+function tdBetween(a, b){ if(b<=a) return 0; const d=new Date(a+"T00:00:00Z"), e=new Date(b+"T00:00:00Z"); let k=0; while(d<e){ d.setUTCDate(d.getUTCDate()+1); const w=d.getUTCDay(); if(w&&w<6) k++; } return k; }
+function tpEval(p, S){
+  const R = TRADE_RULES[p.rule]||TRADE_RULES.A, sells=p.sells||[];
+  const sold = sells.reduce((x,s)=>x+(+s.q||0),0), rem = Math.max(0,(+p.q||0)-sold);
+  const px=+p.px, cur=S[p.t]?.price ?? null, ret = cur!=null? (cur/px-1)*100 : null;
+  const lv = {tp1:px*(1+R.tp1/100), tp2:px*(1+R.tp2/100), sl:px*(1+R.sl/100), be:px, trail: R.trail? px*(1+R.trail/100) : null};
+  const held = tdBetween(p.d, todayYmd()), due = tdAdd(p.d, R.days), left = R.days-held, n=sells.length;
+  let act=null, c="";
+  if(rem<=0){ act="청산 완료"; c="done"; }
+  else if(cur==null){ act="가격 대기"; }
+  else if(cur<=lv.sl){ act=`손절가 도달: 전량 매도`; c="bad"; }
+  else if(left<=0){ act=`만기 ${R.days}거래일: 전량 청산`; c="bad"; }
+  else if(p.rule==="C" && n>=2 && cur<=lv.trail){ act="+2% 아래로: 나머지 정리"; c="bad"; }
+  else if(p.rule==="C" && n>=1 && cur<=lv.be){ act="1차 매도 후 본전: 전량 정리"; c="bad"; }
+  else if(n===0 && cur>=lv.tp2){ act= p.rule==="C"? "+10% 도달: 2/3 매도 (1차·2차)" : "+10% 도달: 전량 매도"; c="ok"; }
+  else if(n===0 && cur>=lv.tp1){ act=`+${R.tp1}% 도달: ${R.tp1q} 매도`; c="ok"; }
+  else if(n>=1 && cur>=lv.tp2 && !(p.rule==="C" && n>=2)){ act= p.rule==="C"? "+10% 도달: 1/3 매도" : "+10% 도달: 나머지 매도"; c="ok"; }
+  else if(left<=2){ act=`만기 ${left}거래일 남음`; c="warn"; }
+  else act="보유";
+  return {R, rem, cur, ret, lv, held, due, left, act, c, n};
+}
+function tradeSummary(E){
+  const sig = swingSignals(E), on=sig.filter(s=>s.on).length, near=sig.filter(s=>s.near).length;
+  const open = tpLoad().map(p=>({p, e:tpEval(p,E.S)})).filter(x=>x.e.rem>0);
+  const todo = open.filter(x=>["bad","ok"].includes(x.e.c)).length;
+  return {on, near, open:open.length, todo};
+}
+function tradeTodayLine(E){
+  const t=tradeSummary(E);
+  return `<b>트레이딩</b>: 진입 신호 ${t.on} · 근접 ${t.near} · 보유 ${t.open}${t.todo? ` · <b class="dn">오늘 처리 ${t.todo}건</b>`:""} — <a href="#trade">트레이딩 탭</a>`;
+}
+function swingOrdersHTML(so, title){
+  return `<h3>${title} (예수금 ${won(so.cash0)})</h3>
+  <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
+  ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
+  </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회까지. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>`;
+}
+function vTrade(){
+  const sig = swingSignals(E), sw = planSwing(E), so = swingOrders(E);
+  const on = sig.filter(s=>s.on), near = sig.filter(s=>s.near);
+  const st = (s)=> s.on? `<span class="sig s2">진입</span>` : s.near? `<span class="sig s1">근접</span>` : `<span class="muted">–</span>`;
+  const row = s=>`<tr class="${s.on?"buy2":s.near?"buy1":""}"><td class="l"><button type="button" class="symbtn" data-chart="${esc(s.t)}"><b>${esc(s.t)}</b></button> <span class="muted">${esc(s.group)}</span></td><td>${st(s)}</td><td class="l">${esc(s.now)}</td><td class="l muted">${esc(s.cond)}</td></tr>`;
+  const head = `<tr><th class="l">종목</th><th>상태</th><th class="l">지금</th><th class="l">진입 조건</th></tr>`;
+  const P = tpLoad().map(p=>({p, e:tpEval(p,E.S)}));
+  const open = P.filter(x=>x.e.rem>0), closed = P.filter(x=>x.e.rem<=0);
+  const badge = e => `<span class="tb ${e.c}">${esc(e.act)}</span>`;
+  const posRow = ({p,e}) => `<tr><td class="l"><b>${esc(p.t)}</b> <span class="muted">${esc(e.R.n)}</span><br><span class="muted">${esc(p.d)} · ${usd(+p.px)} × ${num(e.rem,0)}주${e.n? ` (매도 ${e.n}회)`:""}</span></td>
+    <td>${usd(e.cur)}<br>${cpct(e.ret,1)}</td>
+    <td class="l">${usd(e.lv.tp1)} <span class="muted">+${e.R.tp1}% ${e.R.tp1q}</span><br>${usd(e.lv.tp2)} <span class="muted">+${e.R.tp2}%</span>${e.lv.trail? `<br>${usd(e.lv.trail)} <span class="muted">1·2차 매도 뒤 이 아래면 정리</span>`:""}</td>
+    <td>${usd(e.lv.sl)}<br><span class="muted">${e.R.sl}%</span></td>
+    <td>${esc(e.due)}<br><span class="muted">${e.left>0? e.left+"거래일 남음" : "만기"}</span></td>
+    <td class="l">${badge(e)}</td>
+    <td class="l"><span class="inline"><input type="number" step="0.01" min="0" placeholder="매도가" aria-label="${esc(p.t)} 매도가" data-sp="${esc(p.id)}"><input type="number" step="1" min="1" value="${num(e.rem,0).replace(/,/g,"")}" aria-label="${esc(p.t)} 매도 수량" data-sq="${esc(p.id)}"><button type="button" class="ghost" data-sell="${esc(p.id)}">매도 기록</button><button type="button" class="ghost" data-del="${esc(p.id)}" aria-label="${esc(p.t)} 삭제">삭제</button></span></td></tr>`;
+  const today = todayYmd();
+  return `
+  <h2>지금 신호</h2>
+  <div class="panel"><p><b>진입 ${on.length}</b> · 근접 ${near.length} · 감시 ${sig.length}종목 · 거시 ${esc(E.mode.name)}${sw?.scale<1? " (1회 금액 절반)":""}${sw?.panic? ` · <b class="dn">공황 구간(나스닥 −3%일 23일 내 4회↑)</b>`:""}</p>
+  ${on.length||near.length? `<div class="tbl"><table>${head}${[...on,...near].map(row).join("")}</table></div>` : `<p class="muted">진입·근접 신호 없음. 스윙은 폭락기에만 켜집니다(2000년 이후 평균 연 12회, 평균 보유 6일).</p>`}
+  <details class="mexp sm"><summary>감시 종목 전체 보기</summary><div class="tbl"><table>${head}${sig.map(row).join("")}</table></div></details></div>
+  ${so? swingOrdersHTML(so, "오늘 주문 — 스윙 계좌") : `<p class="note">스윙 계좌 보유 내역이 열리면 오늘 살 주수까지 계산합니다(규칙 탭 맨 아래 키 등록).</p>`}
+
+  <h2>보유 포지션</h2>
+  <div class="panel">
+  ${open.length? `<div class="tbl"><table style="min-width:900px"><tr><th class="l">포지션</th><th>현재</th><th class="l">익절가</th><th>손절가</th><th>만기일</th><th class="l">오늘 할 일</th><th class="l">기록</th></tr>${open.map(posRow).join("")}</table></div>` : `<p class="muted">기록된 스윙 포지션 없음. 사면 아래에 입력하세요.</p>`}
+  <p class="note">익절·손절가는 증권사 예약 매도(감시주문)로 바로 걸어 두세요. 화면 가격은 15분 지연이라 알림 대용으로 쓰지 않습니다. 만기 거래일은 미국 휴장일을 빼지 않아 하루 차이가 날 수 있습니다.</p>
+  <h3>매수 기록</h3>
+  <div class="tform">
+    <label>종목 <select id="tp_t">${TRADE_TICKERS.map(t=>`<option${t===on[0]?.t?" selected":""}>${t}</option>`).join("")}</select></label>
+    <label>규칙 <select id="tp_r"><option value="A">일반 스윙 (+5/+10, −10%, 10일)</option><option value="C"${on.some(s=>s.m==="b")?" selected":""}>QLD 반등 C안 (−15%, 60일)</option></select></label>
+    <label>매수가($) <input id="tp_px" type="number" step="0.01" min="0"></label>
+    <label>수량 <input id="tp_q" type="number" step="1" min="1"></label>
+    <label>매수일 <input id="tp_d" type="date" value="${today}" max="${today}"></label>
+    <button type="button" id="tp_add">추가</button>
+  </div>
+  <p class="note" id="tp_msg"></p>
+  </div>
+
+  <h2>성과 (청산분) vs 같은 기간 QQQM</h2>
+  <div class="panel" id="tp_perf"><p class="muted">계산 중…</p></div>
+  ${closed.length? `<details class="mexp sm"><summary>청산 완료 ${closed.length}건 보기</summary><div class="tbl"><table><tr><th class="l">종목</th><th>매수</th><th class="l">매도</th><th></th></tr>${closed.map(({p})=>`<tr><td class="l"><b>${esc(p.t)}</b> <span class="muted">${esc(p.d)}</span></td><td>${usd(+p.px)} × ${num(+p.q,0)}</td><td class="l">${(p.sells||[]).map(s=>`${esc(s.d)} ${usd(+s.px)}×${num(+s.q,0)}`).join("<br>")}</td><td><button type="button" class="ghost" data-del="${esc(p.id)}">삭제</button></td></tr>`).join("")}</table></div></details>`:""}
+
+  <details class="mexp sm"><summary>다른 기기로 옮기기 (내보내기·가져오기)</summary>
+    <p class="muted">포지션은 이 기기 브라우저에만 저장됩니다. 아래 글을 복사해 다른 기기의 같은 칸에 붙여 넣고 '가져오기'를 누르세요.</p>
+    <textarea id="tp_io" rows="4" style="width:100%">${esc(JSON.stringify(tpLoad()))}</textarea>
+    <p><button type="button" class="ghost" id="tp_import">가져오기 (덮어쓰기)</button></p>
+  </details>
+
+  <details class="mexp sm"><summary>규칙 보기</summary>
+    <p><b>일반 스윙</b>: 1년 고점 대비 빅테크 −30%, QLD −40%, TQQQ·SOXL −55%, 성장주 −70% + 그 종목 RSI ≤ 30. 1회 계좌 25%(성장주 12.5%), 동시 4개. ${esc(SWING_EXIT)}.</p>
+    <p><b>QLD 반등 C안</b>: QQQ 40주 데드 + 40주선 −10% 이하 + RSI ≤ 30. ${esc(BOUNCE_EXIT)}.</p>
+    <p>거시 수비(빨강 2개 이상)면 1회 금액 절반. 신호 있는 달만 월 적립에서 20만 배정, 다 정리하면 이익 50%는 장투로.</p>
+  </details>`;
+}
+async function tradePerf(){
+  const el=$("#tp_perf"); if(!el) return;
+  const fills=[]; tpLoad().forEach(p=>(p.sells||[]).forEach(s=>fills.push({t:p.t, d0:p.d, d1:s.d, px:+p.px, sp:+s.px, q:+s.q})));
+  if(!fills.length){ el.innerHTML=`<p class="muted">청산 기록이 쌓이면 실현 손익과, 같은 돈을 같은 기간 QQQM에 넣었을 때를 비교합니다. 1년 동안 QQQM보다 못하면 스윙 비중을 줄이는 근거로 씁니다.</p>`; return; }
+  const C = await chartData(); const q = C.s?.QQQM? decodeSeries(C.s.QQQM) : [];
+  const at = d => { let v=null; for(const [x,c] of q){ if(x<=d) v=c; else break; } return v; };
+  const yAgo = ymd(new Date(Date.now()-365*864e5));
+  const agg = f => { let pnl=0, bm=0, cost=0, win=0, n=0, miss=0; f.forEach(x=>{ const c=x.px*x.q, a=at(x.d0), b=at(x.d1); pnl+=(x.sp-x.px)*x.q; cost+=c; n++; if(x.sp>x.px) win++; if(a&&b) bm+=c*(b/a-1); else miss++; }); return {pnl,bm,cost,win,n,miss}; };
+  const all=agg(fills), y=agg(fills.filter(x=>x.d1>=yAgo));
+  const line=(lab,a)=> a.n? `<tr><td class="l">${lab}</td><td>${a.n}</td><td>${num(a.win/a.n*100,0)}%</td><td class="${cls(a.pnl)}">${usd(a.pnl)}</td><td class="${cls(a.bm)}">${usd(a.bm)}</td><td><b class="${cls(a.pnl-a.bm)}">${usd(a.pnl-a.bm)}</b></td></tr>` : `<tr><td class="l">${lab}</td><td colspan="5" class="muted">기록 없음</td></tr>`;
+  el.innerHTML = `<div class="tbl"><table><tr><th class="l">구간</th><th>매도 건</th><th>승률</th><th>스윙 손익</th><th>QQQM이었다면</th><th>차이</th></tr>${line("최근 1년",y)}${line("전체",all)}</table></div>
+  <p class="note">${y.n? (y.pnl>=y.bm? "최근 1년 스윙이 QQQM보다 나음." : "<b>최근 1년 스윙이 QQQM보다 못함</b>: 스윙 비중 축소 검토.") : ""} 세금·수수료 미반영, 달러 기준.${all.miss? ` QQQM 가격이 없는 ${all.miss}건은 비교에서 뺐습니다.`:""}</p>`;
+}
+function bindTrade(){
+  const msg=t=>{ const m=$("#tp_msg"); if(m) m.textContent=t; };
+  $("#tp_t")?.addEventListener("change",()=>{ $("#tp_r").value = $("#tp_t").value==="QLD" && swingSignals(E).some(s=>s.m==="b"&&s.on)? "C":"A"; });
+  $("#tp_add")?.addEventListener("click",()=>{
+    const t=$("#tp_t").value, rule=$("#tp_r").value, px=+$("#tp_px").value, q=+$("#tp_q").value, d=$("#tp_d").value;
+    if(!(px>0) || !(q>0) || !d){ msg("매수가·수량·매수일을 넣어 주세요."); return; }
+    if(rule==="C" && t!=="QLD"){ msg("C안은 QLD 전용입니다."); return; }
+    const a=tpLoad(); a.push({id:Date.now().toString(36), t, rule, px, q, d, sells:[]}); tpSave(a); render();
+  });
+  document.querySelectorAll("[data-sell]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.sell, sp=+document.querySelector(`[data-sp="${id}"]`).value, sq=+document.querySelector(`[data-sq="${id}"]`).value;
+    const a=tpLoad(), p=a.find(x=>x.id===id); if(!p) return;
+    const rem=p.q-(p.sells||[]).reduce((x,s)=>x+s.q,0);
+    if(!(sp>0) || !(sq>0) || sq>rem){ alert(`매도가와 수량(최대 ${rem}주)을 확인해 주세요.`); return; }
+    (p.sells=p.sells||[]).push({d:todayYmd(), px:sp, q:sq}); tpSave(a); render();
+  });
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ if(!confirm("이 포지션 기록을 지울까요?")) return; tpSave(tpLoad().filter(x=>x.id!==b.dataset.del)); render(); });
+  $("#tp_import")?.addEventListener("click",()=>{ try{ const a=JSON.parse($("#tp_io").value); if(!Array.isArray(a)) throw 0; tpSave(a); render(); }catch(e){ alert("형식이 맞지 않습니다."); } });
+  tradePerf();
+}
+
+/* ============================================================
    렌더
    ============================================================ */
-const VIEWS = [["plan","이번 달 매수"],["today","오늘"],["market","시세"],["macro","거시 점검"],["people","인간지표"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["rules","규칙"]];
+const VIEWS = [["plan","이번 달 매수"],["today","오늘"],["trade","트레이딩"],["market","시세"],["macro","거시 점검"],["people","인간지표"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["rules","규칙"]];
 let E = null, DATA = null;
 
 /* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
@@ -1121,7 +1267,7 @@ function vToday(){
   else if(true) todo.push(`현금: QQQ 고점 대비 ${RULES.tranches[0].dd}% 전이라 대기. 월 ${won(E.H.settings.monthly_ammo_krw)}은 SGOV에 적립.`);
   if(!lt.below && E.S.QLD?.chg<=-2) todo.push(`QLD ${pct(E.S.QLD.chg)} — 장투 1층 -2% 매수일 (QLD 몫 집행).`);
   if(lt.below) todo.push("장투 계좌 QLD: QQQ가 200일선 아래라 'QQQ −2% 하락일에 산다' 조건을 끄고, 이번 달 QLD 몫을 살 수 있는 주수만큼 최대 4주에 나눠 삽니다(예: 2주면 1·3주차에 1주씩). 이번 달 매수 탭에 주차별로 나옵니다.");
-  if(sw){ const on = sw.sig.filter(s=>s.on); todo.push(on.length? `스윙 신호: ${on.map(s=>`<b>${s.t}</b> ${s.buy}`).join(", ")}${sw.scale<1? " (거시 수비로 절반)":""}` : "스윙: 오늘 진입 신호 없음."); }
+  todo.unshift(tradeTodayLine(E));   // 11-16 Ben: 트레이딩 요약 한 줄, 상세는 트레이딩 탭
   { const x=w40Info(); if(x) todo.push(x.fresh? `<b>40주선 ${x.w.cross==="golden"? "골든 크로스":"데드 크로스"}</b> (경보): ${x.txt}. ${x.w.cross==="golden"? "추세 회복 신호, 규칙대로 적립을 이어갑니다." : "하락 추세 경계, 규칙(낙폭 사다리)은 그대로입니다."}` : x.long? `<b>40주선 하락 지속 경계</b>: ${x.txt}. 과거 11번 중 4번은 이후 10% 넘게 더 빠졌고 7번은 바닥 근처였습니다. 규칙(낙폭 사다리)은 그대로입니다.` : `40주선: ${x.txt}.`); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
   { const cl=candList(); if(cl.length) todo.push(`<b>매수 후보 ${cl.length}개</b>: ${cl.slice(0,4).map(([t,s,b])=>`${esc(t)}(${esc(acctFor(t,s).a)})`).join(", ")} — 아래 '어느 계좌에서' 표 참고.`); }
@@ -2072,12 +2218,13 @@ function render(){
   const h = (location.hash||"#"+home).slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : home;
   if(view!==h && location.hash) history.replaceState(null,"",location.pathname+location.search+"#"+view);   // 없어진 탭 주소(#settings 등) 정리
-  $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<2?` class="key${i===1?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
-  const fn = {today:vToday, plan:vPlan, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
+  $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<3?` class="key${i===2?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
+  const fn = {today:vToday, plan:vPlan, trade:vTrade, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   stackTables($("#app"));
   if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
+  if(view==="trade") bindTrade();
   if(view==="macro"){ const el=$("#lfc"); (DATA.ml? Promise.resolve(DATA.ml) : getJSON("data/macro_long.json").then(d=>DATA.ml=d)).then(d=>liqInflChart(el,d,{yrs:10})).catch(e=>{ el.innerHTML=`<p class="muted">장기 거시 데이터 없음 (${esc(e.message)})</p>`; }); }
   document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openChart(b.dataset.chart); });   // 시세 표는 줄 전체를 눌러도 열림
   if(view==="rules"){
