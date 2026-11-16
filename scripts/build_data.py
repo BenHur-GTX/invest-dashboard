@@ -272,9 +272,18 @@ def summarize(sym, name, group, cur, rows):
     if len(c) >= 20:
         wv = c[-20:]; mu = sum(wv) / 20; sd = (sum((x - mu) ** 2 for x in wv) / 20) ** 0.5
         bb_lo = mu - 2 * sd; pctb = (last - bb_lo) / (4 * sd) * 100 if sd else 50
+    # 11-16 Ben: 일봉 50/200일선 골든·데드 크로스 (최근 400거래일 안 마지막 교차) — 바닥 골든크로스 2차 가속용
+    x50 = None
+    for k in range(len(c) - 1, max(200, len(c) - 400), -1):
+        a, b = sma(c, 50, k), sma(c, 200, k); a0, b0 = sma(c, 50, k - 1), sma(c, 200, k - 1)
+        if None in (a, b, a0, b0):
+            break
+        if (a > b) != (a0 > b0):
+            x50 = {"cross": "golden" if a > b else "dead", "date": rows[k][0], "days": len(c) - 1 - k}
+            break
     w40 = week40(rows)   # 11-14 Ben: 시세 목록에 종목별 40주선 골든/데드 표시
     return {
-        "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40,
+        "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40, "x50": x50,
         "bb_lo": r2(bb_lo, 4), "bb_pctb": r2(pctb, 0), "bb_break": bool(bb_lo is not None and last < bb_lo),
         "price": r2(last, 4), "prev": r2(prev, 4), "chg": r2((last / prev - 1) * 100),
         "ath": r2(ath, 4), "dd_ath": r2((last / ath - 1) * 100),
