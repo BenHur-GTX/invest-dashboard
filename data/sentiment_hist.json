@@ -13,6 +13,13 @@
 "news_fear_ratio": 87.8,
 "news_fear": 151,
 "news_greed": 21
+},
+"2026-W47": {
+"yt_neg_ratio": 18.2,
+"yt_comments": 251,
+"news_fear_ratio": 86.0,
+"news_fear": 123,
+"news_greed": 20
 }
 },
 "cache": {
