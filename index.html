@@ -911,7 +911,7 @@ function planAmmo(E){
 
 /* ---------- 반등 가속 (Ben 2026-11-08, 백테스트 B) ---------- */
 // QQQ가 5년 고점 대비 -20% 이상 빠진 뒤 회복 상태(200일선 +3% 2일 연속)가 되면
-// 장투 현금 풀(SGOV)의 50%를 QLD로. 현금 계좌는 제외(Ben: 현금 계좌는 최대한 보수적으로). 다시 추세이탈(상태 3·4)하면 가속분만 SGOV로 손절. 전고점 회복 시 초기화, 한 사이클 2회까지.
+// 장투 현금 풀(SGOV)만 사용, 현금 계좌는 제외(Ben: 현금 계좌는 최대한 보수적으로). 비율·정리 규칙은 planBoost 안 11-16 주석. 전고점 회복 시 초기화, 한 사이클 2회까지.
 function planBoost(E){
   const H=E.H||{}, acc=E.acc.list;
   const sg = id => (acc.find(a=>a.id===id)?.pos||[]).filter(p=>p.t==="SGOV").reduce((a,p)=>a+p.v,0);
@@ -919,12 +919,14 @@ function planBoost(E){
   const held = ["longterm"].some(k=>Object.values(H.accounts?.[k]?.boost||{}).some(q=>q>0));
   const cm = E.q.cyc_min;
   const deep = cm!=null && cm<=-20;
+  // 11-16 Ben: 1차 = 정찰병(200일선 회복, SGOV 30%, 200일선 아래로 내려가면 즉시 정리) / 2차 = 본대(바닥 골든크로스, 남은 SGOV 70%, 데드크로스 때만 정리).
+  // 백테스트(2000~ 하락장 6회, 3년 추적, SGOV 풀 기준): 기존(50%/50%, 둘 다 200일선−3% 손절) 기하 평균 +53%·최악 −17% → 이 안 +66%·최악 +6%(닷컴 2000~03 −17% → +6%).
+  const x = E.S.QQQ?.x50;
   const fire = deep && E.state===5 && !held;
-  const stop = held && (E.state===3 || E.state===4);
-  // 11-16 Ben: 2차 가속 = 깊은 하락 뒤 50일선이 200일선 상향 돌파(10거래일 안) → 남은 장투 SGOV의 50% → QLD. 손절은 B와 같음.
-  // 백테스트(1999~): GC 8회, QLD 몫 1년 손절 포함 평균 +31%, 최악 −12% (B 12회 +32%, 최악 −17%). 2022 하락장: B 2023-01-26 → GC 2023-03-10.
-  const x = E.S.QQQ?.x50, gc = deep && x?.cross==="golden" && x.days<=10 && !stop;
-  return {cm, deep, fire, stop, held, amt:ltp*0.5, amm, ltp, gc, gcDate:x?.date};
+  const stop = held && E.q.vs200!=null && E.q.vs200<0 && x?.cross!=="golden";   // 1차만 들고 있을 때(골든크로스 전) 200일선 이탈
+  const gc = deep && x?.cross==="golden" && x.days<=10;
+  const dead = held && x?.cross==="dead" && x.days<=10;   // 2차 정리 신호
+  return {cm, deep, fire, stop, held, amt:ltp*0.3, amt2:ltp*0.7, amm, ltp, gc, dead, gcDate:x?.date, deadDate:x?.date};
 }
 
 /* ---------- 스윙 ---------- */
@@ -1269,9 +1271,10 @@ function vToday(){
   else todo.push(`다음 적립은 <b>${bw.label}</b> (D-${bw.dday}). 지금은 아래 조건부 매수만 확인합니다.`);
   { const bo=planBoost(E);
     { const hs=humanSignals().rows.filter(r=>r.alert); if(hs.length) todo.push(`<b>인간지표 과열 경보</b>: ${hs.map(r=>esc(r.k.split(" (")[0])).join(", ")} 자기 과거 상위 10%. 규칙 변경은 없고, QLD·3배 신규 매수는 한 번 더 확인(과열·현금화 탭).`); }
-    if(bo.fire) todo.push(`<b>반등 가속</b>: QQQ가 ${pct(bo.cm,0)}까지 빠진 뒤 200일선 회복. 장투 현금 풀 SGOV의 50% ${won(bo.amt)} → QLD (현금 계좌는 제외). 다시 추세이탈하면 이 몫만 SGOV로 손절.`);
-    if(bo.gc) todo.push(`<b>반등 가속 2차 (바닥 골든크로스 ${esc(bo.gcDate)})</b>: 50일선이 200일선 위로. 장투 SGOV의 50% ${won(bo.amt)} → QLD (1차 뒤 남은 SGOV 기준). 손절은 1차와 같이 추세이탈 재발 시 이 몫만 SGOV로.`);
-    if(bo.stop) todo.push(`<b>반등 가속 손절</b>: 추세이탈 재발. 가속으로 산 QLD만 매도 → SGOV.`); }
+    if(bo.fire) todo.push(`<b>반등 가속 1차 (정찰병)</b>: QQQ가 ${pct(bo.cm,0)}까지 빠진 뒤 200일선 회복. 장투 SGOV의 30% ${won(bo.amt)} → QLD (현금 계좌 제외). QQQ가 200일선 아래로 내려가면 이 몫은 바로 SGOV로.`);
+    if(bo.gc) todo.push(`<b>반등 가속 2차 (본대, 바닥 골든크로스 ${esc(bo.gcDate)})</b>: 50일선이 200일선 위로. 남은 장투 SGOV의 70% ${won(bo.amt2)} → QLD. 1차가 손절됐어도 따로 들어갑니다. 정리는 데드크로스(50일선 < 200일선) 때만.`);
+    if(bo.dead) todo.push(`<b>반등 가속 2차 정리</b>: 데드크로스(${esc(bo.deadDate)}). 가속으로 산 QLD를 SGOV로.`);
+    if(bo.stop) todo.push(`<b>반등 가속 1차 정리</b>: QQQ가 200일선 아래(골든크로스 전). 1차로 산 QLD만 매도 → SGOV.`); }
   if(am.action){
     const a=am.action;
     todo.push(`현금 <b>${a.t.n}차</b>${a.pre?" (RSI 30 선도착, 절반 선집행)":""}: ${a.ready? "<b>집행일</b>" : "보조지표 2개 미충족 — 대기"} · 잔액의 ${a.pctUse}% = ${am.bal>0? won(a.amt) : `잔액 0원(이번 달 ${won(E.H.settings.monthly_ammo_krw)} 적립 후 그 ${a.pctUse}%)`} · ${mixText(a.t.mix)} · ${a.split} 분할`);
@@ -1419,7 +1422,7 @@ const SCEN_SUMMARY = [   // 11-14 Ben: 휴대폰에서 가로 스크롤 없이, 
   {id:"s4", n:"−30% 이하", c:"폭락", lt:"QQQM 20 · QLD 60 · TQQQ 20 + SGOV 전부", pen:"50 : 50 (나스닥은 액티브)", irp:"68~70%", am:"−30~−60% 단계마다 10~30% 투입", sw:"3배는 1회 3%만", gb:"금 팔지 않음"},
   {id:"def", n:"거시 수비", c:"신호등 빨강 2개 이상", lt:"레버리지 → SGOV (−30%↓면 QQQM 60 · SGOV 40)", am:"레버리지 대신 QQQM으로 투입", sw:"1회 금액 절반"},
   {id:"cut", n:"빅컷", c:"0.5%p 이상 인하", lt:"2주간 주식 70 → 50 → 30%", irp:"위험자산 30%", am:"45일 투입 금지", sw:"주식 10%까지"},
-  {id:"rec", n:"회복", c:"−20%↑ 하락 뒤 200일선 회복", lt:"모은 SGOV 50% → QLD, 골든크로스(50>200일선) 때 남은 SGOV 50% 추가", am:"전고점에서 산 것 절반 차익"},
+  {id:"rec", n:"회복", c:"−20%↑ 하락 뒤 200일선 회복", lt:"1차 SGOV 30% → QLD(200일선 이탈 시 정리), 골든크로스 때 남은 70% → QLD(데드크로스 때 정리)", am:"전고점에서 산 것 절반 차익"},
 ];
 const SCEN_COLS = [["lt","장투"],["pen","연금저축"],["irp","IRP"],["am","현금"],["sw","스윙"],["gb","금·BITO"]];
 function scenCur(){
@@ -1487,13 +1490,13 @@ function vCrash(){
     <p class="muted" style="margin:8px 0 0">칸 = 차수 · QQQ 고점 대비 · 모아둔 돈 중 투입 비율 · 상태. 집행은 보조지표 2개 충족일에 3~5거래일 분할.</p>
     ${am.action? `<p style="margin:8px 0 0"><b>지금: ${am.action.t.n}차 ${am.action.ready? "집행" : "보조지표 대기"}</b> · ${mixText(am.action.t.mix)}</p>` : ""}
     ${(()=>{const bo=planBoost(E); return `<div class="crs">
-      <div><span class="pill2 ${bo.fire?"on":""}">반등 가속</span> −20%↓ 뒤 200일선 +3% 2일 회복 → 장투 SGOV 50%(${won(bo.amt)}) → QLD, 재이탈 시 그 몫만 손절</div>
-      <div><span class="pill2 ${bo.gc?"on":""}">2차 가속</span> 그 뒤 50일선이 200일선 상향 돌파(골든크로스) → 남은 SGOV 50% 추가, 손절 같음</div>
+      <div><span class="pill2 ${bo.fire?"on":""}">반등 가속</span> −20%↓ 뒤 200일선 +3% 2일 회복 → 1차(정찰병) 장투 SGOV 30%(${won(bo.amt)}) → QLD, 200일선 아래로 가면 바로 정리</div>
+      <div><span class="pill2 ${bo.gc?"on":""}">2차 가속</span> 50일선이 200일선 상향 돌파(골든크로스) → 2차(본대) 남은 SGOV 70% → QLD, 데드크로스 때만 정리</div>
       <div><span class="pill2 ${am.settle?"on":""}">회복 정산</span> 전고점 회복 → 현금으로 산 종목(${won(am.invVal||0)}) 절반 SGOV, 절반 장투로</div>
       <div><span class="pill2">집행 순서</span> ① 현금(SGOV) → ② IRP 안전자산 → ③ 기존 1배 일부 전환(4단계만)</div></div>`;})()}
     <details class="mexp"><summary><b>세부 규칙 보기</b></summary><ul class="mx">
       <li><b>차수별 종목</b> ${am.list.map(t=>`${t.n}차 ${mixText(t.mix)}`).join(" · ")}. ${RULES.tranches.length}차는 남은 잔액 전부, 나머지는 그 시점 잔액 대비 비율로 계산합니다.</li>
-      <li><b>반등 가속</b> QQQ가 5년 고점 대비 −20% 이상 빠진 뒤 200일선을 +3% 위로 2일 연속 회복하면 장투 현금 풀 SGOV의 50%를 QLD로 옮깁니다. 현금 계좌는 ${RULES.tranches.map(t=>t.dd).join("/")}% 규칙만 따릅니다. 다시 추세이탈하면 그 몫만 SGOV로 되돌립니다. 이후 50일선이 200일선을 상향 돌파하면(골든크로스) 남은 SGOV의 50%를 QLD로 추가합니다(2022 하락장 기준: 1차 2023-01-26, 2차 2023-03-10).</li>
+      <li><b>반등 가속</b> QQQ가 5년 고점 대비 −20% 이상 빠진 뒤 200일선을 +3% 위로 2일 연속 회복하면 1차(정찰병)로 장투 현금 풀 SGOV의 30%를 QLD로 옮기고, 200일선 아래로 내려가면 바로 SGOV로 되돌립니다. 50일선이 200일선을 상향 돌파하면(골든크로스) 2차(본대)로 남은 SGOV의 70%를 QLD로 옮기고, 데드크로스 때만 정리합니다. 1차가 손절돼도 2차는 따로 들어갑니다(2022 하락장: 1차 2023-01-26, 2차 2023-03-10). 현금 계좌는 ${RULES.tranches.map(t=>t.dd).join("/")}% 규칙만 따릅니다.</li>
       <li><b>회복 정산</b> 매도분은 해외주식 양도세 대상(연 250만 공제 후 22%, 직투 계좌 합산). 큰 차익은 배우자 증여(10년 6억 공제, 3개월 내 신고) 후 매도, 단 증여 후 1년 안에 팔면 이월과세. 이관은 미래에셋 해외주식 대체 출고로 가능하면 세금이 없습니다. 정산 후 1차부터 다시 시작합니다.</li>
       <li><b>위험 제한</b> 장투 1배·QLD는 가격 손절하지 않고 QLD 30% 상한, TQQQ 총자산 10% 상한, HY 6% 규칙으로 제한합니다. 전고점 회복 시 차수를 초기화하고 TQQQ는 전량 QLD·QQQM으로, 2층 QLD는 절반을 QQQM으로 옮깁니다.</li>
     </ul></details>
@@ -2195,7 +2198,7 @@ function vRules(){
     <li><b>연금·IRP 나스닥100 종목</b>: 평상시 TIGER 미국나스닥100(지수형). QQQ가 5년 고점 대비 −20% 이하인 폭락장에서는 TIME 미국나스닥100액티브(최근 6개월 변동성 QQQ의 약 1.8배)로 모읍니다. 연금 계좌는 레버리지 ETF를 못 사서 고베타 1배를 대신 쓰는 것이고, 매도 없이 보유합니다.</li>
     <li><b>새 지표가 규칙에 들어간 곳</b>: ① 볼린저 하단 이탈 → 현금 투입 보조지표 1개 + 스윙 2·3회차 매수일 신호. ② 인간지표 공포(한국 반대매매 2년 상위 10% 또는 AAII 하위 10%) → 현금 투입 보조지표 1개 + 스윙 분할 매수일 신호. ③ 인간지표 과열(미국 빚투 또는 AAII 상위 10%) → 과열 점수 +1, 단 가격 과열 신호가 1개 이상 있을 때만(지표 단독으로는 매도 안 함). ④ 오늘 탭 RSI·공포탐욕·VIX 단계 라벨은 현재 위치 안내이고, 실제 금액은 주문표·현금 차수표를 따릅니다.</li>
     <li><b>보조지표 검증 (2026-11-08)</b>: QQQ·SPY·SOXX·코스피 전 기간. 볼린저 하단 이탈은 이후 21일 수익률이 평소의 약 2배(QQQ 하락 국면 +2.0% vs +0.4%, SOXX +3.2% vs +1.3%)라 스윙 분할매수 날짜 신호로 추가. 슬로우 스토캐스틱은 평소와 차이가 없어 제외. '바닥 확인 후 매수'(스토캐스틱 골든크로스·볼린저 재진입 대기)는 회차 도달일 즉시 매수보다 평균 0.7~2.9% 비싸게 사서 채택 안 함 — 회차 가격에 닿으면 바로 삽니다.</li>
-    <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV 50% → QLD(현금 계좌 제외), 추세이탈 재발 시 그 몫만 SGOV로 손절. 백테스트상 장기 연 +0.3~1.1%p, 닷컴형 최대 손실 약 +2%p. 2차(바닥 골든크로스, 11-16): 50일선>200일선 돌파 10거래일 안이면 남은 SGOV 50% → QLD, 1999년 이후 8회 손절 포함 1년 평균 +31%, 최악 −12%.</li>
+    <li><b>반등 가속</b>: QQQ 5년 고점 −20% 이상 하락 후 회복 상태(200일선 +3% 2일)면 장투 현금 풀 SGOV → QLD(현금 계좌 제외). 1차·2차 차별화(11-16): 1차 30%·200일선 이탈 즉시 정리, 2차 골든크로스 남은 70%·데드크로스 정리. 2000년 이후 하락장 6회(3년 추적) SGOV 풀 기하 평균 +66%, 최악 +6% (기존 50/50·−3% 손절 +53%, 최악 −17%). 최대 낙폭은 −41%로 기존 −39%와 비슷.</li>
     <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 5/10/15/15/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 스윙 계좌(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
