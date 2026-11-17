@@ -1,0 +1,25 @@
+name: ohlc-dump
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-e4ehz4]
+    paths: [.github/workflows/ohlc-dump.yml, scripts/dump_ohlc.py]
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -u scripts/dump_ohlc.py
+      - run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add -f data/_ohlc.json
+          git diff --cached --quiet || git commit -m "data: ohlc dump"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
