@@ -3,7 +3,7 @@
 
 1) 수집(이어받기 가능): 후보 채널마다 2019-07 이후 업로드 영상 중 주(월~일)별 댓글 많은 일반 영상 2개 →
    관련도순 댓글 100개 중 업로드 후 10일 안 댓글만 → 후보 단어 조합별 개수를 data/yt_backfill_raw.json에 저장.
-   쿼터: 검색 100/채널(1회), 목록·영상정보·댓글 각 1. 예산 YT_BUDGET(기본 9300) 넘거나 quotaExceeded면 저장 후 중단.
+   쿼터: 검색 100/채널(1회), 목록·영상정보·댓글 각 1. 예산 YT_BUDGET(기본 7000) 넘거나 quotaExceeded면 저장 후 중단.
 2) 분석: QQQ 주간 낙폭·최근 4주 수익·이후 수익과 비교 → data/yt_study.json
 """
 import json, os, statistics as st, sys, time, urllib.error, urllib.parse, urllib.request
@@ -18,8 +18,11 @@ START = "2019-07-01"
 RAW = "data/yt_backfill_raw.json"
 OUT = "data/yt_study.json"
 KEY = os.environ.get("YOUTUBE_API_KEY")
-BUDGET = int(os.environ.get("YT_BUDGET", "9300"))
+MAX_SEC = int(os.environ.get("YT_MAX_SEC", "2700"))
+BUDGET = int(os.environ.get("YT_BUDGET", "7000"))
 used = 0
+import threading
+_lock = threading.Lock()
 
 
 class Quota(Exception):
@@ -28,13 +31,14 @@ class Quota(Exception):
 
 def api(path, cost=1, **q):
     global used
-    if used + cost > BUDGET:
-        raise Quota("budget")
+    with _lock:
+        if used + cost > BUDGET:
+            raise Quota("budget")
+        used += cost
     q["key"] = KEY
     url = f"https://www.googleapis.com/youtube/v3/{path}?" + urllib.parse.urlencode(q)
     for i in range(3):
         try:
-            used += cost
             with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "invest-dashboard/1.0"}), timeout=30) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
@@ -118,28 +122,59 @@ def list_uploads(C):
     C.setdefault("weeks", {}); C.setdefault("done", [])
 
 
-def fetch_comments(R):
-    """주 단위로 최근부터 채널을 번갈아 가며 → 쿼터에서 멈춰도 채널 간 기간이 고르게 남음"""
+def fetch_comments(R, save):
+    """주 단위로 최근부터 채널을 번갈아 → 쿼터·시간에서 멈춰도 채널 간 기간이 고르게 남음. 8개 병렬, 300건마다 저장."""
+    from concurrent.futures import ThreadPoolExecutor
     tasks = []
     for name, C in R["channels"].items():
         done = set(C.get("done", []))
         for w, vs in C.get("picked", {}).items():
             tasks += [(w, name, vid, p) for vid, p in vs if vid not in done]
     tasks.sort(reverse=True)
-    for w, name, vid, p in tasks:
-        C = R["channels"][name]
+    t0 = time.time()
+
+    def one(t):
+        w, name, vid, p = t
         j = api("commentThreads", part="snippet", videoId=vid, maxResults=100, order="relevance", textFormat="plainText")
         p0 = datetime.fromisoformat(p.replace("Z", "+00:00"))
-        W = C["weeks"].setdefault(w, {"n": 0, "combo": {}})
+        n, combo = 0, Counter()
         for c in (j or {}).get("items", []):
             s = c["snippet"]["topLevelComment"]["snippet"]
             if datetime.fromisoformat(s["publishedAt"].replace("Z", "+00:00")) > p0 + timedelta(days=10):
                 continue
-            W["n"] += 1
+            n += 1
             h = L.hits(s.get("textDisplay", ""))
             if h:
-                k = "|".join(sorted(h)); W["combo"][k] = W["combo"].get(k, 0) + 1
-        C["done"].append(vid)
+                combo["|".join(sorted(h))] += 1
+        return t, n, combo
+
+    for i in range(0, len(tasks), 300):
+        if time.time() - t0 > MAX_SEC:
+            raise Quota("time limit")
+        with ThreadPoolExecutor(8) as ex:
+            res = list(ex.map(lambda t: _safe(one, t), tasks[i:i + 300]))
+        err = None
+        for r in res:
+            if isinstance(r, Exception):
+                err = err or r; continue
+            (w, name, vid, p), n, combo = r
+            C = R["channels"][name]
+            W = C["weeks"].setdefault(w, {"n": 0, "combo": {}})
+            W["n"] += n
+            for k, v in combo.items():
+                W["combo"][k] = W["combo"].get(k, 0) + v
+            C["done"].append(vid)
+        save()
+        print("comments", i + len(res), "/", len(tasks), "units", used, flush=True)
+        if err:
+            raise err
+
+
+def _safe(f, t):
+    try:
+        return f(t)
+    except Exception as e:  # noqa
+        return e
 
 
 def collect():
@@ -150,17 +185,22 @@ def collect():
         R = {"channels": {}}
     R.setdefault("log", [])
     msg = "complete"
+    def save():
+        with open(RAW, "w", encoding="utf-8") as f:
+            json.dump(R, f, ensure_ascii=False, separators=(",", ":"))
     try:
         for name in CANDS:
             C = R["channels"].setdefault(name, {})
             resolve(name, C); list_uploads(C)
             print(name, C.get("title"), C.get("subs"), "regular", C.get("n_regular"), "units", used, flush=True)
-        fetch_comments(R)
+            save()
+        fetch_comments(R, save)
     except Quota as e:
         msg = f"quota stop: {e}"
+    except Exception as e:  # noqa
+        msg = f"error: {type(e).__name__}: {e}"[:300]
     R["log"].append({"at": datetime.now(timezone.utc).isoformat(timespec="minutes"), "units": used, "result": msg})
-    with open(RAW, "w", encoding="utf-8") as f:
-        json.dump(R, f, ensure_ascii=False, separators=(",", ":"))
+    save()
     print(msg, "units", used)
     return R
 
