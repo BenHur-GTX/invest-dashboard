@@ -1589,6 +1589,10 @@ function ddBar(dd){
 }
 
 /* ---------- 인간지표 (Ben 2026-11-08, 참고 경보) ---------- */
+function ytNote(y){ const t=y.study||{}, f=v=>v==null?"–":(v>0?"+":"")+num(v,1)+"%";
+  return `<p>미국·한국 주식 채널 5곳에서 주마다 댓글 많은 영상 2개의 상위 댓글 100개를 읽어, 단어로 극공포·공포·탐욕·극탐욕을 세고 0~100점으로 냅니다(저가매수 대화는 따로 세고 점수에서 뺌). 색은 ${esc(t.from||"2019")} 이후 주간 점수 하위·상위 10% 기준입니다.</p>
+  <p>단어는 2023년까지 데이터로만 골랐습니다(QQQ −15% 이하 주에 1.5배 이상 많으면 공포, 고점권에서 1.5배 이상 많으면 탐욕). 과열 단어로 가정했던 '${esc((t.flipped||[]).join("·"))}'은 실제로는 하락장에서 더 많이 나와 공포 쪽으로 셉니다. 고점권에서 많은 단어는 '${esc((t.greed_words||[]).join("·"))}'뿐입니다.</p>
+  <p>검증(2024년 이후, 단어 고를 때 안 쓴 기간): 점수와 QQQ 낙폭 상관 ${t.rho_dd_test??"–"} → 시장 국면은 잘 비춥니다. 이후 3개월 수익과 상관은 ${t.rho_f13_test??"–"}(2023년까지는 ${t.rho_f13_train??"–"})로 기간마다 달라 예측력은 약합니다. 탐욕 상위 10% 뒤 6개월 QQQ ${f(t.greed_f26)}(전체 ${f(t.all_f26)}, ${t.greed_eps??"–"}개 시기), 공포 하위 10% 뒤 ${f(t.fear_f26)}(${t.fear_eps??"–"}개 시기, 대부분 2022년 한 번의 하락장)이라 공포 쪽 근거는 특히 얇습니다. 그래서 경고용으로만 보고 매매 판정에는 넣지 않습니다.</p>`; }
 function humanSignals(){
   const H=E.M.sentiment||{}; const rows=[];
   const st=(p,hiBad=true)=> p==null? ["n","기준선 쌓는 중"] : (hiBad? (p>=90?["r","과열 극단"]: p<=10?["g","공포 극단"]:["n","보통"]) : (p>=90?["g","공포 극단"]: p<=10?["r","과열 극단"]:["n","보통"]));
@@ -1599,7 +1603,12 @@ function humanSignals(){
   if(k?.deposit){ rows.push({k:"투자자예탁금", v:`${num(k.deposit.value/1e12,1)}조 · 20일 ${pct(k.deposit.chg_20d,1)}${k.credit_to_deposit!=null? " · 신용/예탁 "+num(k.credit_to_deposit,1)+"%":""}`, p:k.deposit.pctile_2y, c:"n", st:"참고", note:"신용/예탁 비율이 높을수록 빚투 비중↑", g:"한국", use:"참고만", alert:false}); }
   if(k?.forced){ const f=k.forced, s=st(f.pctile_2y,false); rows.push({k:"한국 반대매매 금액 (5일 평균)", v:`${num(f.avg5/1e8,0)}억 · ${esc(String(f.date).replace(/(\d{4})(\d{2})(\d{2})/,"$1-$2-$3"))}`, p:f.pctile_2y, c:s[0], st:s[1], note:"급증 = 강제 청산(투매) 국면, 바닥 근처에서 자주 나옴", g:"한국", use:"2년 상위 10% → 현금·스윙 매수일 보조지표", alert:false}); }
   const wp=H.weekly_pctile||{};
-  if(H.youtube){ const y=H.youtube, s=st(wp.yt_neg_ratio,false); rows.push({k:"유튜브 댓글 비관 비율", v:`${y.neg_ratio==null?"–":num(y.neg_ratio,0)+"%"} · 7일 댓글 ${num(y.comments_7d,0)}개`, p:wp.yt_neg_ratio, c:s[0], st:s[1], note:`채널: ${esc(y.channels.map(c=>c.name).join(", "))} · 욕·손절 vs 가즈아·인증`, g:"여론", use:"참고만 (1년 기준선 쌓는 중)", alert:false}); }
+  if(H.youtube){ const y=H.youtube, sc=y.score, cut=y.cut||[], hp=y.pctile_hist;
+    const c= sc==null?"n": (cut.length&&sc<=cut[0])?"g": (cut.length&&sc>=cut[1])?"r":"n";
+    const stt= sc==null?"댓글 부족": c==="g"?"공포 극단": c==="r"?"과열 극단": hp==null?"중립": hp<=30?"공포 쪽": hp>=70?"탐욕 쪽":"중립";
+    const sg=y.stages||{}, okc=(y.channels||[]).filter(x=>!x.error);
+    rows.push({k:"유튜브 댓글 심리 점수", v:`${sc==null?"–":num(sc,0)+"점"} · 극공포 ${sg["극공포"]??0} · 공포 ${sg["공포"]??0} · 탐욕 ${sg["탐욕"]??0} · 극탐욕 ${sg["극탐욕"]??0} (댓글 ${num(y.comments_7d??0,0)}개)`, p:hp??null, c, st:stt,
+      note:`0 극공포 ~ 100 극탐욕 · 채널 ${okc.length}개 · 2019년 이후 주간 점수 대비 위치<details class="mexp sm"><summary>설명 보기</summary><p>채널: ${esc(okc.map(x=>x.name+(x.score==null?"":" "+num(x.score,0))).join(", "))}</p>${ytNote(y)}</details>`, g:"여론", use:"참고만 (매매 판정 미반영)", alert:false}); }
   if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:`반대매매·개미 눈물 vs TQQQ 수익·계좌 인증 (${n.source==="google_news_rss"?"구글 뉴스":"네이버 뉴스"})`, g:"여론", use:"참고만 (1년 기준선 쌓는 중)", alert:false}); }
   return {rows, H};
 }
@@ -1613,7 +1622,7 @@ function humanHTML(){
       <div class="hv">${r.v}</div>
       <div class="hn">${r.note}</div>
       <div class="hu">매매 연결: ${r.use}</div></div>`).join("")}</div>`; }).join("") +
-  `<p class="note">"상위 x%"는 자기 과거(미국 10년·한국 2년·여론 1년) 대비 위치입니다. 빨강 = 과열 극단, 초록 = 공포 극단(역발상 매수 우호). 라오어 카페·서학개미 레버리지 순매수는 매달 25일 캡처로 기록합니다(현재 여론 기록 ${H.weeks_recorded??0}주).${H.errors?.length? "<br>수신 실패: "+esc(H.errors.join(" / ")):""}</p>`;
+  `<p class="note">"상위 x%"는 자기 과거(미국 10년·한국 2년·뉴스 1년·유튜브 2020년 이후) 대비 위치입니다. 빨강 = 과열 극단, 초록 = 공포 극단(역발상 매수 우호). 라오어 카페·서학개미 레버리지 순매수는 매달 25일 캡처로 기록합니다(현재 여론 기록 ${H.weeks_recorded??0}주).${H.errors?.length? "<br>수신 실패: "+esc(H.errors.join(" / ")):""}</p>`;
 }
 function humanSummary(){
   const {rows,H}=humanSignals(); if(!rows.length) return "";
@@ -1621,7 +1630,7 @@ function humanSummary(){
   const short=r=>r.k.split(" (")[0];
   const parts=[`과열 ${hot.length}${hot.length? " ("+hot.map(short).join(", ")+")":""}`, `공포 ${fear.length}${fear.length? " ("+fear.map(short).join(", ")+")":""}`];
   if(H.news?.fear_ratio!=null) parts.push(`뉴스 공포 ${num(H.news.fear_ratio,0)}%`);
-  if(H.youtube?.neg_ratio!=null) parts.push(`유튜브 비관 ${num(H.youtube.neg_ratio,0)}%`);
+  if(H.youtube?.score!=null) parts.push(`유튜브 심리 ${num(H.youtube.score,0)}점`);
   if(H.kofia?.credit?.chg_20d!=null) parts.push(`한국 신용융자 20일 ${pct(H.kofia.credit.chg_20d,1)}`);
   return `<a class="hsum" href="#people"><b>인간지표</b> ${parts.join(" · ")} <span class="muted">→ 자세히</span></a>`;
 }

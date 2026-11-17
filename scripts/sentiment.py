@@ -11,9 +11,6 @@ from email.utils import parsedate_to_datetime
 
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
 
-YT_CHANNELS = ["디벨롭몽"]   # 채널 이름(검색 1회 후 ID 캐시)
-YT_NEG = ["손절", "물렸", "망했", "망함", "한강", "사기", "폭망", "깡통", "반대매매", "지옥", "끝났", "살려", "멘붕", "ㅅㅂ", "시발", "씨발", "개같", "좆", "꼴보기", "탈출"]
-YT_POS = ["가즈아", "풀매수", "인증", "졸업", "부자", "떡상", "익절", "몰빵", "최고", "감사합니다", "수익"]
 NEWS_FEAR = ["반대매매", "개미 눈물", "주식 손실", "패닉셀", "빚투 손실"]
 NEWS_GREED = ["TQQQ 수익", "레버리지 ETF 열풍", "서학개미 순매수", "계좌 인증", "빚투 급증"]
 
@@ -71,45 +68,74 @@ def fed_margin(fred):
     raise ValueError("FRED 마진 시계열 없음")
 
 
-def youtube(key, cache):
-    out = {"channels": []}
-    ids = cache.setdefault("yt_ids", {})
-    since = datetime.now(timezone.utc) - timedelta(days=7)
-    neg = pos = n = 0
-    for name in YT_CHANNELS:
-        cid = ids.get(name)
-        if not cid:
-            j = json.loads(_get("https://www.googleapis.com/youtube/v3/search?" + urllib.parse.urlencode({"part": "snippet", "type": "channel", "q": name, "maxResults": 1, "key": key})))
-            cid = j["items"][0]["snippet"]["channelId"]; ids[name] = cid
-        ch = json.loads(_get("https://www.googleapis.com/youtube/v3/channels?" + urllib.parse.urlencode({"part": "contentDetails", "id": cid, "key": key})))
-        upl = ch["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
-        pl = json.loads(_get("https://www.googleapis.com/youtube/v3/playlistItems?" + urllib.parse.urlencode({"part": "contentDetails", "playlistId": upl, "maxResults": 8, "key": key})))
-        cn = cneg = cpos = 0
-        for it in pl.get("items", []):
-            vid = it["contentDetails"]["videoId"]
-            tok = None
-            for _ in range(3):   # 영상당 최대 300개 최신 댓글
-                q = {"part": "snippet", "videoId": vid, "maxResults": 100, "order": "time", "textFormat": "plainText", "key": key}
-                if tok:
-                    q["pageToken"] = tok
+def youtube(key, cache, data_dir="data"):
+    """과거 검증과 같은 방식: 채널별 최근 7일 일반 영상(3분 이상) 중 댓글 많은 2개 → 관련도순 댓글 100개(업로드 후 10일 안).
+    댓글마다 단계(극공포·공포·저가매수·탐욕·극탐욕)를 매기고 0(극공포)~100(극탐욕) 점수. 쿼터: 채널당 하루 약 4유닛."""
+    import yt_lexicon as L
+    from collections import Counter
+    lex = L.load_stages(data_dir)
+    now = datetime.now(timezone.utc); since = now - timedelta(days=7)
+    up = cache.setdefault("yt_uploads", {})
+    tot = Counter(); n_all = 0; chans = []
+    def api(path, **q):
+        q["key"] = key
+        return json.loads(_get(f"https://www.googleapis.com/youtube/v3/{path}?" + urllib.parse.urlencode(q)))
+    for name, cid in L.CHANNELS.items():
+        try:
+            if cid not in up:
+                up[cid] = api("channels", part="contentDetails", id=cid)["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            pl = api("playlistItems", part="contentDetails", playlistId=up[cid], maxResults=30)
+            vids = [it["contentDetails"]["videoId"] for it in pl.get("items", [])
+                    if it["contentDetails"].get("videoPublishedAt", "") >= since.isoformat()[:19]]
+            pick = []
+            if vids:
+                vj = api("videos", part="contentDetails,statistics,snippet", id=",".join(vids[:50]))
+                import re as _re
+                for v in vj.get("items", []):
+                    m = _re.match(r"P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", v["contentDetails"].get("duration", ""))
+                    d_, h_, mi_, s_ = (int(x or 0) for x in m.groups()) if m else (0, 0, 0, 0)
+                    cc = int(v["statistics"].get("commentCount", 0) or 0)
+                    if d_ * 86400 + h_ * 3600 + mi_ * 60 + s_ >= 180 and cc > 0 and v["snippet"].get("liveBroadcastContent", "none") == "none":
+                        pick.append((cc, v["id"], v["snippet"]["publishedAt"]))
+            c = Counter(); n = 0
+            for cc, vid, p in sorted(pick, reverse=True)[:2]:
+                p0 = datetime.fromisoformat(p.replace("Z", "+00:00"))
                 try:
-                    cj = json.loads(_get("https://www.googleapis.com/youtube/v3/commentThreads?" + urllib.parse.urlencode(q)))
-                except Exception:  # 댓글 꺼진 영상
-                    break
-                stop = False
-                for c in cj.get("items", []):
-                    s = c["snippet"]["topLevelComment"]["snippet"]
-                    if datetime.fromisoformat(s["publishedAt"].replace("Z", "+00:00")) < since:
-                        stop = True; break
-                    t = s.get("textDisplay", "")
-                    cn += 1
-                    cneg += any(k in t for k in YT_NEG); cpos += any(k in t for k in YT_POS)
-                tok = cj.get("nextPageToken")
-                if stop or not tok:
-                    break
-        out["channels"].append({"name": name, "comments_7d": cn, "neg": cneg, "pos": cpos})
-        n += cn; neg += cneg; pos += cpos
-    out.update({"comments_7d": n, "neg": neg, "pos": pos, "neg_ratio": round(neg / (neg + pos) * 100, 1) if neg + pos else None})
+                    cj = api("commentThreads", part="snippet", videoId=vid, maxResults=100, order="relevance", textFormat="plainText")
+                except Exception:  # 댓글 꺼짐
+                    continue
+                for it in cj.get("items", []):
+                    s = it["snippet"]["topLevelComment"]["snippet"]
+                    if datetime.fromisoformat(s["publishedAt"].replace("Z", "+00:00")) > p0 + timedelta(days=10):
+                        continue
+                    n += 1
+                    stg = L.stage_of(L.hits(s.get("textDisplay", ""), lex), lex)
+                    if stg:
+                        c[stg] += 1
+            chans.append({"name": name, "comments": n, "videos": min(2, len(pick)), **{k: c.get(k, 0) for k in L.WEIGHT}, "score": L.score(c)})
+            tot.update(c); n_all += n
+        except Exception as e:  # noqa
+            chans.append({"name": name, "error": f"{type(e).__name__}: {e}"[:120]})
+    sc = L.score(tot)
+    out = {"channels": chans, "comments_7d": n_all, "stages": {k: tot.get(k, 0) for k in L.WEIGHT}, "score": sc}
+    # 과거(2019-07~) 주간 점수 분포 대비 위치
+    try:
+        with open(os.path.join(data_dir, "yt_study.json"), encoding="utf-8") as f:
+            S = json.load(f)
+        hist = [x["score"] for x in S.get("series", []) if x.get("score") is not None]
+        if sc is not None and len(hist) >= 52:
+            out["pctile_hist"] = round(sum(v <= sc for v in hist) / len(hist) * 100)
+            out["hist_weeks"] = len(hist)
+        out["cut"] = S.get("cut_week")
+        b = S.get("buckets", {}); sp = S.get("split", {}).get("selected", {})
+        out["study"] = {"from": next((x["w"] for x in S.get("series", []) if x.get("score") is not None), None), "weeks": len(hist),
+                        "greed_f26": b.get("탐욕 상위10%", {}).get("f26"), "fear_f26": b.get("공포 하위10%", {}).get("f26"), "all_f26": b.get("전체", {}).get("f26"),
+                        "rho_dd_test": sp.get("test", {}).get("dd"), "rho_f13_test": sp.get("test", {}).get("f13"), "rho_f13_train": sp.get("train", {}).get("f13"),
+                        "greed_words": (S.get("lexicon") or {}).get("탐욕", []) + (S.get("lexicon") or {}).get("극탐욕", []),
+                        "flipped": [w for w, r in (S.get("keywords") or {}).items() if r.get("hyp") in ("탐욕", "극탐욕") and w in (S.get("lexicon") or {}).get("공포", [])],
+                        "fear_eps": len(S.get("episodes", {}).get("공포", [])), "greed_eps": len(S.get("episodes", {}).get("탐욕", []))}
+    except Exception:  # noqa
+        pass
     return out
 
 
@@ -231,7 +257,7 @@ def collect(data_dir, fred, now):
     run("margin", lambda: fed_margin(fred))
     yk = os.environ.get("YOUTUBE_API_KEY")
     if yk:
-        run("youtube", lambda: youtube(yk, H["cache"]))
+        run("youtube", lambda: youtube(yk, H["cache"], data_dir))
     nid, nsec = os.environ.get("NAVER_CLIENT_ID"), os.environ.get("NAVER_CLIENT_SECRET")
     if nid and nsec:
         run("news", lambda: naver_news(nid, nsec))
@@ -243,14 +269,14 @@ def collect(data_dir, fred, now):
     # 주간 기록(같은 주는 덮어씀) → 자기 과거 대비 백분위
     y, w, _ = now.isocalendar(); wk = f"{y}-W{w:02d}"
     rec = {}
-    if out.get("youtube", {}).get("neg_ratio") is not None:
-        rec["yt_neg_ratio"] = out["youtube"]["neg_ratio"]; rec["yt_comments"] = out["youtube"]["comments_7d"]
+    if out.get("youtube", {}).get("score") is not None:
+        rec["yt_score"] = out["youtube"]["score"]; rec["yt_comments"] = out["youtube"]["comments_7d"]
     if out.get("news", {}).get("fear_ratio") is not None:
         rec["news_fear_ratio"] = out["news"]["fear_ratio"]; rec["news_fear"] = out["news"]["fear_total"]; rec["news_greed"] = out["news"]["greed_total"]
     if rec:
         H["weeks"][wk] = rec
     past = [H["weeks"][k] for k in sorted(H["weeks"]) if k != wk]
-    for k in ("yt_neg_ratio", "yt_comments", "news_fear_ratio"):
+    for k in ("yt_score", "yt_comments", "news_fear_ratio"):
         if k in rec:
             out.setdefault("weekly_pctile", {})[k] = _pctile([p.get(k) for p in past[-52:]], rec[k])
     out["weeks_recorded"] = len(H["weeks"])

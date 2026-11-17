@@ -17,9 +17,33 @@ CANDIDATES = {
              "fomo", "벼락거지", "나만못", "인생역전", "경제적자유", "파이어족", "부자", "천만원", "억벌"],
 }
 
-# 판정용 사전: yt_backfill 검증 후 확정(2026-11). 검증 전에는 후보 전체를 씀.
-STAGES = CANDIDATES
 WEIGHT = {"극공포": -2, "공포": -1, "저가매수": 0, "탐욕": 1, "극탐욕": 2}
+
+# 실시간 수집 채널(이름: 채널 ID). 2019~2026 과거 검증에서 두 기간(~2023 / 2024~) 모두 QQQ 낙폭과 같은 방향으로 움직인 채널만.
+# 제외: 슈카월드·김작가 TV·전인구경제연구소·월가아재(한 기간에서 0 근처이거나 반대 방향).
+CHANNELS = {
+    "디벨롭몽": "UCvrOll07bwpNzGhBHRB5_yw",
+    "삼프로TV": "UChlv4GSd7OQl3js-jkLOnFA",
+    "소수몽키": "UCC3yfxS5qC6PCwDzetUuEWg",
+    "올랜도 킴 미국주식": "UCwSSqi-s0wcH6pJbH3YPZqQ",
+    "박곰희TV": "UCr7XsrSrvAn_WcU4kF99bbQ",
+}
+TRAIN_END = "2024-01-01"   # 단어 고르기는 이 날짜 전 데이터로만, 이후는 검증용
+
+# 판정용 사전은 검증 결과(data/yt_study.json의 lexicon)를 씀. 파일이 없으면 후보 전체.
+STAGES = CANDIDATES
+
+
+def load_stages(data_dir="data"):
+    import json, os
+    try:
+        with open(os.path.join(data_dir, "yt_study.json"), encoding="utf-8") as f:
+            lx = json.load(f).get("lexicon")
+        if lx and all(k in lx for k in WEIGHT):
+            return lx
+    except Exception:  # noqa
+        pass
+    return CANDIDATES
 
 _ws = re.compile(r"\s+")
 
@@ -58,10 +82,10 @@ def stage_of(words, lex=None):
     return "저가매수" if got == ["저가매수"] else None
 
 
-def score(counts):
+def score(counts, min_m=20):
     """단계별 댓글 수 → 0(극공포)~100(극탐욕). 저가매수는 제외. 걸린 댓글 20개 미만이면 None."""
     f2, f1, g1, g2 = (counts.get(k, 0) for k in ("극공포", "공포", "탐욕", "극탐욕"))
     m = f2 + f1 + g1 + g2
-    if m < 20:
+    if m < min_m:
         return None
     return round(50 + 50 * (2 * g2 + g1 - f1 - 2 * f2) / (2 * m), 1)

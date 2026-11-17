@@ -253,74 +253,124 @@ def stage_counts(W, lex):
     return c
 
 
-def analyze(R, lex=None):
-    lex = lex or L.STAGES
+def pool(R, names, weeks):
+    P = {w: {"n": 0, "combo": Counter()} for w in weeks}
+    for name in names:
+        for w, W in R["channels"].get(name, {}).get("weeks", {}).items():
+            if w in P:
+                P[w]["n"] += W["n"]; P[w]["combo"].update(W["combo"])
+    return P
+
+
+def word_rate(P, w, word):
+    n = P[w]["n"]
+    return (sum(c for k, c in P[w]["combo"].items() if word in k.split("|")) / n * 1000) if n >= 100 else None
+
+
+def select_lexicon(P, Q, weeks):
+    """학습 기간 주간 데이터로 단어 고르기: 하락장(QQQ 1년 고점 대비 −15% 이하) 주 빈도 ÷ 고점권(−3% 이내) 주 빈도.
+    1.5배 이상 → 공포 쪽(가설이 극공포면 극공포, 저가매수면 저가매수, 나머지는 공포), 0.67배 이하 → 탐욕 쪽(가설이 극탐욕이면 극탐욕). 40회 미만 단어 제외."""
+    lex = {k: [] for k in L.WEIGHT}; rows = {}
+    for hyp, words in L.CANDIDATES.items():
+        for word in words:
+            bear, top, tot = [], [], 0
+            for w in weeks:
+                r = word_rate(P, w, word)
+                if r is None:
+                    continue
+                tot += r * P[w]["n"] / 1000
+                (bear if Q[w]["dd"] <= -15 else top if Q[w]["dd"] > -3 else []).append(r)
+            lift = st.mean(bear) / st.mean(top) if bear and top and st.mean(top) > 0 else None
+            rows[word] = {"hyp": hyp, "hits": round(tot), "lift": round(lift, 2) if lift else None}
+            if tot < 40 or lift is None:
+                continue
+            if lift >= 1.5:
+                lex["극공포" if hyp == "극공포" else "저가매수" if hyp == "저가매수" else "공포"].append(word)
+            elif lift <= 0.67:
+                lex["극탐욕" if hyp == "극탐욕" else "탐욕"].append(word)
+    return lex, rows
+
+
+def score_series(P, weeks, lex, min_m=20):
+    out = []
+    for w in weeks:
+        c = stage_counts(P[w], lex)
+        out.append((c, L.score(c, min_m)))
+    s4 = []
+    for i in range(len(out)):
+        v = [x[1] for x in out[max(0, i - 3):i + 1] if x[1] is not None]
+        s4.append(round(sum(v) / len(v), 1) if len(v) >= 2 else None)
+    return out, s4
+
+
+def analyze(R):
     Q = qqq_weekly()
     weeks = sorted(Q)
-    pooled = {w: {"n": 0, "combo": Counter()} for w in weeks}
-    res = {"generated": datetime.now(timezone.utc).isoformat(timespec="minutes"), "lexicon": lex, "channels": {}, "log": R.get("log", [])[-5:]}
+    train = [w for w in weeks if w < L.TRAIN_END]; test = [w for w in weeks if w >= L.TRAIN_END]
+    P_all = pool(R, list(R["channels"]), weeks)
+    P_live = pool(R, [n for n in L.CHANNELS if n in R["channels"]], weeks)
+    lex, kwrows = select_lexicon(P_all, Q, train)
+    res = {"generated": datetime.now(timezone.utc).isoformat(timespec="minutes"), "lexicon": lex, "train_end": L.TRAIN_END,
+           "live_channels": list(L.CHANNELS), "channels": {}, "log": R.get("log", [])[-5:]}
+    # 채널별(고른 사전): 학습·검증 기간 낙폭 상관
     for name, C in R["channels"].items():
-        if not C.get("weeks"):
-            res["channels"][name] = {"title": C.get("title"), "subs": C.get("subs"), "weeks": 0}
-            continue
-        sc, n_all, m_all = {}, 0, 0
-        for w, W in C["weeks"].items():
-            if w in pooled:
-                pooled[w]["n"] += W["n"]; pooled[w]["combo"].update(W["combo"])
-            c = stage_counts(W, lex); sc[w] = L.score(c); n_all += W["n"]; m_all += sum(c.values())
-        xs = [sc.get(w) for w in weeks]
-        res["channels"][name] = {"title": C.get("title"), "subs": C.get("subs"), "regular_videos": C.get("n_regular"), "weeks": len(C["weeks"]),
-                                 "comments": n_all, "match_rate": round(m_all / n_all * 100, 1) if n_all else None,
-                                 "rho_dd": spearman(xs, [Q[w]["dd"] for w in weeks]), "rho_r4": spearman(xs, [Q[w]["r4"] for w in weeks]),
-                                 "rho_f13": spearman(xs, [Q[w]["f13"] for w in weeks])}
-    series = []
-    for w in weeks:
-        c = stage_counts(pooled[w], lex)
-        series.append({"w": w, "n": pooled[w]["n"], **{k: c.get(k, 0) for k in L.WEIGHT}, "score": L.score(c), **Q[w]})
-    # 4주 이동평균(잡음 감소)
-    for i, s in enumerate(series):
-        v = [x["score"] for x in series[max(0, i - 3):i + 1] if x["score"] is not None]
-        s["s4"] = round(sum(v) / len(v), 1) if len(v) >= 2 else None
+        P1 = pool(R, [name], weeks)
+        cs, s4 = score_series(P1, weeks, lex, 8)
+        def rho(ws):
+            ix = [weeks.index(w) for w in ws]
+            return spearman([s4[i] for i in ix], [Q[weeks[i]]["dd"] for i in ix])
+        n_all = sum(P1[w]["n"] for w in weeks)
+        res["channels"][name] = {"title": C.get("title"), "subs": C.get("subs"), "weeks": len(C.get("weeks", {})), "comments": n_all,
+                                 "rho_dd_train": rho(train), "rho_dd_test": rho(test), "live": name in L.CHANNELS}
+    cs, s4 = score_series(P_live, weeks, lex)
+    series = [{"w": w, "n": P_live[w]["n"], **{k: cs[i][0].get(k, 0) for k in L.WEIGHT}, "score": cs[i][1], "s4": s4[i], **Q[w]} for i, w in enumerate(weeks)]
     res["series"] = series
-    for key in ("score", "s4"):
-        xs = [s[key] for s in series]
-        res[f"rho_{key}"] = {k: spearman(xs, [s[k] for s in series]) for k in ("dd", "r4", "f4", "f13", "f26")}
-    # 점수 구간별 이후 QQQ 수익 (전체 표본 분위, 사후 기준)
-    vals = sorted(s["s4"] for s in series if s["s4"] is not None)
+    # 학습/검증 기간별 상관: 고른 사전 vs 후보 전체
+    _, s4c = score_series(P_live, weeks, L.CANDIDATES)
+    def rhos(x, ws):
+        ix = [weeks.index(w) for w in ws]
+        return {k: spearman([x[i] for i in ix], [Q[weeks[i]][k] for i in ix]) for k in ("dd", "r4", "f4", "f13", "f26")}
+    res["split"] = {"selected": {"train": rhos(s4, train), "test": rhos(s4, test), "all": rhos(s4, weeks)},
+                    "candidates": {"train": rhos(s4c, train), "test": rhos(s4c, test), "all": rhos(s4c, weeks)}}
+    # 점수(4주 평균) 구간별 이후 QQQ 수익 — 전체 표본 분위(사후 기준)
+    vals = sorted(v for v in s4 if v is not None)
     if len(vals) > 40:
         lo, hi = vals[len(vals) // 10], vals[len(vals) * 9 // 10]
-        def grp(f):
-            g = [s for s in series if s["s4"] is not None and f(s["s4"])]
-            row = {"n": len(g), "dd": round(st.mean(x["dd"] for x in g), 1)}
+        def grp(f, ws=weeks):
+            g = [s for s in series if s["w"] in ws and s["s4"] is not None and f(s["s4"])]
+            row = {"n": len(g), "dd": round(st.mean(x["dd"] for x in g), 1) if g else None}
             for k in ("f4", "f13", "f26"):
                 r = [x[k] for x in g if x[k] is not None]
                 row[k] = round(st.mean(r), 1) if r else None; row["w" + k] = round(sum(x > 0 for x in r) / len(r) * 100) if r else None
             return row
+        wv = sorted(x["score"] for x in series if x["score"] is not None)
+        res["cut_week"] = [wv[len(wv) // 10], wv[len(wv) * 9 // 10]]
         res["buckets"] = {"cut": [lo, hi], "공포 하위10%": grp(lambda v: v <= lo), "중간": grp(lambda v: lo < v < hi), "탐욕 상위10%": grp(lambda v: v >= hi), "전체": grp(lambda v: True)}
-    # 사건 시점
+        # 탐욕 상위 10% 구간이 몇 번의 서로 다른 시기인지(8주 이상 떨어지면 별개)
+        def episodes(f):
+            ws = [s["w"] for s in series if s["s4"] is not None and f(s["s4"])]
+            ep = []
+            for w in ws:
+                if ep and (datetime.fromisoformat(w) - datetime.fromisoformat(ep[-1][-1])).days <= 56:
+                    ep[-1].append(w)
+                else:
+                    ep.append([w])
+            return [{"from": e[0], "to": e[-1], "weeks": len(e)} for e in ep]
+        res["episodes"] = {"공포": episodes(lambda v: v <= lo), "탐욕": episodes(lambda v: v >= hi)}
     ev = {"2020-03-16": "코로나 급락", "2021-11-15": "2021 고점", "2022-06-13": "2022 1차 저점", "2022-10-10": "2022 바닥",
           "2023-07-17": "2023 반등 고점", "2024-07-08": "2024-07 고점", "2024-08-05": "엔캐리 급락", "2025-04-07": "관세 급락"}
     idx = {s["w"]: s for s in series}
     res["events"] = [{"w": w, "label": lb, **{k: idx[w].get(k) for k in ("score", "s4", "dd", "n")},
-                      "pctile": round(sum(v <= idx[w]["s4"] for v in vals) / len(vals) * 100) if idx.get(w, {}).get("s4") is not None and vals else None}
+                      "pctile": round(sum(v <= idx[w]["s4"] for v in vals) / len(vals) * 100) if idx[w].get("s4") is not None and vals else None}
                      for w, lb in ev.items() if w in idx]
-    # 단어별: 1000댓글당 빈도와 QQQ 낙폭·최근 4주 수익 상관, 하락장(dd≤−15%) vs 고점권(dd>−3%) 빈도 비
-    words = [w for ws in L.CANDIDATES.values() for w in ws]
-    kw = {}
-    for word in words:
-        rate = []
-        for s in series:
-            n = pooled[s["w"]]["n"]
-            h = sum(c for k, c in pooled[s["w"]]["combo"].items() if word in k.split("|"))
-            rate.append(h / n * 1000 if n >= 100 else None)
-        tot = sum(sum(c for k, c in pooled[w]["combo"].items() if word in k.split("|")) for w in weeks)
-        bear = [r for r, s in zip(rate, series) if r is not None and s["dd"] <= -15]
-        top = [r for r, s in zip(rate, series) if r is not None and s["dd"] > -3]
-        stage = next(k for k, v in L.CANDIDATES.items() if word in v)
-        kw[word] = {"stage": stage, "hits": tot, "rho_dd": spearman(rate, [s["dd"] for s in series]), "rho_r4": spearman(rate, [s["r4"] for s in series]),
-                    "bear": round(st.mean(bear), 2) if bear else None, "top": round(st.mean(top), 2) if top else None,
-                    "lift": round(st.mean(bear) / st.mean(top), 2) if bear and top and st.mean(top) > 0 else None}
-    res["keywords"] = kw
+    # 단어별 전체 기간 통계(참고)
+    for word, r in kwrows.items():
+        rate = [word_rate(P_all, w, word) for w in weeks]
+        bear = [x for x, w in zip(rate, weeks) if x is not None and Q[w]["dd"] <= -15]
+        top = [x for x, w in zip(rate, weeks) if x is not None and Q[w]["dd"] > -3]
+        r.update({"rho_dd_all": spearman(rate, [Q[w]["dd"] for w in weeks]),
+                  "lift_all": round(st.mean(bear) / st.mean(top), 2) if bear and top and st.mean(top) > 0 else None})
+    res["keywords"] = kwrows
     res["weeks_bear"] = sum(s["dd"] <= -15 for s in series); res["weeks_top"] = sum(s["dd"] > -3 for s in series)
     return res
 
@@ -335,6 +385,6 @@ if __name__ == "__main__":
     out = analyze(R)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=0)
-    print(json.dumps({k: out.get(k) for k in ("rho_score", "rho_s4", "buckets", "events")}, ensure_ascii=False))
+    print(json.dumps({k: out.get(k) for k in ("lexicon", "split", "buckets", "episodes", "events")}, ensure_ascii=False))
     for n, c in out["channels"].items():
         print(n, c)
