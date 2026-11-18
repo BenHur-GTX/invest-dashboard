@@ -1700,6 +1700,14 @@ function humanSignals(){
   if(H.tragic){ const x=H.tragic, cut=x.cut||2, hit=x.count>=cut, sd=x.study||{}, top=sd["상위 10% 달"]||{}, all=sd["전체"]||{}, f=v=>v==null?"–":(v>0?"+":"")+num(v,1)+"%";
     rows.push({k:"투자 손실 비극 보도 (14일)", v:`${x.count}건 (국내 ${x.ko} · 해외 ${x.en})`, p:null, c:hit?"g":"n", st:hit?"바닥 신호 후보":x.count?"보도 있음":"없음",
       note:`주식·코인 손실 뒤 극단적 선택 보도 · ${cut}건 이상이면 표시<details class="mexp sm"><summary>설명 보기</summary>${(x.titles||[]).length?"<p>"+x.titles.map(t=>esc((t.d||"")+" "+t.t)).join("<br>")+"</p>":""}<p>구글 뉴스(국내·해외)에서 제목에 극단적 선택·숨진 채와 주식·코인·빚투가 함께 나온 기사만 셉니다. 2019년 이후 이런 보도가 많았던 달(월 ${cut}건 이상, ${esc((x.top_months||[]).join(", "))}) QQQ 낙폭 평균 ${f(top.qdd)}·비트코인 ${f(top.bdd)}(전체 달 평균 ${f(all.qdd)}·${f(all.bdd)}), 이후 3개월 안 추가 하락 QQQ ${f(top.qmore)}·비트코인 ${f(top.bmore)}, 6개월 뒤 QQQ ${f(top.qf6)}·비트코인 ${f(top.bf6)}입니다. 2019~2026년 중 잡힌 달은 7개뿐이고 대부분 고점 근처였습니다(2021-04 국내 코인 보도 뒤 비트코인 −45% 추가 하락). 2022년 루나 폭락 때 보도는 과거 검색에 잡히지 않아 검색 범위도 불완전합니다. 바닥 근거가 확인되지 않아 매매 판정에는 넣지 않고 경고로만 봅니다.</p></details>`, g:"여론", use:"경고만 (바닥 근처 확인용, 매매 판정 미반영)", alert:false}); }
+  if(H.hype){ const x=H.hype, hit=!!x.hot, g=x.groups||{}, top=g["과열 달"]||{}, all=g["전체"]||{}, f=v=>v==null?"–":(v>0?"+":"")+num(v,1)+"%", mo=v=>v==null?"–":num(v,1)+"개월";
+    const cs=(x.cases||[]).map(c=>`<tr><td>${esc(c.sig)}</td><td class="l">${esc(c.what)}</td><td>${esc(c.peak)}</td><td>${c.lag==null?"–":c.lag<0?"고점 뒤":c.lag+"개월"}</td><td>${esc(c.after)}</td></tr>`).join("");
+    rows.push({k:"테마 광풍·'이번엔 다르다' 보도 (30일)", v:`${x.n}건 (광풍 ${x.wave} · 이번엔 다르다 ${x.diff}) · 국내 ${x.ko} · 해외 ${x.en}${H.youtube?.hype? ` · 유튜브 댓글 7일 광풍 ${H.youtube.hype.wave} · 이번엔 다르다 ${H.youtube.hype.diff}`:""}`, p:x.pct24??null, c:hit?"r":"n", st:hit?"과열 감시":x.pct24==null?"기준선 없음":"보통",
+      note:`AI·반도체·코인·2차전지 + 광풍·열풍 / 이번엔 다르다·거품 아니다 · 직전 24개월 상위 10%면 표시<details class="mexp sm"><summary>설명 보기</summary>${(x.titles||[]).length?"<p>"+x.titles.map(t=>esc((t.d||"")+" "+t.t)).join("<br>")+"</p>":""}
+      <div class="tbl"><table><tr><th>신호</th><th class="l">사례</th><th>고점</th><th>고점까지</th><th>이후</th></tr>${cs}</table></div>
+      <p>과거 사례: 광풍·'이번엔 다르다'가 대중 매체 전면에 나온 뒤 고점까지 0~6개월이 많았지만, 1996년 그린스펀 경고는 3년 3개월 일렀고 2023년 AI 광풍은 3년 넘게 고점이 오지 않았습니다. 정점 근처라는 뜻은 있어도 시점은 못 맞춥니다.</p>
+      ${top.months? `<p>구글 뉴스 ${esc(x.from||"")}~ 월별 검증: 과열 달 ${top.months}개월 뒤 1년 안 QQQ 고점까지 ${mo(top.qpk)}(전체 ${mo(all.qpk)}), 그 고점 뒤 최대 하락 ${f(top.qmdd)}(전체 ${f(all.qmdd)}), 1년 뒤 ${f(top.qf12)}(전체 ${f(all.qf12)}). ${esc((x.top_months||[]).join(", "))}</p>`:""}
+      <p>경고용입니다. 매매 판정에는 넣지 않습니다.</p></details>`, g:"여론", use:"경고만 (QLD·3배 신규 매수 한 번 더 확인, 매매 판정 미반영)", alert:hit}); }
   if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:`반대매매·개미 눈물 vs TQQQ 수익·계좌 인증 (${n.source==="google_news_rss"?"구글 뉴스":"네이버 뉴스"})`, g:"여론", use:"참고만 (1년 기준선 쌓는 중)", alert:false}); }
   return {rows, H};
 }
@@ -1722,6 +1730,7 @@ function humanSummary(){
   const parts=[`과열 ${hot.length}${hot.length? " ("+hot.map(short).join(", ")+")":""}`, `공포 ${fear.length}${fear.length? " ("+fear.map(short).join(", ")+")":""}`];
   if(H.news?.fear_ratio!=null) parts.push(`뉴스 공포 ${num(H.news.fear_ratio,0)}%`);
   if(H.tragic?.count>=(H.tragic?.cut||2)) parts.push(`비극 보도 ${H.tragic.count}건(바닥 신호)`);
+  if(H.hype?.hot) parts.push(`광풍 보도 ${H.hype.n}건(과열 감시)`);
   if(H.youtube?.score!=null) parts.push(`유튜브 심리 ${num(H.youtube.score,0)}점`);
   if(H.kofia?.credit?.chg_20d!=null) parts.push(`한국 신용융자 20일 ${pct(H.kofia.credit.chg_20d,1)}`);
   return `<a class="hsum" href="#people"><b>인간지표</b> ${parts.join(" · ")} <span class="muted">→ 자세히</span></a>`;

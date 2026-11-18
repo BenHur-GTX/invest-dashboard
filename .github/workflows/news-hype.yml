@@ -1,0 +1,29 @@
+name: news-hype
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-y49qz3]
+    paths: [scripts/news_hype.py, .github/workflows/news-hype.yml]
+permissions:
+  contents: write
+concurrency:
+  group: news-hype
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -u scripts/news_hype.py
+      - if: always()
+        run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/news_hype_study.json
+          git diff --cached --quiet || git commit -m "study: news hype"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
