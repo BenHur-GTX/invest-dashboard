@@ -19,6 +19,7 @@ QUERIES = [
 TRAGIC = {"ko": re.compile(r"극단\s*적?\s*선택|숨진\s*채|목숨|투신|스스로\s*생"), "en": re.compile(r"suicide|took (his|her|their) own life|killed (himself|herself)", re.I)}
 INVEST = {"ko": re.compile(r"주식|코인|비트코인|가상\s*화폐|가상\s*자산|암호\s*화폐|빚투|투자|루나|선물|레버리지|증권"),
           "en": re.compile(r"stock|crypto|bitcoin|trading|trader|investor|luna|terra|ftx|robinhood|market", re.I)}
+FOLLOWUP = re.compile(r"lawsuit|sued|settle|소송|합의", re.I)   # 예전 사건 후속 기사 제외
 HL = {"ko": {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}, "en": {"hl": "en-US", "gl": "US", "ceid": "US:en"}}
 
 
@@ -34,7 +35,7 @@ def search(lang, q, after=None, before=None, when=None):
     for it in root.iter("item"):
         t = (it.findtext("title") or "").strip()
         title = re.sub(r"\s+-\s+[^-]+$", "", t)   # 끝의 '- 언론사' 제거
-        if TRAGIC[lang].search(title) and INVEST[lang].search(title):
+        if TRAGIC[lang].search(title) and INVEST[lang].search(title) and not FOLLOWUP.search(title):
             try:
                 d = parsedate_to_datetime(it.findtext("pubDate")).date().isoformat()
             except Exception:  # noqa
@@ -57,12 +58,23 @@ def collect(**kw):
     return out
 
 
-def live(days=14):
+def live(days=14, data_dir="data"):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
     arts = [a for a in collect(when=f"{days}d") if not a["date"] or a["date"] >= since]
     arts.sort(key=lambda a: a["date"] or "", reverse=True)
     return {"days": days, "count": len(arts), "ko": sum(a["lang"] == "ko" for a in arts), "en": sum(a["lang"] == "en" for a in arts),
-            "titles": [{"t": a["title"][:90], "d": a["date"], "l": a["lang"]} for a in arts[:5]]}
+            "titles": [{"t": a["title"][:90], "d": a["date"], "l": a["lang"]} for a in arts[:5]], **_study_summary(data_dir)}
+
+
+def _study_summary(data_dir):
+    try:
+        with open(os.path.join(data_dir, "news_extreme_study.json"), encoding="utf-8") as f:
+            S = json.load(f)
+    except Exception:  # noqa
+        return {}
+    g = S.get("groups", {})
+    return {"cut": S.get("cut_top10"), "study": {k: g.get(k) for k in ("상위 10% 달", "전체")},
+            "top_months": [r["m"] for r in S.get("series", []) if r["n"] >= (S.get("cut_top10") or 99)]}
 
 
 def study():

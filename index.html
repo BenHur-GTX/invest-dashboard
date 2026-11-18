@@ -1300,6 +1300,7 @@ function vToday(){
   if(bw.inWindow) todo.push(`<b>적립 매수 기간입니다.</b> 이번 달 매수 탭의 표대로 장투 ${won(E.H.settings.monthly_longterm_krw)}·연금저축 ${won(E.H.settings.monthly_pension_krw)}을 집행하세요.`);
   else todo.push(`다음 적립은 <b>${bw.label}</b> (D-${bw.dday}). 지금은 아래 조건부 매수만 확인합니다.`);
   { const bo=planBoost(E);
+    { const tg=(E.M.sentiment||{}).tragic; if(tg && tg.count>=(tg.cut||2)) todo.push(`<b>바닥 신호 후보</b>: 최근 14일 투자 손실 비극 보도 ${tg.count}건. 과거 사례는 바닥과 맞지 않은 경우가 많아 규칙 변경은 없습니다(인간지표 탭).`); }
     { const hs=humanSignals().rows.filter(r=>r.alert); if(hs.length) todo.push(`<b>인간지표 과열 경보</b>: ${hs.map(r=>esc(r.k.split(" (")[0])).join(", ")} 자기 과거 상위 10%. 규칙 변경은 없고, QLD·3배 신규 매수는 한 번 더 확인(과열·현금화 탭).`); }
     if(bo.fire) todo.push(`<b>반등 가속 1차 (정찰병)</b>: QQQ가 ${pct(bo.cm,0)}까지 빠진 뒤 200일선 회복. 장투 SGOV의 30% ${won(bo.amt)} → QLD (현금 계좌 제외). QQQ가 200일선 아래로 내려가면 이 몫은 바로 SGOV로.`);
     if(bo.gc) todo.push(`<b>반등 가속 2차 (본대, 바닥 골든크로스 ${esc(bo.gcDate)})</b>: 50일선이 200일선 위로. 남은 장투 SGOV의 70% ${won(bo.amt2)} → QLD. 1차가 손절됐어도 따로 들어갑니다. 정리는 데드크로스(50일선 < 200일선) 때만.`);
@@ -1609,6 +1610,9 @@ function humanSignals(){
     const sg=y.stages||{}, okc=(y.channels||[]).filter(x=>!x.error);
     rows.push({k:"유튜브 댓글 심리 점수", v:`${sc==null?"–":num(sc,0)+"점"} · 극공포 ${sg["극공포"]??0} · 공포 ${sg["공포"]??0} · 탐욕 ${sg["탐욕"]??0} · 극탐욕 ${sg["극탐욕"]??0} (댓글 ${num(y.comments_7d??0,0)}개)`, p:hp??null, c, st:stt,
       note:`0 극공포 ~ 100 극탐욕 · 채널 ${okc.length}개 · 2019년 이후 주간 점수 대비 위치<details class="mexp sm"><summary>설명 보기</summary><p>채널: ${esc(okc.map(x=>x.name+(x.score==null?"":" "+num(x.score,0))).join(", "))}</p>${ytNote(y)}</details>`, g:"여론", use:"참고만 (매매 판정 미반영)", alert:false}); }
+  if(H.tragic){ const x=H.tragic, cut=x.cut||2, hit=x.count>=cut, sd=x.study||{}, top=sd["상위 10% 달"]||{}, all=sd["전체"]||{}, f=v=>v==null?"–":(v>0?"+":"")+num(v,1)+"%";
+    rows.push({k:"투자 손실 비극 보도 (14일)", v:`${x.count}건 (국내 ${x.ko} · 해외 ${x.en})`, p:null, c:hit?"g":"n", st:hit?"바닥 신호 후보":x.count?"보도 있음":"없음",
+      note:`주식·코인 손실 뒤 극단적 선택 보도 · ${cut}건 이상이면 표시<details class="mexp sm"><summary>설명 보기</summary>${(x.titles||[]).length?"<p>"+x.titles.map(t=>esc((t.d||"")+" "+t.t)).join("<br>")+"</p>":""}<p>구글 뉴스(국내·해외)에서 제목에 극단적 선택·숨진 채와 주식·코인·빚투가 함께 나온 기사만 셉니다. 2019년 이후 이런 보도가 많았던 달(월 ${cut}건 이상, ${esc((x.top_months||[]).join(", "))}) QQQ 낙폭 평균 ${f(top.qdd)}·비트코인 ${f(top.bdd)}(전체 달 평균 ${f(all.qdd)}·${f(all.bdd)}), 이후 3개월 안 추가 하락 QQQ ${f(top.qmore)}·비트코인 ${f(top.bmore)}, 6개월 뒤 QQQ ${f(top.qf6)}·비트코인 ${f(top.bf6)}입니다. 2019~2026년 중 잡힌 달은 7개뿐이고 대부분 고점 근처였습니다(2021-04 국내 코인 보도 뒤 비트코인 −45% 추가 하락). 2022년 루나 폭락 때 보도는 과거 검색에 잡히지 않아 검색 범위도 불완전합니다. 바닥 근거가 확인되지 않아 매매 판정에는 넣지 않고 경고로만 봅니다.</p></details>`, g:"여론", use:"경고만 (바닥 근처 확인용, 매매 판정 미반영)", alert:false}); }
   if(H.news){ const n=H.news, s=st(wp.news_fear_ratio,false); rows.push({k:"뉴스 공포 기사 비율", v:`${n.fear_ratio==null?"–":num(n.fear_ratio,0)+"%"} · 공포 ${n.fear_total} / 탐욕 ${n.greed_total}건 (7일)`, p:wp.news_fear_ratio, c:s[0], st:s[1], note:`반대매매·개미 눈물 vs TQQQ 수익·계좌 인증 (${n.source==="google_news_rss"?"구글 뉴스":"네이버 뉴스"})`, g:"여론", use:"참고만 (1년 기준선 쌓는 중)", alert:false}); }
   return {rows, H};
 }
@@ -1630,6 +1634,7 @@ function humanSummary(){
   const short=r=>r.k.split(" (")[0];
   const parts=[`과열 ${hot.length}${hot.length? " ("+hot.map(short).join(", ")+")":""}`, `공포 ${fear.length}${fear.length? " ("+fear.map(short).join(", ")+")":""}`];
   if(H.news?.fear_ratio!=null) parts.push(`뉴스 공포 ${num(H.news.fear_ratio,0)}%`);
+  if(H.tragic?.count>=(H.tragic?.cut||2)) parts.push(`비극 보도 ${H.tragic.count}건(바닥 신호)`);
   if(H.youtube?.score!=null) parts.push(`유튜브 심리 ${num(H.youtube.score,0)}점`);
   if(H.kofia?.credit?.chg_20d!=null) parts.push(`한국 신용융자 20일 ${pct(H.kofia.credit.chg_20d,1)}`);
   return `<a class="hsum" href="#people"><b>인간지표</b> ${parts.join(" · ")} <span class="muted">→ 자세히</span></a>`;

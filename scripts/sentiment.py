@@ -276,6 +276,11 @@ def collect(data_dir, fred, now):
         run("news", lambda: naver_news(nid, nsec))
     else:
         run("news", google_news)
+    try:
+        import news_extreme as NX
+        run("tragic", lambda: NX.live(14, data_dir))
+    except Exception as e:  # noqa
+        out["errors"].append(f"tragic: {e}"[:200])
     dk = os.environ.get("DATA_GO_KR_KEY")
     if dk:
         run("kofia", lambda: kofia(dk))
