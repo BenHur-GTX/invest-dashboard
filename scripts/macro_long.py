@@ -41,7 +41,7 @@ def main():
     for k, sid, st in [("ff", "FEDFUNDS", START), ("m2", "M2SL", START), ("cpi", "CPIAUCSL", START),
                        ("core", "CPILFESL", START), ("walcl", "WALCL", "2002-12-01"),
                        ("tga", "WTREGEN", "2002-12-01"), ("rrp", "RRPONTSYD", "2002-12-01"),
-                       ("pce", "PCEPILFE", START)]:
+                       ("pce", "PCEPILFE", START), ("gs10", "GS10", START), ("unrate", "UNRATE", START)]:
         s[k] = monthly(fred(sid, st))
         print(k, len(s[k]), list(s[k].items())[-1])
     try:
@@ -56,7 +56,7 @@ def main():
             # WALCL·WTREGEN 백만$, RRP 십억$ → 십억$
             nl[m] = s["walcl"][m] / 1000 - s["tga"][m] / 1000 - s["rrp"].get(m, 0)
     out = {"months": months}
-    for k in ["ff", "m2", "cpi", "core", "pce", "krm2"]:
+    for k in ["ff", "m2", "cpi", "core", "pce", "krm2", "gs10", "unrate"]:
         out[k] = [round(s[k][m], 4) if m in s[k] else None for m in months]
     out["netliq"] = [round(nl[m], 1) if m in nl else None for m in months]
     os.makedirs("data", exist_ok=True)

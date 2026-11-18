@@ -290,8 +290,21 @@ def summarize(sym, name, group, cur, rows):
             x50 = {"cross": "golden" if a > b else "dead", "date": rows[k][0], "days": len(c) - 1 - k}
             break
     w40 = week40(rows)   # 11-14 Ben: 시세 목록에 종목별 40주선 골든/데드 표시
+    # 11-18 Ben: 도망 경보용 월말 종가 10개월선 (마지막 달은 진행 중으로 보고 확정은 직전 월말)
+    mc = {}
+    for r in rows:
+        mc[r[0][:7]] = r[4]
+    mk = sorted(mc)
+    m10 = None
+    if len(mk) >= 11:
+        done = mk[:-1]
+        sma10 = sum(mc[k] for k in done[-10:]) / 10
+        live10 = (sum(mc[k] for k in done[-9:]) + last) / 10
+        m10 = {"month": done[-1], "close": r2(mc[done[-1]], 4), "sma10": r2(sma10, 4),
+               "gap": r2((mc[done[-1]] / sma10 - 1) * 100), "below": mc[done[-1]] < sma10,
+               "live_sma10": r2(live10, 4), "live_gap": r2((last / live10 - 1) * 100), "live_below": last < live10}
     return {
-        "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40, "x50": x50,
+        "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40, "x50": x50, "m10": m10,
         "bb_lo": r2(bb_lo, 4), "bb_pctb": r2(pctb, 0), "bb_break": bool(bb_lo is not None and last < bb_lo),
         "price": r2(last, 4), "prev": r2(prev, 4), "chg": r2((last / prev - 1) * 100),
         "ath": r2(ath, 4), "dd_ath": r2((last / ath - 1) * 100),

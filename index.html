@@ -352,6 +352,22 @@ td .inline input{width:78px}
 .ntag{flex:0 0 auto;min-width:64px;text-align:center;font-size:12px;font-weight:700;border-radius:4px;padding:1px 6px;background:#efede7;color:var(--ink)}
 .ntag.t-b{background:#dbe6f7;color:#1f3f7a} .ntag.t-s{background:#f6e3c8;color:#6b4200} .ntag.t-g{background:#f3e9c2;color:#5c4a00} .ntag.t-c{background:#e4dcf2;color:#3e2a6b} .ntag.t-y{background:#f6edc8;color:#5c4a00}
 
+.stl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 10px}
+.stl>div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;color:var(--ink2)}
+.stl>div b{display:block;font-size:15px;color:var(--ink)} .stl>div span{font-size:12px;line-height:1.35;display:block}
+.stl>div.on{border-width:2px} .stl>div.on.g{border-color:var(--ok);background:#eef7f1} .stl>div.on.y{border-color:var(--warn);background:#fdf6e7} .stl>div.on.r{border-color:var(--bad);background:#fdeeec}
+@media (max-width:560px){.stl{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cy-wrap{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:18px;align-items:center}
+@media (max-width:640px){.cy-wrap{grid-template-columns:1fr}.cy-ring{max-width:280px;margin:0 auto}}
+.cy-ring{width:100%;height:auto;display:block}
+.cy-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+@media (max-width:640px){.cy-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cy-chip{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.cy-chip .k{font-size:12px;color:var(--ink2)} .cy-chip .v{font-size:19px;font-weight:800;line-height:1.3} .cy-chip .s{font-size:11.5px;color:var(--ink2)}
+.cy-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}
+.cy-tbl th,.cy-tbl td{padding:4px 6px;text-align:right;border-bottom:1px solid var(--line)} .cy-tbl th{font-weight:600;color:var(--ink2);font-size:12px}
+.cy-tbl .l{text-align:left} .cy-tbl i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.cy-tbl tr.on td{font-weight:800;background:#f6f5f1} .cy-tbl td.r{color:var(--bad);font-weight:700}
 .lfc{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#6250d6} .lfc [hidden]{display:none!important}
 .lfk{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:10px}
 .lfk>div{background:#fff;padding:8px 10px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px} .lfk .muted{flex-basis:100%;font-size:12px} .lfk b{font-size:17px} .lfk b.us{font-size:14px;color:var(--ink2);font-weight:600}
@@ -531,9 +547,12 @@ function engine(D){
   const L = macroLights(mac);
   const lc = l => l.mode ?? l.c;   // 10년물은 표시 색과 판정 색이 다름 (5%대 = 표시 빨강, 판정 노랑)
   const reds = L.filter(l=>lc(l)==="r").length, yel = L.filter(l=>lc(l)==="y").length, known = L.filter(l=>l.c!=="n").length;
-  const mode = known===0 ? {name:"판정 대기", c:"n"} : reds>=2 ? {name:"수비", c:"r"} : (reds===1||yel>=2) ? {name:"중립", c:"y"} : {name:"공격", c:"g"};
+  // 11-18 Ben: 수비는 빨강 2개가 2주 넘게 이어질 때 켜고, 4주 연속 빨강 1개 이하일 때 끔 (주 단위 과거값으로 재계산)
+  const defP = defensePersist(mac);
+  let mode = known===0 ? {name:"판정 대기", c:"n"} : defP.on ? {name:"수비", c:"r"} : (reds>=1||yel>=2) ? {name:"중립", c:"y"} : {name:"공격", c:"g"};
+  if(!defP.on && reds>=2) mode.wait = defP.streak;
   const hy = mac.hy?.v;
-  const noLev = mode.name==="수비" || (hy!=null && hy>=6);
+  let noLev = mode.name==="수비" || (hy!=null && hy>=6);
 
   // 계좌 평가
   const acc = valueAccounts(H, S, fx);
@@ -553,11 +572,66 @@ function engine(D){
   if(state===3||state===4) alerts.push({c:"info", t:`QQQ ${RULES.states[state].name} 상태: 장투 계좌 QLD는 −2% 하락일 매수를 끄고, 월 QLD 몫을 매주 1번씩 4번 나눠 삽니다. 1배 지수는 계속 삽니다.`});
   const bc = bigCut(mac);
   if(bc) alerts.push({c:"bad", t:`<b>연준 빅컷</b> ${esc(bc.date)} ${num(bc.delta*100,0)}bp 인하 후 <b>${bc.days}일째</b> (45일 경보 구간). 과거 2001·2007·2020년 빅컷 뒤 큰 하락이 이어졌고, 2024년은 헛경보였습니다. 첫 반등에 현금 투입 금지, 안전장치 규칙은 확정 대기.`});
+  const flee = fleeAlert(M);
+  if(flee.on && mode.name!=="수비") mode = {name:"수비", c:"r"};   // 도망은 수비 행동 + 레버리지 정리
+  if(flee.on) noLev = true;
+  const ladder = flee.on? {name:"도망", c:"r", step:3} : mode.name==="수비"? {...mode, step:2} : {...mode, step: mode.name==="중립"?1:0};
+  if(flee.on) alerts.push({c:"bad", t:`<b>도망 경보</b> QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위. 장투 보유 QLD·TQQQ 전량 → SGOV, 신규 적립 전액 SGOV. 1배 보유분·연금저축은 그대로.`});
   if(acc.directTotal >= (H?.settings?.cash_trigger_krw||1e8)) alerts.push({c:"info", t:`직투 자산 1억 도달 — 스윙 계좌 현금 50% 규칙 적용.`});
 
-  return {M,S,H,fx,q,vix,fng,dd,state,stage,aux,auxN,L,mode,noLev,hy,acc,alerts};
+  return {M,S,H,fx,q,vix,fng,dd,state,stage,aux,auxN,L,mode,noLev,hy,acc,alerts,flee,ladder,defP};
 }
 
+// 11-18 Ben: 도망 경보 = QQQ 월말 종가 10개월선 아래 AND 실업률 > 최근 12개월 평균. 기존 수비 모드와 별개.
+// 검증(1971~ S&P500): 연 12.1% / MDD −29% vs 보유 11.0% / −51%. 효과는 2000·2008만, 1987·2020·2022는 못 피함. 나스닥100 MDD −81→−56%.
+function fleeAlert(M){
+  const q=M.symbols?.QQQ?.m10, u=(M.macro?.unrate?.spark||[]).filter(v=>v!=null);
+  const u12 = u.length>=12? u.slice(-12).reduce((a,b)=>a+b,0)/12 : null, uv=u.length? u[u.length-1] : null;
+  const p = !!q?.below, un = uv!=null && u12!=null && uv>u12;
+  return {on: p&&un, p, un, q, uv, u12, known: !!q && u12!=null};
+}
+// 11-18 Ben: 공격 → 중립 → 수비 → 도망 한 줄 사다리
+function stageStripHTML(){
+  const st=[["공격","g","규칙대로 적립·레버리지 허용"],["중립","y","레버리지 절반만"],["수비","r","신규 레버리지 멈춤, 1배로"],["도망","r","보유 레버리지 정리, 신규 전액 SGOV"]];
+  const cur=E.ladder.step;
+  return `<div class="stl">${st.map(([n,c,t],i)=>`<div class="${i===cur?"on "+c:""}"><b>${n}</b><span>${t}</span></div>`).join("")}</div>
+  ${E.mode.wait? `<p class="muted" style="margin:4px 0 0">빨강 2개 ${E.mode.wait}주째 · 3주 연속이면 수비</p>`:""}`;
+}
+function fleeHTML(){
+  const f=E.flee, q=f.q;
+  const tile=(t,on,v,sub)=>`<div class="light"><div class="t">${t}</div><div class="st ${on?"r":"g"}"><span class="dot ${on?"r":"g"}"></span>${on?"충족":"아님"}</div><div class="d">${v}${sub? `<br><span class="muted">${sub}</span>`:""}</div></div>`;
+  return `<div class="panel"><p style="margin:0 0 10px">${f.on? pill("도망 경보 켜짐","r") : pill("꺼짐","g")} <span class="muted">${f.on? "장투 QLD·TQQQ 정리 → SGOV, 신규 적립 전액 SGOV" : "2개 모두 충족할 때만 켜짐"}</span></p>
+  <div class="lights">
+    ${tile("가격: QQQ 월말 10개월선 아래", f.p, q? `${esc(q.month)} 종가 ${num(q.close,2)} · 10개월선 ${num(q.sma10,2)} (${q.gap>0?"+":""}${num(q.gap,1)}%)` : "데이터 대기", q? `이번 달 진행 중 ${q.live_gap>0?"+":""}${num(q.live_gap,1)}%${q.live_below!==q.below? (q.live_below? " · 월말 아래면 충족":" · 월말 위면 해제") : ""}` : "")}
+    ${tile("고용: 실업률 12개월 평균 위", f.un, f.uv!=null? `실업률 ${num(f.uv,1)}% · 12개월 평균 ${num(f.u12,2)}%` : "데이터 대기", "")}
+  </div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>눌림이 아니라 침체형 하락장일 때만 비중을 줄이는 경보입니다. 기존 거시 수비 모드(신규 매수 조절)는 그대로 두고 따로 판정합니다. 켜지면 장투 계좌의 QLD·TQQQ 보유분을 팔아 SGOV로, 신규 적립과 모은 SGOV 사다리 투입은 멈춥니다. 1배 지수 보유분, 연금저축·IRP·현금 계좌·스윙 계좌는 바꾸지 않습니다. 둘 중 하나라도 꺼지면 다음 달부터 평소 규칙으로 돌아갑니다.</p><p>1971년 이후 S&P500 기준 연 12.1%·최대낙폭 −29%(보유 11.0%·−51%), 나스닥100은 최대낙폭 −81% → −56%. 효과는 2000·2008년 두 번에서 나왔고 1987·2020·2022년은 못 피했습니다. 2010년 이후만 보면 보유보다 연 1.7%p 낮습니다. 다시 살 때는 저점보다 17~36% 위입니다.</p></details></div>`;
+}
+// 주 단위 과거 시점 거시값 (스파크라인 끝에서 wk주 전): 일간 ×5, 주간 ×1, 월간 ÷4.33
+function macroAt(m, wk){
+  if(!wk) return m;
+  const o={...m}, cut=(a,n)=>a&&a.length>n? a.slice(0,a.length-n) : null;
+  for(const k of ["dgs10","dgs2","hy","sofr","iorb","t10y2y","vix"]) if(m[k]?.spark){ const sp=cut(m[k].spark,wk*5); o[k]={...m[k], spark:sp||[], v: sp? sp[sp.length-1] : null}; }
+  if(m.hy?.spark){ const sp=o.hy.spark; o.hy.chg4w = sp.length>21? sp[sp.length-1]-sp[sp.length-21] : null; }
+  if(m.icsa?.spark){ const sp=cut(m.icsa.spark,wk)||[]; o.icsa={...m.icsa, spark:sp, v:sp[sp.length-1]??null, avg4: sp.length>=4? sp.slice(-4).reduce((a,b)=>a+b,0)/4 : null}; }
+  if(m.sahm?.spark){ const sp=cut(m.sahm.spark,Math.round(wk/4.33))||m.sahm.spark; o.sahm={...m.sahm, v:sp[sp.length-1]}; }
+  if(m.netliq?.spark){ const sp=cut(m.netliq.spark,wk)||[]; let down=0; for(let i=sp.length-1;i>0;i--){ if(sp[i]<sp[i-1]) down++; else break; }
+    o.netliq={...m.netliq, spark:sp, v:sp[sp.length-1]??null, chg4w: sp.length>5? sp[sp.length-1]-sp[sp.length-5] : null, weeks_down:down}; }
+  const iso=new Date(Date.now()-wk*7*864e5).toISOString().slice(0,10);
+  if(m.fedu){ const later=(m.fedu.changes||[]).filter(x=>x.date>iso); o.fedu={...m.fedu, v: m.fedu.v - later.reduce((a,x)=>a+x.delta,0), changes:(m.fedu.changes||[]).filter(x=>x.date<=iso)}; }
+  o._asOf = iso;
+  return o;
+}
+function defensePersist(m){
+  const R=[]; for(let wk=16; wk>=0; wk--){ try{ const L=macroLights(macroAt(m,wk)); R.push(L.filter(l=>(l.mode??l.c)==="r").length); }catch(e){ R.push(0); } }
+  let on=false, low=0, streak=0;
+  for(let i=0;i<R.length;i++){
+    streak = R[i]>=2? streak+1 : 0;
+    if(!on && streak>=3) on=true;            // 이번 주 포함 3번 연속 = 2주 넘게 지속
+    if(on){ low = R[i]<=1? low+1 : 0; if(low>=4){ on=false; low=0; } }
+  }
+  return {on, streak, hist:R};
+}
 function macroLights(m){
   const out = [];
   // 금리
@@ -565,7 +639,7 @@ function macroLights(m){
     const f = m.fedu, d2 = m.dgs2?.v;
     let c="n", st="데이터 대기", d="기준금리 상단(DFEDTARU)·2년물(DGS2)";
     if(f?.v!=null){
-      const six = new Date(); six.setMonth(six.getMonth()-6);
+      const six = m._asOf? new Date(m._asOf) : new Date(); six.setMonth(six.getMonth()-6);
       const recent = (f.changes||[]).filter(x=>new Date(x.date)>=six);
       const hikes = recent.filter(x=>x.delta>0).length, cuts = recent.filter(x=>x.delta<0).length;
       const emerg = recent.some(x=>x.delta<=-0.5);
@@ -578,10 +652,11 @@ function macroLights(m){
     }
     out.push({t:"금리 사이클", c, st, d});
   }
-  // 장기금리 (11-13 Ben): 미 10년물. 표시는 5%↑ 경고(빨강). 모드 판정은 5.0~5.5% 노랑, 5.5%↑ 빨강 (1990년대엔 5~7%에서도 강세장이라 5%만으로 수비 전환은 과함)
+  // 장기금리 (11-13 Ben): 미 10년물. 표시는 5%↑ 경고(빨강). 모드 판정은 11-18부터 6개월 상승폭(+0.5%p 노랑, +1%p 빨강)
   {
-    const t = m.dgs10?.v, g = rateGrade(t), f = m.fedu?.v;
-    out.push({t:"장기금리 (미 10년물)", c:g.c, st:g.st, d: t!=null? `10년물 ${num(t,2)}% · 기준금리 상단 ${num(f,2)}% · 차이 ${f!=null? (t-f>=0?"+":"")+num(t-f,2)+"%p":"–"}` : "10년물(DGS10) 데이터 대기 — 다음 갱신부터 표시", mode: t==null? "n" : t>=5.5? "r" : t>=5.0? "y" : "g"});
+    // 11-18 Ben: 모드 판정은 6개월(약 126거래일) 상승폭. +1%p 빨강, +0.5%p 노랑. 표시 색(5%↑ 경고)은 그대로
+    const t = m.dgs10?.v, g = rateGrade(t), f = m.fedu?.v, sp=m.dgs10?.spark||[], t6 = sp.length>126? sp[sp.length-127] : null, d6 = t!=null&&t6!=null? t-t6 : null;
+    out.push({t:"장기금리 (미 10년물)", c:g.c, st:g.st, d: t!=null? `10년물 ${num(t,2)}% · 6개월 ${d6==null?"–":(d6>=0?"+":"")+num(d6,2)+"%p"} · 기준금리 상단 ${num(f,2)}%` : "10년물(DGS10) 데이터 대기 — 다음 갱신부터 표시", mode: d6==null? (t==null?"n":"g") : d6>=1? "r" : d6>=0.5? "y" : "g"});
   }
   { const e = empLight(m); out.push({t:"고용", ...e}); }
   // 유동성
@@ -652,13 +727,15 @@ function bigCutHTML(onlyActive){
   <div class="tbl"><table><tr><th class="l">계좌</th><th>지금 주식 비중</th><th>목표</th><th>줄일 금액</th><th class="l">단계</th></tr>${rows}</table></div>
   <p class="note">근거: 2001·2007·2008·2020년 빅컷 뒤 45~90일 안에 QQQ가 5~45% 더 빠졌고, 2024년 9월은 헛경보였습니다. 장투 백테스트(세전, B안 대비): 2주 3단계 축소 + 45일 뒤 200일선 위에서 복귀 = 연 −0.0~+0.1%p, 닷컴 최악 손실 −38.5% → −35.6%(가장 작음). 45일 뒤 무조건 복귀는 연 +0.0~+0.5%p지만 최악 손실 −36.0%. '덜 먹더라도 덜 잃기' 원칙에 맞춰 추세 조건을 씁니다. 세금 반영 검증은 남아 있습니다. 주식 비중은 SGOV·머니마켓·초단기국채를 뺀 나머지입니다.</p></div>`;
 }
+// 11-18 Ben: 실업수당은 고정 30만/25만 대신 52주 저점 대비 변화폭 (+20% 빨강, +10% 노랑). 고정 기준은 1970~90년대에 상시 빨강이었음
 function empLight(m){
   const s = m.sahm?.v, ic = m.icsa?.avg4 ?? m.icsa?.v;
   if(s==null && ic==null) return {c:"n", st:"데이터 대기", d:"샴 룰(SAHMREALTIME)·신규 실업수당(ICSA)"};
+  const sp=(m.icsa?.spark||[]).slice(-52).filter(v=>v!=null), low = sp.length>=8? Math.min(...sp) : null, rise = ic!=null && low? (ic/low-1)*100 : null;
   let c="g", st="양호";
-  if((s!=null && s>=0.5) || (ic!=null && ic>=300000)){ c="r"; st="침체 신호"; }
-  else if((s!=null && s>=0.3) || (ic!=null && ic>=250000)){ c="y"; st="둔화"; }
-  return {c, st, d:`샴 룰 ${num(s,2)} · 실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"} · 실업률 ${num(m.unrate?.v,1)}%`};
+  if((s!=null && s>=0.5) || (rise!=null && rise>=20)){ c="r"; st="침체 신호"; }
+  else if((s!=null && s>=0.3) || (rise!=null && rise>=10)){ c="y"; st="둔화"; }
+  return {c, st, d:`샴 룰 ${num(s,2)} · 실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"}${rise!=null? ` (52주 저점 +${num(rise,0)}%)`:""} · 실업률 ${num(m.unrate?.v,1)}%`};
 }
 
 function priceOf(t, S){ const s=S[t]; return s?.price ?? null; }
@@ -772,7 +849,7 @@ function planLongterm(E){
     if(E.stage===0){ mv("SPYM","SCHD",30*k200); mv("QLD","SGOV",(alloc.QLD||0)/2); notes.push(["거시 중립", "SPYM 30만 → SCHD · QLD 절반 → SGOV", "y"]); }
     else { const l=lev()/2; mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",Math.max(0,l-(alloc.TQQQ||0))); notes.push(["거시 중립", "1배 그대로 · 레버리지 절반만 QQQM으로", "y"]); }
   } else if(E.mode.name==="수비" || (E.hy!=null && E.hy>=6)){
-    const why = E.hy>=6 ? "HY 스프레드 6% 이상" : "거시 수비(빨강 2개 이상)";
+    const why = E.hy>=6 ? "HY 스프레드 6% 이상" : "거시 수비(빨강 2개 3주 연속)";
     if(E.stage===4 && !priceFirst){
       const l=(alloc.QLD||0)+(alloc.TQQQ||0);
       mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",alloc.QLD||0); mv("QQQM","SGOV",l/2);
@@ -785,6 +862,11 @@ function planLongterm(E){
       mv("TQQQ","QQQM",alloc.TQQQ||0); mv("QLD","QQQM",alloc.QLD||0);
       notes.push(`${why}이지만 QQQ 고점 대비 ${pct(E.dd)}로 가격 신호 우선: 1배는 계속 사고 레버리지 몫만 QQQM으로.`);
     }
+  }
+  // ⓪ 도망 경보 (11-18 Ben): 신규 적립 전액 SGOV, 보유 레버리지 정리. 1배 보유분은 그대로
+  if(E.flee?.on){
+    for(const t of Object.keys(alloc)) if(t!=="SGOV") mv(t,"SGOV",alloc[t]);
+    notes.push(["도망 경보", "신규 적립 전액 SGOV · 보유 QLD·TQQQ 전량 매도 → SGOV · 모은 SGOV 사다리 투입 멈춤 · 1배 보유분은 그대로", "r"]);
   }
   // ② 과열 점수
   if(hot && (alloc.QLD||0)>0){ const q=alloc.QLD; mv("QLD","SCHD",q/2); mv("QLD","SGOV",q/2); let extra=0; if(oh.score>=3) extra=mv("QQQM","SCHD",20*k200);
@@ -1225,7 +1307,7 @@ function vTrade(){
   <details class="mexp sm"><summary>규칙 보기</summary>
     <p><b>일반 스윙</b>: 1년 고점 대비 빅테크 −30%, QLD −40%, TQQQ·SOXL −55%, 성장주 −70% + 그 종목 RSI ≤ 30. 1회 계좌 25%(성장주 12.5%), 동시 4개. ${esc(SWING_EXIT)}.</p>
     <p><b>QLD 반등 C안</b>: QQQ 40주 데드 + 40주선 −10% 이하 + RSI ≤ 30. ${esc(BOUNCE_EXIT)}.</p>
-    <p>거시 수비(빨강 2개 이상)면 1회 금액 절반. 신호 있는 달만 월 적립에서 20만 배정, 다 정리하면 이익 50%는 장투로.</p>
+    <p>거시 수비(빨강 2개 3주 연속)면 1회 금액 절반. 신호 있는 달만 월 적립에서 20만 배정, 다 정리하면 이익 50%는 장투로.</p>
   </details>`;
 }
 async function tradePerf(){
@@ -1287,7 +1369,7 @@ function stagesHTML(E){
   // 11-15 Ben: 위 칸과 겹치는 공포탐욕·VIX 줄은 빼고, 모드를 바꾸는 10년물·하이일드를 다음 경계까지 거리와 함께
   const m=E.M.macro||{}, t10=m.dgs10?.v;
   const row=(c,name,val,lv,nx)=>`<div><span class="hdot ${c}"></span><b>${name} ${val}</b><span class="lv">${lv}</span><span class="nx">${nx}</span></div>`;
-  const t10r = t10==null? "" : row(t10>=5.5?"r":t10>=5?"y":t10>=4.5?"y":"g", "10년물", num(t10,2)+"%", t10>=5.5?"빨강":t10>=5?"노랑 (경고)":t10>=4.5?"주의":"안정", t10>=5.5? "5.5%↑ 수비 1표" : t10>=5? `빨강까지 +${num(5.5-t10,2)}%p` : `노랑까지 +${num(5-t10,2)}%p`);
+  const t10r = t10==null? "" : row(t10>=5.5?"r":t10>=5?"y":t10>=4.5?"y":"g", "10년물", num(t10,2)+"%", t10>=5.5?"빨강":t10>=5?"노랑 (경고)":t10>=4.5?"주의":"안정", (()=>{ const L=E.L.find(l=>l.t.startsWith("장기금리")); return L?.mode==="r"? "6개월 +1%p↑ 수비 1표" : "판정: 6개월 +1%p"; })());
   return cell("RSI",q.rsi,R,Rn,1) + t10r;
 }
 function renderHero(){
@@ -1302,7 +1384,7 @@ function renderHero(){
   const mm=E.M.macro||{}, LL=Object.fromEntries(E.L.map(l=>[l.t,l])), Lr=LL["금리 사이클"], Lt=LL["장기금리 (미 10년물)"], Le=LL["고용"], Ll=LL["유동성"], Lc=LL["신용"], nl=mm.netliq;
   const cF=E.fng==null?"n": E.fng<=25? "r" : E.fng<=45? "y" : E.fng>=80? "r" : "g";
   $("#hero").innerHTML = `
-    <div class="mode"><div class="k">${D(E.mode.c)}거시 모드</div><div class="v">${esc(E.mode.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
+    <div class="mode"><div class="k">${D(E.ladder.c)}거시 단계</div><div class="v">${esc(E.ladder.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
     <div><div class="k">${D(Lr?.c||"n")}기준금리</div><div class="v">${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}</div><div class="s">연준<br>${esc(Lr?.st||"–")}</div></div>
     <div><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
     <div><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
@@ -1441,7 +1523,7 @@ function macroSummary(){
   const act = m.name==="수비"? "신규 레버리지 중단, 현금 투입은 1배 지수로만" : m.name==="중립"? "규칙대로 적립. −10% 구간 QLD 몫은 절반을 QQQM으로" : m.name==="공격"? "규칙대로 적립·레버리지 허용" : "데이터 갱신 대기";
   const short={"금리 사이클":"금리","장기금리 (미 10년물)":"10년물","고용":"고용","유동성":"유동성","신용":"신용"};
   return `<div class="msum"><div class="tlamp" aria-hidden="true"><i class="${m.c==="r"?"on r":""}"></i><i class="${m.c==="y"?"on y":""}"></i><i class="${m.c==="g"?"on g":""}"></i></div>
-    <div><div class="mn ${m.c}">${esc(m.name)} 모드</div><div class="mc">빨강 ${r} · 노랑 ${y} · 초록 ${g} <br>빨강 2개↑ 수비 · 빨강 1개 또는 노랑 2개↑ 중립</div>
+    <div><div class="mn ${m.c}">${esc(m.name)} 모드</div><div class="mc">빨강 ${r} · 노랑 ${y} · 초록 ${g} <br>빨강 2개 3주 연속 수비 · 빨강 1개 또는 노랑 2개↑ 중립 · 도망 경보는 별도</div>
     <div class="ma"><b>${act}</b></div>
     <div class="mdots">${L.map(l=>`<span><span class="dot ${lc(l)}"></span>${esc(short[l.t]||l.t)}</span>`).join("")}</div></div></div>`;
 }
@@ -1449,10 +1531,10 @@ function macroGauges(){
   const m=E.M.macro||{}, L=Object.fromEntries(E.L.map(l=>[l.t,l])), out=[];
   { const l=L["금리 사이클"]; const lab=["인하기","동결","고점 동결","인상기","침체형 인하","긴급 인하"], cols=["g","g","y","y","r","r"];
     out.push(segGauge({t:"금리 사이클", c:l.c, st:l.st, labels:["인하","동결","고점 동결","인상","침체 인하","긴급 인하"], idx:lab.indexOf(l.st), cols, d:esc(l.d)})); }
-  { const l=L["장기금리 (미 10년물)"], v=m.dgs10?.v;
-    out.push(gauge({t:"장기금리 (미 10년물)", c:l.c, st:l.st, vtxt:v!=null? num(v,2)+"%":"–", v, min:3, max:6.5, zones:[[4.5,"g"],[5.5,"y"],[6.5,"r"]], ticks:[4.5,5,5.5], fmt:x=>x+"%", d:"판정: 5~5.5% 노랑, 5.5%↑ 빨강 · 화면 경고는 5%↑"})); }
+  { const l=L["장기금리 (미 10년물)"], t=m.dgs10?.v, sp=m.dgs10?.spark||[], t6=sp.length>126? sp[sp.length-127]:null, v=t!=null&&t6!=null? t-t6 : null, mc=l.mode??l.c;
+    out.push(gauge({t:"장기금리 (미 10년물) 6개월 변화", c:mc, st:mc==="r"?"급등":mc==="y"?"상승":"안정", vtxt:v!=null? (v>=0?"+":"")+num(v,2)+"%p":"–", v, min:-1, max:2, zones:[[0.5,"g"],[1,"y"],[2,"r"]], ticks:[0,0.5,1], fmt:x=>(x>0?"+":"")+x+"%p", d:`판정: 6개월 +0.5%p 노랑, +1%p 빨강 · 지금 ${num(t,2)}% (화면 경고는 5%↑)`})); }
   { const l=L["고용"], v=m.sahm?.v, ic=m.icsa?.avg4??m.icsa?.v;
-    out.push(gauge({t:"고용 (샴 룰)", c:l.c, st:l.st, vtxt:v!=null? num(v,2):"–", v, min:-0.2, max:0.8, zones:[[0.3,"g"],[0.5,"y"],[0.8,"r"]], ticks:[0.3,0.5], d:`실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"} (25만↑ 노랑, 30만↑ 빨강) · 실업률 ${num(m.unrate?.v,1)}%`})); }
+    out.push(gauge({t:"고용 (샴 룰)", c:l.c, st:l.st, vtxt:v!=null? num(v,2):"–", v, min:-0.2, max:0.8, zones:[[0.3,"g"],[0.5,"y"],[0.8,"r"]], ticks:[0.3,0.5], d:`실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"} (52주 저점 +10% 노랑, +20% 빨강) · 실업률 ${num(m.unrate?.v,1)}%`})); }
   { const l=L["유동성"], nl=m.netliq, lab=["증가","4주 감소","13주 연속 감소","자금시장 경색"];
     out.push(segGauge({t:"유동성 (순유동성)", c:l.c, st:l.st, vtxt:nl?.chg4w!=null? `4주 ${nl.chg4w>0?"+":""}${num(nl.chg4w,0)}B$`:"", labels:["증가","4주 감소","13주 연속↓","경색"], idx:lab.indexOf(l.st), cols:["g","y","r","r"], d:esc(l.d)})); }
   { const l=L["신용"], v=m.hy?.v;
@@ -1538,7 +1620,7 @@ const SCEN_SUMMARY = [   // 11-14 Ben: 휴대폰에서 가로 스크롤 없이, 
   {id:"s2", n:"−15%", c:"−15 ~ −20%", lt:"QQQM 45 · SPYM 25 · QLD 30 + SGOV 22%", pen:"50 : 50", irp:"62~65%"},
   {id:"s3", n:"−20%", c:"−20 ~ −30%", lt:"QQQM 30 · SPYM 10 · QLD 60 + SGOV 43%", pen:"50 : 50 (나스닥은 액티브)", irp:"62~65%", am:"−25%에서 5% 투입"},
   {id:"s4", n:"−30% 이하", c:"폭락", lt:"QQQM 20 · QLD 60 · TQQQ 20 + SGOV 전부", pen:"50 : 50 (나스닥은 액티브)", irp:"68~70%", am:"−30~−60% 단계마다 10~30% 투입", sw:"3배는 1회 3%만", gb:"금 팔지 않음"},
-  {id:"def", n:"거시 수비", c:"신호등 빨강 2개 이상", lt:"레버리지 → SGOV (−30%↓면 QQQM 60 · SGOV 40)", am:"레버리지 대신 QQQM으로 투입", sw:"1회 금액 절반"},
+  {id:"def", n:"거시 수비", c:"신호등 빨강 2개 3주 연속", lt:"레버리지 → SGOV (−30%↓면 QQQM 60 · SGOV 40)", am:"레버리지 대신 QQQM으로 투입", sw:"1회 금액 절반"},
   {id:"cut", n:"빅컷", c:"0.5%p 이상 인하", lt:"2주간 주식 70 → 50 → 30%", irp:"위험자산 30%", am:"45일 투입 금지", sw:"주식 10%까지"},
   {id:"rec", n:"회복", c:"−20%↑ 하락 뒤 200일선 회복", lt:"1차 SGOV 30% → QLD(200일선 이탈 시 정리), 골든크로스 때 남은 70% → QLD(데드크로스 때 정리)", am:"전고점에서 산 것 절반 차익"},
 ];
@@ -2167,12 +2249,14 @@ function vMacro(){
   const m=E.M.macro||{};
   const cards = E.L.map(l=>`<div class="light"><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
   const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
-  return `<h2>금리 한눈에</h2>${ratesHTML(m)}
+  return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
+  <h2>도망 경보</h2>${fleeHTML()}
+  <h2>금리 한눈에</h2>${ratesHTML(m)}
   <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
-  <h2>거시 신호등 · 현재 모드: ${pill(E.mode.name,E.mode.c)}</h2>
+  <h2>거시 신호등 · 현재 단계: ${pill(E.ladder.name,E.ladder.c)}</h2>${stageStripHTML()}
   <div class="lights">${cards}</div>
-  <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 공격·수비 모드를 정합니다. 빨강 2개 이상 → 수비(신규 레버리지 중단, 현금 1배로만), 빨강 1개 또는 노랑 2개 이상 → 중립. 장기금리(10년물)는 5% 이상이면 <b>경고</b>(빨강)로 표시합니다. 다만 모드 판정에서는 5.0~5.5%를 노랑 1개, 5.5% 이상을 빨강 1개로 셉니다. 1995~2000년엔 10년물이 5~7%였는데도 나스닥이 5배 올라서, 5%만으로 수비 모드까지 가는 건 근거가 약합니다. 데이터: FRED(무료). PMI·EPS 전망은 무료 소스가 없어 수동 확인 항목입니다.</p></details>
+  <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 단계를 정합니다. 빨강 2개가 3주 연속(2주 넘게)이면 수비, 수비 중엔 빨강 1개 이하가 4주 이어져야 풀립니다. 빨강 1개 또는 노랑 2개는 중립. 도망은 거시 신호등과 별개로 '도망 경보'(QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위)가 켜질 때입니다.</p><p>11-18부터 고정 숫자 대신 변화폭으로 판정합니다. 10년물은 6개월 +1%p 빨강·+0.5%p 노랑(5% 이상 표시 경고는 그대로), 실업수당은 52주 저점 대비 +20% 빨강·+10% 노랑. 고정 기준(10년물 5.5%, 실업수당 30만)은 1971년 이후 61% 기간을 수비로 판정했고, 변화폭 기준은 약 22%입니다. 수익 차이는 없었습니다. 데이터: FRED(무료).</p></details>
   <h2>저등급 신용 · 사모대출 <span class="muted">경고용</span></h2>${creditWatchHTML(m)}
   <h2>공포탐욕</h2>
   <div class="panel">${fngGauge(E.fng, E.M.fng)}</div>
@@ -2208,9 +2292,71 @@ function ratesHTML(m){
       <details class="mexp sm"><summary>설명 보기</summary><p>5.5%는 박종훈 소장이 "돌파 직후 미국 자산이 다 같이 내렸다"고 짚은 선입니다(매매 규칙 아님). 장기채는 금리와 관계없이 사지 않는다는 것이 화자의 입장입니다.</p></details></div>
   </div>`;
 }
+
+// 11-18 Ben: 금리·물가 사이클 국면. 돈 풀림 → 물가 상승 → 금리 인상 → 고점 동결 → 금리 인하 → 침체형 인하
+// 판정(월간, FRED): 기준금리 6개월 +0.2%p↑ 인상 / −0.2%p↓ 인하(실업률이 12개월 저점 +0.5%p↑면 침체형) /
+// 24개월 저점 +1%p↑이면서 고점 −0.5%p 안 = 고점 동결 / CPI 3%↑ & 6개월 전보다 상승 = 물가 상승 / 나머지 = 돈 풀림·안정
+// 통계: S&P500 1971~2025, 국면별 12개월 안에 −15% 이상 하락 확률 (평균 13%). 경고·참고용, 매매 판정 미반영
+const CYC = [
+  {k:"ease",   n:"돈 풀림·안정", p15:3,  r12:12.9, col:"#cfe5d8"},
+  {k:"infl",   n:"물가 상승",   p15:32, r12:6.5,  col:"#f0b48a"},
+  {k:"hike",   n:"금리 인상",   p15:15, r12:8.4,  col:"#f6d6b8"},
+  {k:"peak",   n:"고점 동결",   p15:10, r12:2.8,  col:"#e4e1da"},
+  {k:"cut",    n:"금리 인하",   p15:10, r12:11.5, col:"#cfdcea"},
+  {k:"recess", n:"침체형 인하", p15:28, r12:7.5,  col:"#e39a8f"},
+];
+const CYC_BEARS = ["1961-12","1966-02","1968-11","1973-01","1980-11","1987-08","2000-03","2007-10","2020-02","2022-01"];
+function cyclePhases(d){
+  const M=d.months, ff=d.ff, cpi=d.cpi, un=d.unrate||[];
+  const yoy=i=> i>=12 && cpi[i]!=null && cpi[i-12]? (cpi[i]/cpi[i-12]-1)*100 : null;
+  const unAt=i=>{ for(let j=i;j>=0&&j>i-3;j--) if(un[j]!=null) return un[j]; return null; };
+  const ffAt=i=>{ for(let j=i;j>=0&&j>i-3;j--) if(ff[j]!=null) return ff[j]; return null; };
+  return M.map((m,i)=>{
+    if(i<24) return null;
+    const f=ffAt(i), f6=ffAt(i-6); if(f==null||f6==null) return null;
+    const d6=f-f6;
+    if(d6>=0.2) return "hike";
+    if(d6<=-0.2){ const u=unAt(i); let mn=Infinity; for(let j=i-11;j<=i;j++){ const x=unAt(j); if(x!=null) mn=Math.min(mn,x); } return u!=null && u-mn>=0.5? "recess" : "cut"; }
+    let mn=Infinity, mx=-Infinity; for(let j=i-23;j<=i;j++){ const x=ffAt(j); if(x!=null){ mn=Math.min(mn,x); mx=Math.max(mx,x); } }
+    if(f-mn>=1 && mx-f<0.5) return "peak";
+    const c=yoy(i), c6=yoy(i-6);
+    if(c!=null && c>=3 && c6!=null && c>c6) return "infl";
+    return "ease";
+  });
+}
+function cycleRing(el, d){
+  const P=cyclePhases(d), M=d.months; let li=P.length-1; while(li>0 && P[li]==null) li--;
+  const cur=P[li], ci=CYC.findIndex(c=>c.k===cur); let run=0; for(let j=li;j>=0&&P[j]===cur;j--) run++;
+  const lastIdx=a=>{ for(let i=a.length-1;i>=0;i--) if(a[i]!=null) return i; return -1; };
+  const yoyA=a=>a.map((v,i)=>i<12||v==null||a[i-12]==null? null : (v/a[i-12]-1)*100);
+  const cpiY=yoyA(d.cpi), m2Y=yoyA(d.m2);
+  const chip=(t,a,unit,dig)=>{ const i=lastIdx(a); if(i<6) return ""; const v=a[i], v6=a[i-6]; const dv=v6!=null? v-v6 : null;
+    return `<div class="cy-chip"><div class="k">${t}</div><div class="v">${num(v,dig)}${unit}</div><div class="s">6개월 ${dv==null?"–":(dv>=0?"+":"")+num(dv,2)+"%p"} · ${esc(M[i])}</div></div>`; };
+  // 링: 6칸, 12시 방향부터 시계방향
+  const cx=150, cy=150, R1=138, R0=92, n=CYC.length, gap=0.025;
+  const pt=(r,a)=>[cx+r*Math.sin(a), cy-r*Math.cos(a)];
+  const seg=(a0,a1)=>{ const [x1,y1]=pt(R1,a0),[x2,y2]=pt(R1,a1),[x3,y3]=pt(R0,a1),[x4,y4]=pt(R0,a0); return `M${x1.toFixed(1)},${y1.toFixed(1)} A${R1},${R1} 0 0 1 ${x2.toFixed(1)},${y2.toFixed(1)} L${x3.toFixed(1)},${y3.toFixed(1)} A${R0},${R0} 0 0 0 ${x4.toFixed(1)},${y4.toFixed(1)}Z`; };
+  const arcs=CYC.map((c,i)=>{ const a0=i/n*2*Math.PI+gap, a1=(i+1)/n*2*Math.PI-gap, on=i===ci, am=(a0+a1)/2; const [lx,ly]=pt((R0+R1)/2,am);
+    const words=c.n.includes("·")? c.n.split("·") : c.n.split(" ");
+    const lab = words.length>1 && c.n.length>4? `<tspan x="${lx.toFixed(1)}" dy="-5">${esc(c.n.length>5? words[0]: c.n)}</tspan>${c.n.length>5? `<tspan x="${lx.toFixed(1)}" dy="13">${esc(words.slice(1).join(" "))}</tspan>`:""}` : `<tspan x="${lx.toFixed(1)}" dy="0">${esc(c.n)}</tspan>`;
+    return `<path d="${seg(a0,a1)}" fill="${c.col}" ${on?'stroke="#1c1c1a" stroke-width="2.5"':'opacity=".55"'}/><text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="${on?12.5:11.5}" font-weight="${on?800:600}" fill="#1c1c1a">${lab}</text>`; }).join("");
+  // 진행 방향 표시: 바깥쪽 얇은 원호 + 작은 삼각형
+  const arrow=(()=>{ const a=ci>=0? (ci+0.5)/n*2*Math.PI : 0; const [x,y]=pt(R1+9,a), [bx,by]=pt(R1+18,a-0.06), [cx2,cy2]=pt(R1+18,a+0.06); return ci<0? "" : `<path d="M${x.toFixed(1)},${y.toFixed(1)} L${bx.toFixed(1)},${by.toFixed(1)} L${cx2.toFixed(1)},${cy2.toFixed(1)}Z" fill="#1c1c1a"/>`; })();
+  const c=CYC[ci]||{n:"판정 대기",p15:null};
+  const center=`<text x="${cx}" y="${cy-22}" text-anchor="middle" font-size="12" fill="#55534e">지금 (${esc(M[li]||"")})</text><text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="19" font-weight="800" fill="#1c1c1a">${esc(c.n)}</text><text x="${cx}" y="${cy+24}" text-anchor="middle" font-size="12" fill="#55534e">${run}개월째</text>`;
+  const svg=`<svg viewBox="-24 -24 348 348" class="cy-ring" role="img" aria-label="금리 사이클 현재 국면 ${esc(c.n)}">${arcs}${arrow}${center}</svg>`;
+  const rows=CYC.map((x,i)=>`<tr class="${i===ci?"on":""}"><td class="l"><i style="background:${x.col}"></i>${esc(x.n)}</td><td class="${x.p15>=25?"r":""}">${x.p15}%</td><td>${x.r12>0?"+":""}${num(x.r12,1)}%</td></tr>`).join("");
+  el.innerHTML=`<div class="cy-wrap">${svg}<div class="cy-side">
+    <div class="cy-chips">${chip("유동성 M2",m2Y,"%",1)}${chip("물가 CPI",cpiY,"%",1)}${chip("기준금리",d.ff,"%",2)}${chip("10년물",d.gs10||[],"%",2)}</div>
+    <table class="cy-tbl"><tr><th class="l">국면</th><th>1년 내 −15%</th><th>1년 수익</th></tr>${rows}</table>
+    <div class="muted" style="font-size:12px">S&P500 1971~2025 · 평균 13% / +9.6% · 경고용, 매매 판정 미반영</div>
+  </div></div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>돈이 풀리면 물가가 오르고, 연준이 금리를 올렸다가 멈추고, 경기가 식으면 내리는 순서를 기준금리·CPI·실업률로 나눴습니다. 기준금리 6개월 +0.2%p 이상 = 금리 인상, −0.2%p 이하 = 금리 인하(실업률이 12개월 저점보다 0.5%p 이상 오르면 침체형 인하), 2년 새 1%p 이상 오른 뒤 멈춤 = 고점 동결, CPI 3% 이상이면서 오르는 중 = 물가 상승, 나머지 = 돈 풀림·안정.</p><p>위험이 큰 국면은 물가 상승(1년 안에 −15% 하락 32%, 표본 40개월)과 침체형 인하(28%)입니다. 금리 인상 국면은 15%로 평균(13%)과 비슷합니다. 하락장 시작 10번 중 5번이 금리 인상 국면, 2번이 금리 인하(2007·2020), 1번이 물가 상승(2022)이었습니다. 8~12년 주기설은 표본이 4개뿐이라 넣지 않았습니다.</p></details>`;
+}
 function liqInflChart(el, d, opt={}){
   const M=d.months, yoy=a=>a.map((v,i)=>i<12||v==null||a[i-12]==null? null : (v/a[i-12]-1)*100);
-  const S={ff:d.ff, m2:yoy(d.m2), cpi:yoy(d.cpi), core:yoy(d.core), kr:d.krm2? yoy(d.krm2) : M.map(()=>null)};
+  const S={ff:d.ff, gs10:d.gs10||M.map(()=>null), m2:yoy(d.m2), cpi:yoy(d.cpi), core:yoy(d.core), kr:d.krm2? yoy(d.krm2) : M.map(()=>null)};
+  const PH=cyclePhases(d), PC=Object.fromEntries(CYC.map(c=>[c.k,c.col]));
   // 11-16 Ben: 한·미 M2 비교 (한국은행 ECOS 161Y005, 평잔·계절조정)
   const lastBoth=(()=>{for(let i=M.length-1;i>=0;i--) if(d.krm2?.[i]!=null && d.m2[i]!=null) return i; return -1;})(), i22=M.indexOf("2022-01");
   const cum=a=>lastBoth>0&&i22>=0&&a[i22]? (a[lastBoth]/a[i22]-1)*100 : null, cKR=cum(d.krm2||[]), cUS=cum(d.m2);
@@ -2232,16 +2378,18 @@ function liqInflChart(el, d, opt={}){
   function draw(){
     const last=M.length-1, i0=Math.max(0,M.findIndex(m=>m>=String(+M[last].slice(0,4)-yrs)+M[last].slice(4)));
     const sh0 = mode==="us"? shift : 0;
-    const W=Math.max(320,Math.min(900,el.clientWidth||720)),H=W<560?250:320,L=30,R=46,T=10,B=24, n=last-i0+sh0;
+    const W=Math.max(320,Math.min(900,el.clientWidth||720)),H=W<560?266:336,L=30,R=46,T=mode==="us"?26:10,B=24, n=last-i0+sh0;
     const xs=i=>L+(i-i0)/(n)*(W-L-R);
     const m2s=i=>S.m2[i]; // M2 점은 i+shift 위치에 찍음
     const lines= mode==="kr"? [["m2","미국 M2","var(--s3)",i=>S.m2[i],0],["kr","한국 M2","var(--s4)",i=>S.kr[i],0]]
-      : [["ff","기준금리","var(--s1)",i=>S.ff[i],0],["cpi","CPI","var(--s2)",i=>S.cpi[i],0],["core","근원 CPI","var(--s2)",i=>S.core[i],0,"d"],["m2",sh0?`M2 (${sh0}개월 앞당김)`:"M2","var(--s3)",m2s,sh0]];
+      : [["ff","기준금리","var(--s1)",i=>S.ff[i],0],["gs10","10년물","var(--s4)",i=>S.gs10[i],0],["cpi","CPI","var(--s2)",i=>S.cpi[i],0],["core","근원 CPI","var(--s2)",i=>S.core[i],0,"d"],["m2",sh0?`M2 (${sh0}개월 앞당김)`:"M2","var(--s3)",m2s,sh0]];
     let lo=0,hi=0; for(const[,, ,f]of lines)for(let i=i0;i<=last;i++){const v=f(i);if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}}
     lo=Math.floor(lo/2)*2; hi=Math.ceil(hi/2)*2; const step=hi-lo>16?4:2;
     const ys=v=>T+(hi-v)/(hi-lo)*(H-T-B);
     let g=""; for(let v=lo;v<=hi;v+=step) g+=`<line x1="${L}" x2="${W-R}" y1="${ys(v)}" y2="${ys(v)}" stroke="${v===0?"#b9b6ad":"#ecebe6"}" stroke-width="1"/><text x="${L-6}" y="${ys(v)+4}" text-anchor="end" font-size="11" fill="#55534e">${v}</text>`;
     const yStep=yrs>15?10:2; for(let i=i0;i<=last+sh0;i++){const mo=i<=last?M[i]:null; const y=mo?+mo.slice(0,4):null; if(mo&&mo.endsWith("-01")&&y%yStep===0) g+=`<text x="${xs(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#55534e">${y}</text><line x1="${xs(i)}" x2="${xs(i)}" y1="${H-B}" y2="${H-B+4}" stroke="#b9b6ad"/>`;}
+    if(mode==="us"){ const bw=(W-L-R)/Math.max(1,n); for(let i=i0;i<=last;i++){ const k=PH[i]; if(k) g+=`<rect x="${(xs(i)-bw/2).toFixed(1)}" y="4" width="${(bw+0.6).toFixed(1)}" height="12" fill="${PC[k]}"/>`; }
+      for(const b of CYC_BEARS){ const i=M.indexOf(b); if(i>=i0) g+=`<path d="M${xs(i).toFixed(1)},${T+8} l-4,-6 h8z" fill="#1c1c1a"/>`; } }
     if(sh0){ g+=`<rect x="${xs(last)}" y="${T}" width="${xs(last+sh0)-xs(last)}" height="${H-T-B}" fill="#1baf7a" opacity=".06"/><text x="${(xs(last)+xs(last+sh0))/2}" y="${T+12}" text-anchor="middle" font-size="10.5" fill="#55534e">M2가 가리키는 앞날</text>`; }
     let paths="", ends=[];
     for(const[k,name,col,f,sh,dash]of lines){ let p="",pen=false,lv=null,lx=null;
@@ -2255,12 +2403,12 @@ function liqInflChart(el, d, opt={}){
     const svg=el.querySelector("svg"), tip=el.querySelector(".tip"), ch=svg.querySelector(".ch");
     const mv=ev=>{const r=svg.getBoundingClientRect(), px=(ev.clientX-r.left)/r.width*W; let i=Math.round(i0+(px-L)/(W-L-R)*n); i=Math.max(i0,Math.min(last,i));
       ch.setAttribute("x1",xs(i));ch.setAttribute("x2",xs(i));ch.setAttribute("opacity",".5");
-      tip.innerHTML= mode==="kr"? `<b>${M[i]}</b><br>한국 M2 ${num(S.kr[i],1)}% · 미국 M2 ${num(S.m2[i],1)}%` : `<b>${M[i]}</b><br>기준금리 ${num(S.ff[i],2)}% · CPI ${num(S.cpi[i],1)}% · 근원 ${num(S.core[i],1)}%<br>M2 ${num(S.m2[i-sh0],1)}%${sh0?` <span style="opacity:.7">(${M[i-sh0]||""} 값)</span>`:""}`;
+      tip.innerHTML= mode==="kr"? `<b>${M[i]}</b><br>한국 M2 ${num(S.kr[i],1)}% · 미국 M2 ${num(S.m2[i],1)}%` : `<b>${M[i]}</b> ${PH[i]? esc(CYC.find(c=>c.k===PH[i]).n):""}<br>기준금리 ${num(S.ff[i],2)}% · 10년물 ${num(S.gs10[i],2)}% · CPI ${num(S.cpi[i],1)}% · 근원 ${num(S.core[i],1)}%<br>M2 ${num(S.m2[i-sh0],1)}%${sh0?` <span style="opacity:.7">(${M[i-sh0]||""} 값)</span>`:""}`;
       tip.style.opacity=1; const tx=xs(i)/W*r.width; tip.style.left=Math.min(tx+10, r.width-tip.offsetWidth-4)+"px"; tip.style.top="8px";};
     svg.addEventListener("pointermove",mv); svg.addEventListener("pointerleave",()=>{tip.style.opacity=0;ch.setAttribute("opacity",0)});
     el.querySelectorAll("[data-y]").forEach(b=>b.classList.toggle("on",+b.dataset.y===yrs));
     el.querySelectorAll("[data-s]").forEach(b=>b.classList.toggle("on",+b.dataset.s===shift));
-    el.querySelector(".lg").innerHTML = lines.map(([k,name,col,,,dash])=>`<span><i ${dash?'class="d"':""} style="border-color:${col}"></i>${esc(name)}</span>`).join("");
+    el.querySelector(".lg").innerHTML = lines.map(([k,name,col,,,dash])=>`<span><i ${dash?'class="d"':""} style="border-color:${col}"></i>${esc(name)}</span>`).join("") + (mode==="us"? `<span class="muted">맨 위 띠 = 사이클 국면 · ▼ S&P500 −20% 하락장 시작</span>`:"");
     el.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===mode));
     el.querySelectorAll(".uso").forEach(x=>x.hidden= mode!=="us"); el.querySelectorAll(".kro").forEach(x=>x.hidden= mode!=="kr");
   }
@@ -2441,7 +2589,8 @@ function vRules(){
     <li><b>계좌 역할</b>: 장투(직투, 월 ${won(E.H.settings.monthly_longterm_krw)}) = QQQM·SPYM 코어 + QLD 위성(상한 30%), 1배는 팔지 않음, 과열 시 QLD 일부만 현금 풀로 · 현금(월 ${won(E.H.settings.monthly_ammo_krw)}, SGOV) = QQQ −25/−30/−35/−40/−50/−60%에만 모은 돈의 5/10/15/15/25/30% 투입, 전고점 회복 시 산 종목 절반 현금화·절반 장투 이관 · 스윙 계좌(700만) = 1배·2배 지수·섹터 ETF·빅테크 과대낙폭, 3배는 극단 구간 관심만 · IRP = 위험자산 비중 조절(S&P500 40·나스닥100 30·미국배당다우존스 30) + KODEX 200 음봉 매매 · 연금저축(월 ${won(E.H.settings.monthly_pension_krw)}) = 국내상장 배당·나스닥100 초장기 적립, 매도 없음. 미국배당다우존스 60 + 나스닥100 40 (QQQ -10% 이하면 50:50).</li>
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
-    <li><b>거시 신호등</b> 빨강 2개 이상 또는 HY ≥ 6% → 신규 레버리지 중단.</li>
+    <li><b>거시 신호등</b> 빨강 2개가 3주 연속(빨강 1개 이하 4주면 해제) 또는 HY ≥ 6% → 신규 레버리지 중단. 10년물은 6개월 +1%p, 실업수당은 52주 저점 +20%가 빨강(11-18 변화폭 기준).</li>
+    <li><b>도망 경보</b> QQQ 월말 종가 10개월선 아래 + 실업률 12개월 평균 위 → 장투 QLD·TQQQ 보유분 SGOV로, 신규 적립 전액 SGOV, SGOV 사다리 투입 멈춤. 1배 보유분·다른 계좌 매도 없음.</li>
     <li><b>나스닥 −3%</b>(조던 룰)은 장투 매도 신호로 쓰지 않음. 경보 + 스윙 신규 비중 절반, 23일 내 4회면 스윙 신규 중단.</li>
     <li><b>현금 비중</b>: 직투 1억 도달 시 스윙 계좌 현금 50%. IRP 위험자산 평상 55~60%, 폭락 70%.</li>
   </ol></div>
@@ -2480,7 +2629,7 @@ function render(){
   if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
   if(view==="trade") bindTrade();
-  if(view==="macro"){ const el=$("#lfc"); (DATA.ml? Promise.resolve(DATA.ml) : getJSON("data/macro_long.json").then(d=>DATA.ml=d)).then(d=>liqInflChart(el,d,{yrs:10})).catch(e=>{ el.innerHTML=`<p class="muted">장기 거시 데이터 없음 (${esc(e.message)})</p>`; }); }
+  if(view==="macro"){ const el=$("#lfc"); (DATA.ml? Promise.resolve(DATA.ml) : getJSON("data/macro_long.json").then(d=>DATA.ml=d)).then(d=>{ const c=$("#cyc"); if(c) cycleRing(c,d); liqInflChart(el,d,{yrs:10}); }).catch(e=>{ el.innerHTML=`<p class="muted">장기 거시 데이터 없음 (${esc(e.message)})</p>`; }); }
   document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openChart(b.dataset.chart); });   // 시세 표는 줄 전체를 눌러도 열림
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
