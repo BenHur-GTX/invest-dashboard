@@ -3,7 +3,7 @@
 
 1) 수집(이어받기 가능): 후보 채널마다 2019-07 이후 업로드 영상 중 주(월~일)별 댓글 많은 일반 영상 2개 →
    관련도순 댓글 100개 중 업로드 후 10일 안 댓글만 → 후보 단어 조합별 개수를 data/yt_backfill_raw.json에 저장.
-   쿼터: 검색 100/채널(1회), 목록·영상정보·댓글 각 1. 예산 YT_BUDGET(기본 7000) 넘거나 quotaExceeded면 저장 후 중단.
+   쿼터: 검색 100/채널(1회), 목록·영상정보·댓글 각 1. 예산 YT_BUDGET(기본 9300) 넘거나 quotaExceeded면 저장 후 중단.
 2) 분석: QQQ 주간 낙폭·최근 4주 수익·이후 수익과 비교 → data/yt_study.json
 """
 import json, os, statistics as st, sys, time, urllib.error, urllib.parse, urllib.request
@@ -19,7 +19,7 @@ RAW = "data/yt_backfill_raw.json"
 OUT = "data/yt_study.json"
 KEY = os.environ.get("YOUTUBE_API_KEY")
 MAX_SEC = int(os.environ.get("YT_MAX_SEC", "2700"))
-BUDGET = int(os.environ.get("YT_BUDGET", "7000"))
+BUDGET = int(os.environ.get("YT_BUDGET", "9300"))
 used = 0
 import threading
 _lock = threading.Lock()
