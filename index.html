@@ -2173,10 +2173,26 @@ function vMacro(){
   <h2>거시 신호등 · 현재 모드: ${pill(E.mode.name,E.mode.c)}</h2>
   <div class="lights">${cards}</div>
   <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 공격·수비 모드를 정합니다. 빨강 2개 이상 → 수비(신규 레버리지 중단, 현금 1배로만), 빨강 1개 또는 노랑 2개 이상 → 중립. 장기금리(10년물)는 5% 이상이면 <b>경고</b>(빨강)로 표시합니다. 다만 모드 판정에서는 5.0~5.5%를 노랑 1개, 5.5% 이상을 빨강 1개로 셉니다. 1995~2000년엔 10년물이 5~7%였는데도 나스닥이 5배 올라서, 5%만으로 수비 모드까지 가는 건 근거가 약합니다. 데이터: FRED(무료). PMI·EPS 전망은 무료 소스가 없어 수동 확인 항목입니다.</p></details>
+  <h2>저등급 신용 · 사모대출 <span class="muted">경고용</span></h2>${creditWatchHTML(m)}
   <h2>공포탐욕</h2>
   <div class="panel">${fngGauge(E.fng, E.M.fng)}</div>
   <h2>추이 (2년)</h2>
   <div class="grid2">${series.map(([k,t,th])=>{ const s=m[k]?.spark; return `<div class="panel"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
+}
+// 11-18 Ben: CCC·은행 대출 기준·BDC. 경고·참고용, 매매 판정 미반영 (검증: data/credit_study.json)
+function creditWatchHTML(m){
+  const c=m.ccc, sl=m.sloos, bz=m.bizd, hy=m.hy?.v;
+  const cB = !c? ["데이터 대기","n"] : (c.chg3m??0)>=2? (hy!=null&&hy>=5? ["신용 전반 악화","r"] : ["저등급만 악화","y"]) : ["안정","g"];
+  const sB = !sl? ["데이터 대기","n"] : sl.v>=20? ["대출 긴축","y"] : ["안정","g"];
+  const bB = !bz? ["데이터 대기","n"] : bz.dd1y<=-15? ["바닥 참고","g"] : ["평소","n"];
+  const row=(k,v,b,s)=>`<div class="light"><div class="t">${k}</div><div class="st ${b[1]}"><span class="dot ${b[1]}"></span>${esc(b[0])}</div><div class="d">${v}${s? `<br><span class="muted">${s}</span>`:""}</div></div>`;
+  return `<div class="lights">
+    ${row("CCC 스프레드", c? `${num(c.v,2)}% · 3개월 ${c.chg3m>=0?"+":""}${num(c.chg3m,2)}%p · BB ${num(c.bb,2)}%` : "BAMLH0A3HYC", cB, "3개월 +2%p↑ + HY 5% 미만 = 노랑")}
+    ${row("은행 대출 기준 강화", sl? `${num(sl.v,1)}% · ${esc(sl.date.slice(0,7))} 조사` : "DRTSCILM (분기)", sB, "20%↑ 노랑")}
+    ${row("BDC (BIZD)", bz? `1년 고점 ${pct(bz.dd1y,1)}` : "BIZD", bB, "−15%↓ 바닥 참고")}
+    ${row("BDC 환매 (분기·수동)", "26년 1분기 환매 69억$ > 유입 49억$ (첫 사례) · 3분기 요청 43억$로 완화", ["참고","n"], "분기마다 수동 갱신")}
+  </div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>모두 매매 판정에 넣지 않습니다. S&P500 1990년 이후 하락장 8번 기준: 은행 대출 기준 강화 20%↑는 4번 먼저 켜졌지만 2020·2022년엔 바닥에서 켜진 헛경보였습니다. CCC는 FRED 무료 이력이 2023년 11월부터라 과거 위기 검증이 안 됩니다. BDC 가격 −15%는 하락 전에 켜진 게 2007년 한 번뿐이고, 켜진 뒤 6개월 평균 +15%(평소 +5%)라 위험 경고가 아니라 바닥 참고로 봅니다. BDC 환매는 분기 보도자료로만 나와 자동 수집이 안 됩니다.</p></details>`;
 }
 function ratesHTML(m){
   const t=m.dgs10?.v, f=m.fedu?.v, d2=m.dgs2?.v, g=rateGrade(t);

@@ -95,6 +95,8 @@ FRED = {
     "sahm": "SAHMREALTIME", "unrate": "UNRATE", "icsa": "ICSA",
     "walcl": "WALCL", "tga": "WTREGEN", "rrp": "RRPONTSYD", "sofr": "SOFR", "iorb": "IORB",
     "vix": "VIXCLS",
+    # 11-18 Ben: 경고용 (판정 미반영). CCC·BB는 FRED가 최근 3년만 제공
+    "ccc": "BAMLH0A3HYC", "bb": "BAMLH0A1HYBB", "sloos": "DRTSCILM",
 }
 
 
@@ -365,6 +367,13 @@ def macro_block(start):
     # HY 4주 변화
     if len(m["hy"]) > 21:
         out["hy"]["chg4w"] = round(m["hy"][-1][1] - m["hy"][-21][1], 2)
+    # CCC 3개월(63영업일) 변화, BB 대비 차이 · 은행 C&I 대출 기준 강화 비율(분기)
+    if m.get("ccc"):
+        c = m["ccc"]
+        out["ccc"] = {"v": c[-1][1], "date": c[-1][0], "chg3m": round(c[-1][1] - c[-64][1], 2) if len(c) > 64 else None,
+                      "bb": m["bb"][-1][1] if m.get("bb") else None, "spark": [x[1] for x in c[-260:]]}
+    if m.get("sloos"):
+        out["sloos"] = {"v": m["sloos"][-1][1], "date": m["sloos"][-1][0], "hist": [x[1] for x in m["sloos"][-8:]]}
     # 기준금리 변경 이력 (최근 12개월)
     ch = []
     f = m["fedu"]
@@ -565,6 +574,12 @@ def main():
     print("prices done", len(symbols), flush=True)
     start = (now - timedelta(days=800)).strftime("%Y-%m-%d")
     macro, raw = macro_block(start)
+    # BDC(사모대출) ETF BIZD: 1년 고점 대비 (11-18 Ben, −15%↓은 과거 바닥 근처라 '바닥 참고' 배지)
+    try:
+        b = [r[5] for r in yahoo("BIZD", "2y")]
+        macro["bizd"] = {"v": round(b[-1], 2), "dd1y": round((b[-1] / max(b[-252:]) - 1) * 100, 1)}
+    except Exception as e:  # noqa
+        print("bizd fail", e, flush=True)
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)
