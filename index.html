@@ -215,12 +215,12 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .th3{margin:14px 2px 8px} .th3 .muted{font-size:12px;font-weight:400}
 .tic{min-width:42px;height:28px;padding:0 8px;border-radius:6px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:13px} .tic.buy{background:var(--ok)} .tic.sell{background:var(--bad)} .tic.wait,.tic.chk{background:#c9c5bc}
 .tmini{height:6px;background:#ece9e2;border-radius:3px;margin-top:6px;position:relative} .tmini i{position:absolute;left:0;top:0;bottom:0;background:var(--ok);border-radius:3px} .tmini s{position:absolute;top:-3px;width:2px;height:12px;background:var(--brand)}
-.tlab{font-size:11.5px;color:var(--ink2);margin-top:3px} .tnone{color:var(--ok);font-weight:700;padding:10px 0}
+.tends{display:flex;justify-content:space-between;font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.2} .tends+.tmini{margin-top:2px} .tlab{font-size:11.5px;color:var(--ink2);margin-top:3px} .tnone{color:var(--ok);font-weight:700;padding:10px 0}
 .tsig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px} .tsc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--ink);text-decoration:none;transition:border-color .15s ease}
 .tsc:hover{border-color:var(--brand)} .tsc .k{font-size:12px;color:var(--ink2)} .tsc .v{font-size:20px;font-weight:700} .tsc .v small{font-size:12px;color:var(--ink2);font-weight:500}
 .tdots{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px} .tdots i{width:11px;height:11px;border-radius:50%;background:#e3e1db} .tdots i.g{background:var(--ok)} .tdots i.y{background:#e0a400} .tdots i.r{background:var(--bad)}
 .tact{padding:4px 12px 10px} .tact .tr{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none} .tact .tr:last-of-type{border-bottom:0}
-.tact .tr.none{color:var(--ok);font-weight:700} .tact .tm{flex:1;min-width:0;word-break:keep-all} .tact .tm b{font-size:15px} .tact .tx{font-size:12px;color:var(--ink2)} .tact .ta{font-weight:700;white-space:nowrap} .tact .tg{color:var(--brand);font-size:18px}
+.tact .tr.none{color:var(--ok);font-weight:700} .tact .tm{flex:1;min-width:0;word-break:keep-all} .tact .tm b{font-size:15px} .tact .tx{font-size:12px;color:var(--ink2);white-space:nowrap} .tact .ta{font-weight:700;white-space:nowrap} .tact .tg{color:var(--brand);font-size:18px}
 .tb{font-size:11.5px;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap} .tb.buy{background:var(--ok);color:#fff} .tb.sell{background:var(--bad);color:#fff} .tb.wait,.tb.chk{background:#e8e6e0;color:var(--ink2)}
 .tmore{font-size:12px;color:var(--ink2);padding:2px 0 4px} .tchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .tchip{font-size:12.5px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);background:#f7f6f2;color:var(--ink2);text-decoration:none}
 .tchip.g{background:#e6f2eb;border-color:#b9dcc6;color:#1d5c3a} .tchip.y{background:#fff6e0;border-color:#efd08a;color:#7a4b00} .tchip.r{background:#fdecea;border-color:#f2b8b1;color:#8a1c12}
@@ -1339,7 +1339,7 @@ function todayActions(lt, am, irp, bw){
   // 11-18 Ben: 적립 D-day는 이번 달 매수 탭에. 대신 다음 장투 SGOV 차수(무엇을 얼마나 사게 되나)
   { const dd=E.dd??0, i=LT_POOL.findIndex(x=>dd>x.lvl);
     if(i>=0){ const L=LT_POOL[i], prev=i? LT_POOL[i-1].lvl : 0, ltA=E.acc.list.find(a=>a.id==="longterm"), sg=(ltA?.pos||[]).filter(p=>p.t==="SGOV").reduce((a,p)=>a+p.v,0);
-      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`${L.lvl}%까지 ${num(dd-L.lvl,1)}%p 남음`, a: sg>0? won(sg*L.pct/100) : `${L.pct}% 투입`, go:"plan", bar:{v:Math.max(0,prev-dd), max:prev-L.lvl, mk:null, lab:`도달하면 모은 SGOV ${L.pct}% → ${L.mix.replace(/·/g," · ")} 매수`}}); } }
+      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`${L.lvl}%까지 ${Math.max(0,Math.round(dd-L.lvl))}%p`, a: sg>0? won(sg*L.pct/100) : `${L.pct}% 투입`, go:"plan", bar:{v:Math.max(0,prev-dd), max:prev-L.lvl, mk:null, ends:[`${prev}%`,`${L.lvl}%`], lab:`도달 시 ${L.mix} 매수`}}); } }
   return A;
 }
 function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼마나 남았나 (장투 SGOV 차수 + 현금 계좌 차수)
@@ -1353,14 +1353,14 @@ function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼�
   return `<div class="panel lad"><div class="ltop"><span class="muted">QQQ 5년 고점 대비</span><span class="lnow">${pct(dd,1)}</span></div>
     <div class="lbar"><div class="lf" style="width:${X(dd)}%"></div><span class="lme" style="left:${X(dd)}%">지금</span>
     ${shown.map(v=>`<span class="lm${cut.includes(v)?" c":""}" style="left:${X(v)}%"></span><span class="lml" style="left:${X(v)}%"><b>${v}</b><br>${sub(v)}</span>`).join("")}</div>
-    <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${num(dd-lt.lvl,1)}%p</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${num(dd-ca.dd,1)}%p</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
+    <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${Math.round(dd-lt.lvl)}%p</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${Math.round(dd-ca.dd)}%p</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
 }
 function todayActionsHTML(lt, am, irp, bw){
   const A = todayActions(lt, am, irp, bw), act = A.filter(a=>a.k!=="wait"), show = act.slice(0,3);
   if(show.length<3) show.push(...A.filter(a=>a.k==="wait").slice(0, 3-show.length));
   const more = A.length - show.length;
   const IC = {buy:"매수", sell:"매도", chk:"점검", wait:"대기"};
-  const bar = b => b? `<div class="tmini"><i style="width:${Math.max(2,Math.min(100,b.v/b.max*100))}%"></i>${b.mk!=null? `<s style="left:${Math.min(100,b.mk/b.max*100)}%"></s>`:""}</div>${b.lab? `<div class="tlab">${esc(b.lab)}</div>`:""}` : "";
+  const bar = b => b? `${b.ends? `<div class="tends"><span>${esc(b.ends[0])}</span><span>QQQ 진행</span><span>${esc(b.ends[1])}</span></div>`:""}<div class="tmini"><i style="width:${Math.max(2,Math.min(100,b.v/b.max*100))}%"></i>${b.mk!=null? `<s style="left:${Math.min(100,b.mk/b.max*100)}%"></s>`:""}</div>${b.lab? `<div class="tlab">${esc(b.lab)}</div>`:""}` : "";
   const t = tradeSummary(E), oh = overheat(E), x = w40Info(), hs = humanSignals().rows.filter(r=>r.alert);
   const dots = (arr) => `<div class="tdots">${arr.map(c=>`<i class="${c}"></i>`).join("")}</div>`;
   const rep = (n,c) => Array(Math.max(0,n)).fill(c);
@@ -1374,7 +1374,7 @@ function todayActionsHTML(lt, am, irp, bw){
     ${!act.length? `<div class="tnone">오늘 살 것 없음</div>`:""}${more>0? `<div class="tmore">+${more}개 더 · 상세 점검에서</div>`:""}</div>
   <div class="tsig">
     <a class="tsc" href="#crash"><div class="k">현금 투입 지표</div><div class="v">${E.auxN}/${auxT}</div>${dots([...rep(E.auxN,"g"), ...rep(auxT-E.auxN,"")])}</a>
-    <a class="tsc" href="#trade"><div class="k">트레이딩 진입</div><div class="v">${t.on}</div><div class="tlab">대기 ${t.near} · 조건 근접</div>${dots([...rep(t.on,"g"), ...rep(Math.min(t.near,6),"y")])}</a>
+    <a class="tsc" href="#trade"><div class="k">트레이딩 진입</div><div class="v">${t.on}</div><div class="tlab">근접 대기 ${t.near}</div>${dots([...rep(t.on,"g"), ...rep(Math.min(t.near,6),"y")])}</a>
     <a class="tsc" href="#heat"><div class="k">과열</div><div class="v">${oh.score}/5</div>${dots([...rep(oh.score,"r"), ...rep(5-oh.score,"")])}</a>
   </div>
   ${chips.length? `<div class="tchips">${chips.join("")}</div>`:""}`;
