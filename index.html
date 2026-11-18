@@ -1025,10 +1025,10 @@ function irpOrders(E){
 function ordersHTML(){
   if(!E.acc.list.find(a=>a.id==="irp"||a.id==="swing")) return `<h3>IRP·스윙 주문</h3><div class="panel"><p class="muted">보유 내역 키를 등록하면 계산됩니다(규칙 탭 맨 아래).</p></div>`;
   const io=irpOrders(E), so=swingOrders(E);
-  const irpT = io? `<h3>⑤ IRP <span class="muted" style="font-weight:400">위험자산 ${pct(io.irp.cur,1,false)} → ${io.irp.lo}~${io.irp.hi}%</span></h3>
+  const irpT = io? `<h3>④ IRP <span class="muted" style="font-weight:400">위험자산 ${pct(io.irp.cur,1,false)} → ${io.irp.lo}~${io.irp.hi}%</span></h3>
   <div class="panel ord">${io.rows.length? io.rows.map(r=>`<div class="orow"><span class="tb buy">매수</span><span class="on"><b>${esc(r.name)}</b> <span class="os">${r.sh??"–"}주</span></span><span class="oa">${won(r.amt)}</span></div>`).join("") : `<div class="orow"><span class="tb wait">대기</span><span class="on">오늘 살 것 없음</span></div>`}
   <details class="mexp sm"><summary>설명 보기</summary>${io.rows.map(r=>`<p><b>${esc(r.name)}</b> 현재가 ${r.px? num(r.px,0)+"원":"대기"} · ${esc(r.why)}</p>`).join("")}<p>재원은 IRP 머니마켓(안전자산). 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p></details></div>` : "";
-  const swT = so? swingOrdersHTML(so, "⑥ 스윙 계좌") : "";
+  const swT = so? swingOrdersHTML(so, "⑤ 스윙 계좌") : "";
   return irpT + swT;
 }
 
@@ -1502,14 +1502,14 @@ function planBody(){
   <details class="mexp sm"><summary>설명 보기</summary><p>장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></details></div>
   ${allocBody()}
   ${fxHTML()}
+  ${candAcctHTML()}
+  ${lt.notes.length? `<div class="nlist">${lt.notes.map(n=>{ const [k,v,t,full]=Array.isArray(n)? n : ["참고", n, "n"]; return `<div class="nrow"${full? ` title="${esc(full)}"`:""}><span class="ntag t-${t}">${esc(k)}</span><span>${esc(v)}</span></div>`; }).join("")}</div>`:""}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
   <div class="tbl"><table>
     <tr><th>종목</th><th>금액</th><th>달러</th><th>현재가</th><th>${E.H.settings.fractional?"주수(소수점)":"주수"}</th></tr>
     ${lt.rows.map(r=>`<tr><td><b>${r.t}</b></td><td>${num(r.man, r.man<10?1:0)}만</td><td>${usd(r.dollars,0)}</td><td>${usd(r.px)}</td><td>${r.sh!=null? num(r.sh, E.H.settings.fractional?2:0):"–"}</td></tr>`).join("")}
     <tr class="total"><td>합계</td><td>${num(tot,0)}만</td><td>${usd(tot*1e4/E.fx,0)}</td><td></td><td></td></tr>
   </table></div>
-  ${candAcctHTML()}
-  ${lt.notes.length? `<div class="nlist">${lt.notes.map(n=>{ const [k,v,t,full]=Array.isArray(n)? n : ["참고", n, "n"]; return `<div class="nrow"${full? ` title="${esc(full)}"`:""}><span class="ntag t-${t}">${esc(k)}</span><span>${esc(v)}</span></div>`; }).join("")}</div>`:""}
   <h3>② 현금 계좌 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
   <div class="panel ord"><div class="orow"><span class="tb buy">매수</span><span class="on"><b>SGOV</b> <span class="os">잔액 ${won(am.bal)} · 차수 ${am.done.length? am.done.join(",")+"차":"없음"}</span></span><span class="oa">${won(E.H.settings.monthly_ammo_krw)}</span></div>
   ${am.action? `<div class="orow"><span class="tb ${am.action.ready?"buy":"wait"}">${am.action.ready?"집행":"대기"}</span><span class="on"><b>현금 ${am.action.t.n}차</b> <a class="os" href="#crash">폭락 대응 탭</a></span></div>`:""}
@@ -1521,10 +1521,11 @@ function planBody(){
     ${pn.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.w}%</td><td>${won(r.won)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td></tr>`).join("")}
   </table></div>
   <details class="mexp sm"><summary>설명 보기</summary><p>${pn.merged? `${pn.merged.join("·")} 몫이 1주 가격보다 작아 이번 달은 예수금으로 두고 다음 달 같은 몫과 합쳐 삽니다. `:""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p></details>
-  ${lt.side?.gold? `<h3>④ 금현물 계좌 ${won(lt.side.gold*1e4)} → KRX 금현물 1g</h3>
+  ${ordersHTML()}
+  ${lt.side?.gold? `<h3>⑥ 금현물 계좌 ${won(lt.side.gold*1e4)} → KRX 금현물 1g</h3>
   <div class="panel ord"><div class="orow"><span class="tb buy">매수</span><span class="on"><b>KRX 금현물</b> <span class="os">1g</span></span><span class="oa">≈${won(lt.side.gold*1e4)}</span></div>
   <details class="mexp sm"><summary>설명 보기</summary><p>장투 계좌와 별개 계좌입니다. 가격과 관계없이 매달 1g을 삽니다(1g 약 ${won(lt.side.gold*1e4)}, GLD 시세로 환산한 추정치). ${lt.side.goldExtra? "월 저축 밖에서 따로 넣는 돈입니다." : "장투 몫에서 떼어 옮긴 돈입니다."} 팔지 않는 것이 기본이고, 주봉 RSI 75 이상 + 200일선 +20%면 10%를 SGOV로 돌립니다.</p></details></div>`:""}
-  ${ordersHTML()}`;
+`;
 }
 
 
