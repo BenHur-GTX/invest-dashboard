@@ -205,6 +205,7 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .mexp{margin-top:18px} .mexp summary{cursor:pointer} .mx{margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink2)} .mx li{margin:4px 0} .mx b{color:var(--ink)}
 .cands button{all:unset;cursor:pointer;font-size:13.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s ease,background-color .15s ease}
 .cands button:hover{border-color:var(--brand)} .cands button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.picks .pk{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:7px 0;border-bottom:1px solid var(--line)} .picks .pk:last-of-type{border-bottom:0} .picks .pa{min-width:92px;font-size:13px;color:var(--ink2)} .picks .sig{margin-left:0} .picks details{margin-top:8px}
 .cands button.s3{border-color:#0b4d2c;border-width:2px;background:#d3eadc;font-weight:600} .cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
 .symbtn{all:unset;cursor:pointer;border-radius:4px;transition:color .15s ease}
 .symbtn:hover b{color:var(--brand);text-decoration:underline;text-underline-offset:3px} .symbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -1319,7 +1320,7 @@ function vToday(){
   todo.unshift(tradeTodayLine(E));   // 11-16 Ben: 트레이딩 요약 한 줄, 상세는 트레이딩 탭
   { const x=w40Info(); if(x) todo.push(x.fresh? `<b>40주선 ${x.w.cross==="golden"? "골든 크로스":"데드 크로스"}</b> (경보): ${x.txt}. ${x.w.cross==="golden"? "추세 회복 신호, 규칙대로 적립을 이어갑니다." : "하락 추세 경계, 규칙(낙폭 사다리)은 그대로입니다."}` : x.long? `<b>40주선 하락 지속 경계</b>: ${x.txt}. 과거 11번 중 4번은 이후 10% 넘게 더 빠졌고 7번은 바닥 근처였습니다. 규칙(낙폭 사다리)은 그대로입니다.` : `40주선: ${x.txt}.`); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
-  { const cl=candList(); if(cl.length) todo.push(`<b>매수 후보 ${cl.length}개</b>: ${cl.slice(0,4).map(([t,s,b])=>`${esc(t)}(${esc(acctFor(t,s).a)})`).join(", ")} — 아래 '어느 계좌에서' 표 참고.`); }
+  { const pk=candPicks().picks; if(pk.length) todo.push(`<b>계좌별 추천</b>: ${pk.map(p=>`${esc(p.a)} ${esc(tName(p.t))}`).join(" · ")}`); }
   { const bc=bigCut(E.M.macro||{}); if(bc) todo.push(`<b>빅컷 ${bc.days}일째</b>: 아래 '빅컷 안전장치' 단계대로 계좌별 주식 비중을 낮춥니다.`); }
   if(irp){ todo.push(irp.kodexOn ? `IRP KODEX 200 슬리브 가동 중 (코스피 고점 대비 ${pct(irp.ksDD,0)}, RSI ${num(irp.ks.rsi,1)}). ${irp.todayBuy? `<b>오늘 음봉 매수일</b>: ${won(irp.tick)}` : "다음 -1.5% 음봉일에 매수."}` : "IRP KODEX 200: 가동 조건 미충족."); }
 
@@ -1857,12 +1858,32 @@ function acctFor(t, s){
   return {a:"–", how:""};
 }
 function candList(){ return Object.entries(E.S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || (a[1].rsi??99)-(b[1].rsi??99)); }
+const PICK_NAME = {"GLD":"KRX 금현물 +1g", "1489.T":"도쿄 1489"};
+const tName = t => PICK_NAME[t] || KR_NAMES[t] || t;   // 11-18 Ben: 국내 ETF는 코드 대신 이름
+// 11-18 Ben: 계좌별로 가장 추천하는 1개만. 후보 전체는 접힘.
+function candPicks(){
+  const nq = nasdaqPick(E);
+  const L = candList().filter(([t,s])=>{
+    if(t==="0137W0") return false;                              // 연금저축 정리 후보, 신규 매수 안 함
+    if(t==="069500") return false;                              // KODEX 200은 IRP 음봉 규칙(코스피 폭락)으로만
+    if((t==="426030"||t==="133690") && t!==nq) return false;    // 나스닥100은 낙폭 규칙으로 하나만
+    if(s?.group==="레버리지" && rankScore(t,s).hold) return false;  // 거시 수비·과열이면 보류
+    return acctFor(t,s).a!=="–";
+  });
+  const pick = new Map();
+  L.filter(x=>x[2].label!=="관찰").forEach(([t,s,b])=>{ const a=acctFor(t,s).a.replace(/ \(.*\)$/,""); const r=rankScore(t,s); const cur=pick.get(a);
+    if(!cur || b.lv>cur.b.lv || (b.lv===cur.b.lv && r.sc>cur.r.sc)) pick.set(a,{t,s,b,r,a}); });
+  const ORDER=["장투 계좌","연금저축·IRP","금현물 계좌","스윙 계좌","직투 엔화 예수금"];
+  return {all:L, picks:[...pick.values()].sort((x,y)=>ORDER.indexOf(x.a)-ORDER.indexOf(y.a))};
+}
 function candAcctHTML(){
-  const L = candList(); if(!L.length) return "";
-  return `<h2>매수 후보 → 어느 계좌에서</h2><div class="tbl"><table>
-    <tr><th class="l">종목</th><th class="l">신호</th><th class="l">계좌</th><th class="l">이렇게</th></tr>
-    ${L.map(([t,s,b])=>{ const a=acctFor(t,s); return `<tr class="${sigCls(b)}"><td class="l"><button type="button" class="symbtn" data-chart="${esc(t)}"><b>${esc(t)}</b></button></td><td class="l">${sigTag(b)} <span class="muted">${esc(b.why)}</span></td><td class="l"><b>${esc(a.a)}</b></td><td class="l" style="white-space:normal;min-width:260px">${esc(a.how)}</td></tr>`; }).join("")}
-  </table></div><p class="note">후보는 추가 돈이 아니라 그 계좌의 이번 달 몫·보유 현금 안에서 순서를 바꾸는 신호입니다. 현금 계좌(폭락 대비 SGOV)는 낙폭 사다리 규칙으로만 씁니다.</p>`;
+  const {all, picks} = candPicks(); if(!picks.length) return "";
+  return `<h2>계좌별 추천 1개</h2><div class="panel picks">
+    ${picks.map(({t,s,b,a})=>`<div class="pk"><span class="pa">${esc(a)}</span><button type="button" class="symbtn" data-chart="${esc(t)}"><b>${esc(tName(t))}</b></button>${sigTag(b)}</div>`).join("")}
+    <details class="mexp sm"><summary>후보 전체 ${all.length}개 보기</summary><div class="tbl"><table>
+    <tr><th class="l">종목</th><th class="l">신호</th><th class="l">계좌</th></tr>
+    ${all.map(([t,s,b])=>`<tr class="${sigCls(b)}"><td class="l"><button type="button" class="symbtn" data-chart="${esc(t)}"><b>${esc(tName(t))}</b></button></td><td class="l">${sigTag(b)} <span class="muted">${esc(b.why)}</span></td><td class="l">${esc(acctFor(t,s).a)}</td></tr>`).join("")}
+    </table></div><p class="note">후보는 추가 돈이 아니라 그 계좌의 이번 달 몫 안에서 순서만 바꿉니다. 현금 계좌는 낙폭 사다리로만.</p></details></div>`;
 }
 let CHARTS = null;
 async function chartData(){
