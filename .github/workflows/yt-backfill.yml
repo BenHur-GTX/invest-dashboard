@@ -1,0 +1,32 @@
+name: yt-backfill
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-f20stj]
+    paths: [scripts/yt_backfill.py, scripts/yt_lexicon.py, .github/workflows/yt-backfill.yml]
+permissions:
+  contents: write
+concurrency:
+  group: yt-backfill
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -u scripts/yt_backfill.py
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YT_ANALYZE_ONLY: ${{ contains(github.event.head_commit.message, '[analyze]') && '1' || '' }}
+      - if: always()
+        run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/yt_backfill_raw.json data/yt_study.json
+          git diff --cached --quiet || git commit -m "study: youtube backfill"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
