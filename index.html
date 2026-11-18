@@ -179,7 +179,7 @@ tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var
 .rk.r1{background:var(--brand);color:#fff} .rk.r2{background:var(--brand-soft);color:var(--brand)} .rk.off{background:transparent;color:#8a877f;box-shadow:inset 0 0 0 1px #d6d3cb}
 .rkw{display:block;font-size:11px;color:var(--ink2);font-weight:400;margin-top:2px;white-space:nowrap}
 .sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
-.sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
+.sig.s3{background:#0b4d2c;color:#fff;box-shadow:0 0 0 2px #9fd4b4} .sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
 .cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .cl-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .cl-v{font-size:26px;font-weight:800;color:var(--dn,#1d4ed8)}
 .cl{position:relative;margin:14px 0 2px;height:14px} .cl-tr{display:flex;height:14px;border-radius:7px;overflow:hidden} .cl-tr .z0{background:#eef3ef} .cl-tr .z1{background:#f6ecd0} .cl-tr .z2{background:#f6dcd8}
@@ -205,7 +205,7 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .mexp{margin-top:18px} .mexp summary{cursor:pointer} .mx{margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink2)} .mx li{margin:4px 0} .mx b{color:var(--ink)}
 .cands button{all:unset;cursor:pointer;font-size:13.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s ease,background-color .15s ease}
 .cands button:hover{border-color:var(--brand)} .cands button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
+.cands button.s3{border-color:#0b4d2c;border-width:2px;background:#d3eadc;font-weight:600} .cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
 .symbtn{all:unset;cursor:pointer;border-radius:4px;transition:color .15s ease}
 .symbtn:hover b{color:var(--brand);text-decoration:underline;text-underline-offset:3px} .symbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 td.l .symbtn{display:block}
@@ -1749,9 +1749,25 @@ function jpSig(s){
   if(d!=null && d<=-10 && aux.length>=1) return {lv:1, label:"관찰", why:`${why} · MDD −15%↑ + 보조 2개면 매수`};
   return null;
 }
+// 11-18 Ben: 최상위 '강력 매수 찬스' = 기존 최상위 신호 + RSI ≤ 30 + QQQ 5년 고점 −20% 이하(장투 하락 사다리 −20% 단계) + 거시 수비·HY 6%↑ 아님
 function buySig(t, s){
+  const b = baseSig(t, s);
+  if(b && b.lv===2 && s.rsi!=null && s.rsi<=30 && E && E.dd!=null && E.dd<=-20 && !E.noLev)
+    return {lv:3, label:"강력 매수 찬스", why:`${b.why} · QQQ ${pct(E.dd,0)} · 거시 ${E.mode.name}`};
+  return b;
+}
+const LEV_SW = {"QLD":-40, "TQQQ":-55, "SOXL":-55};   // 스윙 A안 진입 낙폭 (1년 고점 대비) + RSI ≤ 30
+const KR_SKIP = ["0048J0","0046A0"];   // 국내 머니마켓·초단기채는 현금성
+function baseSig(t, s){
   if(!s) return null;
   if(t==="1489.T") return jpSig(s);
+  if(s.group==="레버리지" && LEV_SW[t]!=null){   // 스윙 A안 진입선, 그 10%p 위 + RSI ≤ 40이면 관찰
+    const d=s.dd52, r=s.rsi, L=LEV_SW[t];
+    if(d!=null && r!=null && d<=L && r<=30) return {lv:2, label:"스윙 진입", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
+    if(d!=null && r!=null && d<=L+10 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)} · 진입선 ${L}%`};
+    return null;
+  }
+  const etfLike = BUY_ETF.includes(t) || t==="MAGS" || s.group==="섹터" || (s.group==="국내" && !KR_SKIP.includes(t));   // 섹터·국내 ETF도 1배 ETF와 같은 4개 신호
   const hot = s.rsi!=null && s.rsi>=70 && s.vs200!=null && s.vs200>=10;
   if(s.group==="빅테크" && t!=="MAGS"){
     const d=s.dd52, r=s.rsi;
@@ -1765,7 +1781,7 @@ function buySig(t, s){
     if(d!=null && r!=null && d<=-60 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
     return null;
   }
-  if(!BUY_ETF.includes(t) && !(t==="MAGS")) return null;
+  if(!etfLike) return null;
   const hits = [];
   if(s.rsi!=null && s.rsi<=35) hits.push(`RSI ${num(s.rsi,0)}`);
   if(s.vs200!=null && s.vs200<=0) hits.push("200일선 아래");
@@ -1776,8 +1792,8 @@ function buySig(t, s){
   if(hot) return {lv:-1, label:"과열·보류", why:`RSI ${num(s.rsi,0)} · 200일선 ${pct(s.vs200,0)}`};
   return null;
 }
-const sigCls = b => !b? "" : b.lv===2? "buy2" : b.lv===1? "buy1" : "hot";
-const sigTag = b => !b? "" : `<span class="sig ${b.lv===2?"s2":b.lv===1?"s1":"sh"}">${esc(b.label)}</span>`;
+const sigCls = b => !b? "" : b.lv>=2? "buy2" : b.lv===1? "buy1" : "hot";
+const sigTag = b => !b? "" : `<span class="sig ${b.lv===3?"s3":b.lv===2?"s2":b.lv===1?"s1":"sh"}">${esc(b.label)}</span>`;
 // 11-18 Ben: 시세 탭 그룹 안 매수 우선순위. 새 지표 없이 기존 신호로 '얼마나 싼가' 점수(0~100) + 매수 후보/과열 가감.
 // 1배·배당·빅테크 = 쌀수록 위(쌀 때 산다). 레버리지 = 싼 정도 + 40주선 위(추세 회복) 가점, 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래.
 const RANK_SKIP = ["지수","현금·채권"];   // 지수·환율·VIX·SGOV·TLT(매도 예정)는 순위 대상 아님, 원래 순서 유지
@@ -1795,7 +1811,7 @@ function rankScore(t, s){
   const wsum = parts.reduce((a,p)=>a+p[0],0);
   let sc = wsum? parts.reduce((a,p)=>a+p[0]*p[1],0)/wsum*100 : 0;
   const b = buySig(t, s);
-  if(b) sc += b.lv===2? 25 : b.lv===1? 12 : -30;
+  if(b) sc += b.lv>=2? 25 : b.lv===1? 12 : -30;
   let hold = null;
   if(s.group==="레버리지"){
     if(s.w40){ sc += s.w40.up? 10 : 0; if(s.w40.up) why.unshift("40주선 위"); }
@@ -1806,7 +1822,7 @@ function rankScore(t, s){
   if(b && b.lv<0) why.unshift("과열");
   if(RANK_OFF[t]) hold = RANK_OFF[t];
   // 11-18 Ben: 신호 배지 단계가 먼저(드문 기회·매수 적기 > 분할 매수 > 관찰 > 신호 없음 > 과열), 같은 단계 안에서만 점수
-  const tier = !b? 0 : b.lv>=2? 3 : b.lv===1? (b.label==="관찰"? 1 : 2) : -1;
+  const tier = !b? 0 : b.lv>=3? 4 : b.lv===2? 3 : b.lv===1? (b.label==="관찰"? 1 : 2) : -1;
   return {sc: Math.round(sc), tier, hold, why: why.slice(0,2).join(" · ")};
 }
 function rankGroup(g, rows){   // rows: [[t,s]] → [[t,s,rk]] 우선순위 순
@@ -1821,7 +1837,7 @@ function candidatesHTML(S){
   return `<div class="panel"><b>지금 매수 후보</b> <span class="muted">· 누르면 차트</span>
     ${list.length? `<div class="cands">${list.map(([t,s,b])=>`<button type="button" class="s${b.lv}" data-chart="${esc(t)}" title="${esc(b.why)}"><b>${esc(t)}</b> ${esc(b.label)} <span class="muted">${esc(b.why)}</span></button>`).join("")}</div>`
       : `<p class="muted" style="margin:6px 0 0">조건을 채운 종목이 없습니다. 이번 달은 기존 적립 규칙대로 사면 됩니다.</p>`}
-    <div class="lgd"><span class="sig s2">매수 적기</span><span>4개 중 3개↑</span><span class="sig s1">분할 매수 고려</span><span>2개</span><span class="sig sh">과열·보류</span><span>RSI 70↑ + 200일선 +10%↑</span></div>
+    <div class="lgd"><span class="sig s3">강력 매수 찬스</span><span>최상위 신호 + RSI ≤ 30 + QQQ −20%↓ + 거시 수비 아님</span><span class="sig s2">매수 적기</span><span>4개 중 3개↑</span><span class="sig s1">분할 매수 고려</span><span>2개</span><span class="sig sh">과열·보류</span><span>RSI 70↑ + 200일선 +10%↑</span></div>
     <div class="lgd muted">4개 = RSI ≤ 35 · 200일선 아래 · 볼린저 하단 · 1년 고점 −10%↓ · 빅테크·성장주 기준은 맨 아래 설명</div></div>`;
 }
 // 매수 후보 → 계좌 (계좌 역할 기준, 11-14 Ben). 후보는 돈을 더 넣는 게 아니라 그 계좌의 이번 달 몫·현금 안에서 우선순위를 바꿉니다
@@ -1834,6 +1850,8 @@ function acctFor(t, s){
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
   if(t==="1489.T") return {a:"직투 엔화 예수금", how:"모아 둔 엔화로만 삽니다(원화 환전 매수 안 함). MDD −15/−25%에서 보조지표(RSI ≤ 30, 200일선 −10%, 볼린저 하단) 2개 이상이면 1/3씩, −35%면 남은 전부. 3~5거래일 나눠서."};
   if(t==="BITO") return {a:"장투 계좌 (BITO 칸)", how:"상한은 비트코인 현물 낙폭에 따라 3%(평소)·6%(−70%)·9%(−80% 이하). 상한의 2배를 넘으면 상한까지 차익. 업비트·해외 거래소 현물은 쓰지 않습니다."};
+  if(s?.group==="국내") return {a:"연금저축·IRP", how:"이번 달 연금저축·IRP 적립분 안에서 이 종목 칸을 먼저 채웁니다. 돈을 더 넣지 않습니다."};
+  if(s?.group==="레버리지") return {a:"스윙 계좌", how:"스윙 A안: 1회 계좌 25%, 최대 4개. +5% 절반·+10% 나머지 익절, −10% 손절, 10거래일 안에 정리. 거시 수비면 보류."};
   if(s?.group==="성장주") return {a:"스윙 계좌", how:"1회 계좌 12.5%만, 종목당 2회(5거래일 간격). +5% 절반·+10% 나머지 익절, −10% 손절, 10거래일 안에 정리."};
   if(s?.group==="빅테크"||s?.group==="섹터") return {a:"스윙 계좌", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
@@ -1961,13 +1979,15 @@ function vMarket(){
   <details class="panel mexp"><summary><b>표·지표 설명 보기</b></summary>
     <ul class="mx">
       <li><b>매수 후보 (ETF: QQQM·SPYM·MGK·배당·O·금·BITO)</b> RSI ≤ 35, 200일선 아래, 볼린저 하단, 1년 고점 −10% 이하 중 3개↑ 매수 적기, 2개 분할 매수 고려. RSI ≥ 70이면서 200일선 +10% 이상은 과열·보류. 레버리지·섹터는 오늘·폭락 대응 탭 규칙을 따릅니다. 아직 백테스트 전 초안 기준입니다.</li>
+      <li><b>강력 매수 찬스</b> 그 종목의 최상위 신호(매수 적기·드문 기회·스윙 진입 등) + RSI ≤ 30 + QQQ 5년 고점 −20% 이하(장투 하락 사다리 −20% 단계) + 거시 수비·HY 6%↑ 아님. 넷이 겹칠 때만 뜹니다.</li>
+      <li><b>섹터·국내 ETF</b> 1배 ETF와 같은 4개 신호(머니마켓·초단기채 제외). <b>레버리지</b> 스윙 A안 진입선 QLD −40%, TQQQ·SOXL −55% + RSI ≤ 30이면 스윙 진입, 진입선 10%p 위 + RSI ≤ 40이면 관찰.</li>
       <li><b>빅테크</b> 1년 고점 −30% 이하 + RSI ≤ 30이면 드문 매수 기회(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰.</li>
       <li><b>성장주 (아이온큐·로켓랩)</b> 모니터링용. 1년 고점 −70% + RSI ≤ 30일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI ≤ 40이면 관찰.</li>
       <li><b>고점 대비</b> 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비).</li>
       <li><b>볼린저 %B</b> 20일 밴드 안 위치. 0 아래면 하단 이탈.</li>
       <li><b>40주선</b> 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈)와 경과 주수(마감 주 기준). 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 주에 반대로 넘어간 상태(금요일 종가로 확정).</li>
       <li><b>차트</b> 기본 3년 주봉 + 40주선, 골든▲·데드▼ 지점, 이격도·RSI 패널. 6개월·1년은 일봉 50·200일선. 뒤로 가기로 닫힙니다.</li>
-      <li><b>매수 우선순위 (기본 정렬)</b> 신호 배지가 있는 종목이 맨 위(드문 기회·매수 적기 → 분할 매수 고려 → 관찰), 과열·보류는 맨 아래. 같은 단계 안에서는 '얼마나 싼가' 점수 0~100 순서. 1년 고점 대비 낙폭 30 · RSI 30 · 200일선 이격 25 · 볼린저 %B 15 (낙폭 만점 기준: 빅테크 −35%, 성장주 −70%, 금·비트 −50%, 그 외 −25~30%). 매수 적기·드문 기회 +25, 분할 매수·관찰 +12, 과열·보류 −30. 레버리지는 낙폭 만점 기준이 스윙 진입선(QLD −40%, TQQQ·SOXL −55%), 40주선 위면 +10(추세 회복), 3배는 QQQ −30% 전까지 −15(QLD 먼저), 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래. BITU(매수 제외)·IBIT·비트코인 현물(참고용)도 맨 아래. 지수·환율·현금·채권 표는 순위 없음. 번호에 마우스를 올리면 점수와 이유. 순위는 '같은 그룹 안에서 상대적으로 더 싼 것'이지, 사도 된다는 판정이 아닙니다. 실제 금액은 이번 달 매수 표를 따릅니다.</li>
+      <li><b>매수 우선순위 (기본 정렬)</b> 신호 배지가 있는 종목이 맨 위(강력 매수 찬스 → 드문 기회·매수 적기·스윙 진입 → 분할 매수 고려 → 관찰), 과열·보류는 맨 아래. 같은 단계 안에서는 '얼마나 싼가' 점수 0~100 순서. 1년 고점 대비 낙폭 30 · RSI 30 · 200일선 이격 25 · 볼린저 %B 15 (낙폭 만점 기준: 빅테크 −35%, 성장주 −70%, 금·비트 −50%, 그 외 −25~30%). 매수 적기·드문 기회 +25, 분할 매수·관찰 +12, 과열·보류 −30. 레버리지는 낙폭 만점 기준이 스윙 진입선(QLD −40%, TQQQ·SOXL −55%), 40주선 위면 +10(추세 회복), 3배는 QQQ −30% 전까지 −15(QLD 먼저), 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래. BITU(매수 제외)·IBIT·비트코인 현물(참고용)도 맨 아래. 지수·환율·현금·채권 표는 순위 없음. 번호에 마우스를 올리면 점수와 이유. 순위는 '같은 그룹 안에서 상대적으로 더 싼 것'이지, 사도 된다는 판정이 아닙니다. 실제 금액은 이번 달 매수 표를 따릅니다.</li>
       <li><b>정렬</b> 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 다시 매수 우선순위.</li>
       <li><b>SPCX</b> 2026년 6월 상장이라 200일선이 아직 없습니다.</li>
     </ul></details>
