@@ -17,6 +17,24 @@ CANDIDATES = {
              "fomo", "벼락거지", "나만못", "인생역전", "경제적자유", "파이어족", "부자", "천만원", "억벌"],
 }
 
+# Ben 추가 후보(2026-11-17): 변형·띄어쓰기 포함
+CANDIDATES["극공포"] += ["손절해야", "손절할까", "손절각", "손절했", "완전망", "망필", "떡락"]
+CANDIDATES["극탐욕"] += ["영끌매수", "영끌해서", "영끌로", "계좌인증", "수익인증", "수익률", "자랑", "파이어", "qld", "sqqq", "soxl"]
+CANDIDATES["탐욕"] += ["%수익"]
+
+# 종목·상품 이름: 과열·공포 어느 쪽에도 넣지 않음(Ben 2026-11-17). 빈도 통계만 참고로 냄.
+PRODUCTS = {"레버리지", "tqqq", "qld", "3배", "sqqq", "soxl"}
+
+# 판정용 사전(Ben 2026-11-17 결정): 과열 = 영끌 매수·수익률 자랑·계좌 인증·수익·신고가·축하·경제적 자유·파이어,
+# 공포 = 폭망·떡락·폭락·손절해야 하나·완전 망·망필 및 유사어. 데이터로 고른 사전(lexicon_data)은 비교용.
+BEN = {
+    "극공포": ["폭망", "완전망", "망필", "손절해야", "손절할까", "손절각", "손절했", "망했", "깡통", "한강", "반토막"],
+    "공포": ["폭락", "떡락", "대폭락", "하락장"],
+    "저가매수": [],
+    "탐욕": ["수익", "신고가", "축하", "익절", "떡상", "%수익", "+%"],
+    "극탐욕": ["영끌매수", "영끌해서", "영끌로", "계좌인증", "수익인증", "인증", "수익률", "자랑", "경제적자유", "파이어", "인생역전", "억벌"],
+}
+
 WEIGHT = {"극공포": -2, "공포": -1, "저가매수": 0, "탐욕": 1, "극탐욕": 2}
 
 # 실시간 수집 채널(이름: 채널 ID). 2019~2026 과거 검증에서 두 기간(~2023 / 2024~) 모두 QQQ 낙폭과 같은 방향으로 움직인 채널만.
@@ -34,6 +52,16 @@ TRAIN_END = "2024-01-01"   # 단어 고르기는 이 날짜 전 데이터로만,
 STAGES = CANDIDATES
 
 
+def cand_version():
+    import hashlib
+    return hashlib.md5(json_dumps(CANDIDATES).encode()).hexdigest()[:8]
+
+
+def json_dumps(x):
+    import json
+    return json.dumps(x, ensure_ascii=False, sort_keys=True)
+
+
 def load_stages(data_dir="data"):
     import json, os
     try:
@@ -43,7 +71,7 @@ def load_stages(data_dir="data"):
             return lx
     except Exception:  # noqa
         pass
-    return CANDIDATES
+    return BEN
 
 _ws = re.compile(r"\s+")
 

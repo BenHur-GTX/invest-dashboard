@@ -184,6 +184,10 @@ def collect():
     except Exception:  # noqa
         R = {"channels": {}}
     R.setdefault("log", [])
+    if R.get("cand_ver") != L.cand_version():   # 후보 단어가 바뀌면 댓글을 다시 읽음(영상 목록은 재사용)
+        for C in R["channels"].values():
+            C["weeks"] = {}; C["done"] = []
+        R["cand_ver"] = L.cand_version()
     msg = "complete"
     def save():
         with open(RAW, "w", encoding="utf-8") as f:
@@ -273,6 +277,8 @@ def select_lexicon(P, Q, weeks):
     lex = {k: [] for k in L.WEIGHT}; rows = {}
     for hyp, words in L.CANDIDATES.items():
         for word in words:
+            if word in L.PRODUCTS:
+                continue
             bear, top, tot = [], [], 0
             for w in weeks:
                 r = word_rate(P, w, word)
@@ -309,8 +315,9 @@ def analyze(R):
     train = [w for w in weeks if w < L.TRAIN_END]; test = [w for w in weeks if w >= L.TRAIN_END]
     P_all = pool(R, list(R["channels"]), weeks)
     P_live = pool(R, [n for n in L.CHANNELS if n in R["channels"]], weeks)
-    lex, kwrows = select_lexicon(P_all, Q, train)
-    res = {"generated": datetime.now(timezone.utc).isoformat(timespec="minutes"), "lexicon": lex, "train_end": L.TRAIN_END,
+    lex_data, kwrows = select_lexicon(P_all, Q, train)
+    lex = L.BEN
+    res = {"generated": datetime.now(timezone.utc).isoformat(timespec="minutes"), "lexicon": lex, "lexicon_data": lex_data, "train_end": L.TRAIN_END,
            "live_channels": list(L.CHANNELS), "channels": {}, "log": R.get("log", [])[-5:]}
     # 채널별(고른 사전): 학습·검증 기간 낙폭 상관
     for name, C in R["channels"].items():
@@ -326,11 +333,13 @@ def analyze(R):
     series = [{"w": w, "n": P_live[w]["n"], **{k: cs[i][0].get(k, 0) for k in L.WEIGHT}, "score": cs[i][1], "s4": s4[i], **Q[w]} for i, w in enumerate(weeks)]
     res["series"] = series
     # 학습/검증 기간별 상관: 고른 사전 vs 후보 전체
-    _, s4c = score_series(P_live, weeks, L.CANDIDATES)
+    _, s4c = score_series(P_live, weeks, {k: [w for w in v if w not in L.PRODUCTS] for k, v in L.CANDIDATES.items()})
+    _, s4d = score_series(P_live, weeks, lex_data)
     def rhos(x, ws):
         ix = [weeks.index(w) for w in ws]
         return {k: spearman([x[i] for i in ix], [Q[weeks[i]][k] for i in ix]) for k in ("dd", "r4", "f4", "f13", "f26")}
     res["split"] = {"selected": {"train": rhos(s4, train), "test": rhos(s4, test), "all": rhos(s4, weeks)},
+                    "data": {"train": rhos(s4d, train), "test": rhos(s4d, test), "all": rhos(s4d, weeks)},
                     "candidates": {"train": rhos(s4c, train), "test": rhos(s4c, test), "all": rhos(s4c, weeks)}}
     # 점수(4주 평균) 구간별 이후 QQQ 수익 — 전체 표본 분위(사후 기준)
     vals = sorted(v for v in s4 if v is not None)
@@ -364,6 +373,9 @@ def analyze(R):
                       "pctile": round(sum(v <= idx[w]["s4"] for v in vals) / len(vals) * 100) if idx[w].get("s4") is not None and vals else None}
                      for w, lb in ev.items() if w in idx]
     # 단어별 전체 기간 통계(참고)
+    for hyp, words in L.CANDIDATES.items():
+        for word in words:
+            kwrows.setdefault(word, {"hyp": hyp, "hits": None, "lift": None, "product": word in L.PRODUCTS})
     for word, r in kwrows.items():
         rate = [word_rate(P_all, w, word) for w in weeks]
         bear = [x for x, w in zip(rate, weeks) if x is not None and Q[w]["dd"] <= -15]
