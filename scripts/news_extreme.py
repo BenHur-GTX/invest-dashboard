@@ -18,8 +18,8 @@ QUERIES = [
 ]
 TRAGIC = {"ko": re.compile(r"극단\s*적?\s*선택|숨진\s*채|목숨|투신|스스로\s*생"), "en": re.compile(r"suicide|took (his|her|their) own life|killed (himself|herself)", re.I)}
 INVEST = {"ko": re.compile(r"주식|코인|비트코인|가상\s*화폐|가상\s*자산|암호\s*화폐|빚투|투자|루나|선물|레버리지|증권"),
-          "en": re.compile(r"stock|crypto|bitcoin|trading|trader|investor|luna|terra|ftx|robinhood|market", re.I)}
-FOLLOWUP = re.compile(r"lawsuit|sued|settle|소송|합의", re.I)   # 예전 사건 후속 기사 제외
+          "en": re.compile(r"\bloss(es)?\b|\blost\b|debt|margin call|liquidat|crypto|bitcoin|trader|trading|investor|luna|terra|ftx|robinhood", re.I)}
+FOLLOWUP = re.compile(r"lawsuit|sued|settle|trial|drug|fda|patient|depression|소송|합의|임상", re.I)   # 예전 사건 후속 기사 제외
 HL = {"ko": {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}, "en": {"hl": "en-US", "gl": "US", "ceid": "US:en"}}
 
 
