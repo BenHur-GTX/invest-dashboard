@@ -220,7 +220,7 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .tsc:hover{border-color:var(--brand)} .tsc .k{font-size:12px;color:var(--ink2)} .tsc .v{font-size:20px;font-weight:700} .tsc .v small{font-size:12px;color:var(--ink2);font-weight:500}
 .tdots{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px} .tdots i{width:11px;height:11px;border-radius:50%;background:#e3e1db} .tdots i.g{background:var(--ok)} .tdots i.y{background:#e0a400} .tdots i.r{background:var(--bad)}
 .tact{padding:4px 12px 10px} .tact .tr{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none} .tact .tr:last-of-type{border-bottom:0}
-.tact .tr.none{color:var(--ok);font-weight:700} .tact .tm{flex:1;min-width:0;word-break:keep-all} .tact .tm b{font-size:15px} .tact .tx{font-size:12px;color:var(--ink2)} .tact .ta{font-weight:700;white-space:nowrap} .tact .tg{color:var(--brand);font-size:18px}
+.tact .tr.none{color:var(--ok);font-weight:700} .tact .tm{flex:1;min-width:0;word-break:keep-all} .tact .tm b{font-size:15px} .tact .tx{font-size:12px;color:var(--ink2);white-space:nowrap} .tact .ta{font-weight:700;white-space:nowrap} .tact .tg{color:var(--brand);font-size:18px}
 .tb{font-size:11.5px;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap} .tb.buy{background:var(--ok);color:#fff} .tb.sell{background:var(--bad);color:#fff} .tb.wait,.tb.chk{background:#e8e6e0;color:var(--ink2)}
 .tmore{font-size:12px;color:var(--ink2);padding:2px 0 4px} .tchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .tchip{font-size:12.5px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);background:#f7f6f2;color:var(--ink2);text-decoration:none}
 .tchip.g{background:#e6f2eb;border-color:#b9dcc6;color:#1d5c3a} .tchip.y{background:#fff6e0;border-color:#efd08a;color:#7a4b00} .tchip.r{background:#fdecea;border-color:#f2b8b1;color:#8a1c12}
@@ -961,8 +961,8 @@ function planBoost(E){
 /* 스윙 (11-14 Ben 확정, data/swing2_bt.json): 배수가 클수록 더 깊은 낙폭에서만 진입.
    진입 = 1년 고점 대비 낙폭 ≤ 빅테크 −30% / QLD −40% / TQQQ·SOXL −55% + 그 종목 RSI ≤ 30. 1회 계좌 25%, 동시 4개·종목당 2개, 같은 종목 5거래일 간격.
    청산 = +5% 절반 · +10% 나머지 · −10% 손절 · 10거래일 무조건. 신호 있는 달만 월 적립에서 20만 배정, 다 정리했을 때 이익의 50%는 장투로 이관. */
-const SWING_TH = {1:-30, 2:-40, 3:-55, g:-70};   // g = 성장주(IONQ·RKLB, 11-14 Ben): 모니터링 위주, 진짜 폭락장에서만 짧게. 1회 계좌 12.5%
-const SWING_GROWTH = ["IONQ","RKLB"], SWING_UNIT = {g:0.125, b:0.25};
+const SWING_TH = {1:-30, 2:-40, 3:-55, g:-70};   // g = 성장주(IONQ·RKLB, 11-14 Ben / IREN·PLTR·MRNA·ARKK·ARKG·XBI 11-18 추가): 모니터링 위주, 진짜 폭락장에서만 짧게. 1회 계좌 12.5%
+const SWING_GROWTH = ["IONQ","RKLB","IREN","PLTR","MRNA","ARKK","ARKG","XBI"], SWING_UNIT = {g:0.125, b:0.25};
 const SWING_BT = ["NVDA","AAPL","MSFT","AMZN","GOOGL","META","AVGO","TSLA","TSM"];
 const SWING_MONTHLY = 20;   // 만원, 신호 있는 달만
 const SWING_EXIT = "+5% 절반 · +10% 나머지 · −10% 손절 · 10거래일이면 무조건 청산";
@@ -1339,9 +1339,10 @@ function todayActions(lt, am, irp, bw){
   // 11-18 Ben: 적립 D-day는 이번 달 매수 탭에. 대신 다음 장투 SGOV 차수(무엇을 얼마나 사게 되나)
   { const dd=E.dd??0, i=LT_POOL.findIndex(x=>dd>x.lvl);
     if(i>=0){ const L=LT_POOL[i], prev=i? LT_POOL[i-1].lvl : 0, ltA=E.acc.list.find(a=>a.id==="longterm"), sg=(ltA?.pos||[]).filter(p=>p.t==="SGOV").reduce((a,p)=>a+p.v,0);
-      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`${L.lvl}%까지 ${num(dd-L.lvl,1)}%p 남음`, a: sg>0? won(sg*L.pct/100) : `${L.pct}% 투입`, go:"plan", bar:{v:Math.max(0,prev-dd), max:prev-L.lvl, mk:null, lab:`도달하면 모은 SGOV ${L.pct}% → ${L.mix.replace(/·/g," · ")} 매수`}}); } }
+      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`${L.lvl}%까지 ${ppLeft(dd-L.lvl)} 남음`, a: sg>0? won(sg*L.pct/100) : `${L.pct}% 투입`, go:"plan", bar:{lab:`도달하면 모은 SGOV ${L.pct}% → ${L.mix.replace(/·/g," · ")} 매수`}}); } }
   return A;
 }
+function ppLeft(v){ const r=Math.round(v); return r<1? "1%p 미만" : r+"%p"; }   // 11-18 Ben: 남은 거리는 소수점 없이
 function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼마나 남았나 (장투 SGOV 차수 + 현금 계좌 차수)
   const dd = E.dd ?? 0, cut = RULES.tranches.map(t=>t.dd);
   const lv = [...new Set([...LT_POOL.map(x=>x.lvl), ...cut])].sort((a,b)=>b-a);
@@ -1353,14 +1354,14 @@ function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼�
   return `<div class="panel lad"><div class="ltop"><span class="muted">QQQ 5년 고점 대비</span><span class="lnow">${pct(dd,1)}</span></div>
     <div class="lbar"><div class="lf" style="width:${X(dd)}%"></div><span class="lme" style="left:${X(dd)}%">지금</span>
     ${shown.map(v=>`<span class="lm${cut.includes(v)?" c":""}" style="left:${X(v)}%"></span><span class="lml" style="left:${X(v)}%"><b>${v}</b><br>${sub(v)}</span>`).join("")}</div>
-    <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${num(dd-lt.lvl,1)}%p</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${num(dd-ca.dd,1)}%p</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
+    <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${ppLeft(dd-lt.lvl)}</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${ppLeft(dd-ca.dd)}</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
 }
 function todayActionsHTML(lt, am, irp, bw){
   const A = todayActions(lt, am, irp, bw), act = A.filter(a=>a.k!=="wait"), show = act.slice(0,3);
   if(show.length<3) show.push(...A.filter(a=>a.k==="wait").slice(0, 3-show.length));
   const more = A.length - show.length;
   const IC = {buy:"매수", sell:"매도", chk:"점검", wait:"대기"};
-  const bar = b => b? `<div class="tmini"><i style="width:${Math.max(2,Math.min(100,b.v/b.max*100))}%"></i>${b.mk!=null? `<s style="left:${Math.min(100,b.mk/b.max*100)}%"></s>`:""}</div>${b.lab? `<div class="tlab">${esc(b.lab)}</div>`:""}` : "";
+  const bar = b => b? `${b.max==null? "" : `<div class="tmini"><i style="width:${Math.max(2,Math.min(100,b.v/b.max*100))}%"></i>${b.mk!=null? `<s style="left:${Math.min(100,b.mk/b.max*100)}%"></s>`:""}</div>`}${b.lab? `<div class="tlab">${esc(b.lab)}</div>`:""}` : "";
   const t = tradeSummary(E), oh = overheat(E), x = w40Info(), hs = humanSignals().rows.filter(r=>r.alert);
   const dots = (arr) => `<div class="tdots">${arr.map(c=>`<i class="${c}"></i>`).join("")}</div>`;
   const rep = (n,c) => Array(Math.max(0,n)).fill(c);
@@ -1668,7 +1669,7 @@ function crashLadder(am){
       ${lt.map(x=>`<i class="cl-t lt" style="left:${P(-x)}%"></i>`).join("")}${ca.map(x=>`<i class="cl-t ca" style="left:${P(-x)}%"></i>`).join("")}</div>
     <div class="cl-lb">${[0,-10,-20,-30,-40,-50,-60].map(x=>`<i style="left:${P(-x)}%">${x}</i>`).join("")}</div>
     <div class="lgd"><span class="lc" style="background:#eef3ef">평상</span><span class="lc" style="background:#f6ecd0">장투 하락 단계 (−10·−15·−20·−30)</span><span class="lc" style="background:#f6dcd8">현금 사다리 (${ca.join("·")})</span></div>
-    <div class="cl-st"><span>200일선 <b>${pct(E.q.vs200,1)}</b></span><span>RSI <b>${num(E.q.rsi,1)}</b></span><span>다음 현금 차수 <b>${(()=>{const n=am.list.find(t=>!t.reached); return n? n.n+"차 "+n.dd+"% (남은 "+num(dd-n.dd,1)+"%p)" : "모두 도달";})()}</b></span></div>`;
+    <div class="cl-st"><span>200일선 <b>${pct(E.q.vs200,1)}</b></span><span>RSI <b>${num(E.q.rsi,1)}</b></span><span>다음 현금 차수 <b>${(()=>{const n=am.list.find(t=>!t.reached); return n? n.n+"차 "+n.dd+"% (남은 "+ppLeft(dd-n.dd)+")" : "모두 도달";})()}</b></span></div>`;
 }
 function ddBar(dd){
   const marks=[-10,-15,-20,-30]; const w=v=>Math.min(100,Math.abs(v)/40*100);
@@ -2101,7 +2102,7 @@ function vMarket(){
       <li><b>강력 매수 찬스</b> 그 종목의 최상위 신호(매수 적기·드문 기회·스윙 진입 등) + RSI ≤ 30 + QQQ 5년 고점 −20% 이하(장투 하락 사다리 −20% 단계) + 거시 수비·HY 6%↑ 아님. 넷이 겹칠 때만 뜹니다.</li>
       <li><b>섹터·국내 ETF</b> 1배 ETF와 같은 4개 신호(머니마켓·초단기채 제외). <b>레버리지</b> 스윙 A안 진입선 QLD −40%, TQQQ·SOXL −55% + RSI ≤ 30이면 스윙 진입, 진입선 10%p 위 + RSI ≤ 40이면 관찰.</li>
       <li><b>빅테크</b> 1년 고점 −30% 이하 + RSI ≤ 30이면 드문 매수 기회(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰.</li>
-      <li><b>성장주 (아이온큐·로켓랩)</b> 모니터링용. 1년 고점 −70% + RSI ≤ 30일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI ≤ 40이면 관찰.</li>
+      <li><b>성장주 (아이온큐·로켓랩·IREN·팔란티어·모더나, ARKK·ARKG·XBI)</b> 모니터링용. ARKK(혁신 성장주)·XBI(중소형 바이오)는 투기 성장주 심리 온도계로, 이 둘이 먼저 꺾이면 성장주 전체 위험 선호가 식는 신호로 봅니다. 1년 고점 −70% + RSI ≤ 30일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI ≤ 40이면 관찰.</li>
       <li><b>고점 대비</b> 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비).</li>
       <li><b>볼린저 %B</b> 20일 밴드 안 위치. 0 아래면 하단 이탈.</li>
       <li><b>40주선</b> 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈)와 경과 주수(마감 주 기준). 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 주에 반대로 넘어간 상태(금요일 종가로 확정).</li>
