@@ -381,6 +381,7 @@ def analyze(R):
         bear = [x for x, w in zip(rate, weeks) if x is not None and Q[w]["dd"] <= -15]
         top = [x for x, w in zip(rate, weeks) if x is not None and Q[w]["dd"] > -3]
         r.update({"rho_dd_all": spearman(rate, [Q[w]["dd"] for w in weeks]),
+                  "hits_all": sum(c for w in weeks for k, c in P_all[w]["combo"].items() if word in k.split("|")),
                   "lift_all": round(st.mean(bear) / st.mean(top), 2) if bear and top and st.mean(top) > 0 else None})
     res["keywords"] = kwrows
     res["weeks_bear"] = sum(s["dd"] <= -15 for s in series); res["weeks_top"] = sum(s["dd"] > -3 for s in series)

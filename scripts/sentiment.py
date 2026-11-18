@@ -75,7 +75,7 @@ def _yt_contrary(S):
     for st, words in lx.items():
         for w in words:
             l = (kw.get(w) or {}).get("lift_all")
-            if l is None:
+            if l is None or (kw.get(w) or {}).get("hits_all", 0) < 30:   # 표본 적은 단어는 판단 보류
                 continue
             if (st in ("탐욕", "극탐욕") and l >= 1.5) or (st in ("공포", "극공포") and l <= 0.67):
                 out.append(f"{w}({l}배)")
