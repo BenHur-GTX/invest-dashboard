@@ -84,7 +84,7 @@ def collect(**kw):
                     seen.add(key); out.append(a)
         except Exception as e:  # noqa
             print("news_hype fail", q, e, file=sys.stderr)
-        time.sleep(0.6)
+        time.sleep(0.3)
     return out
 
 
@@ -128,26 +128,44 @@ def study():
     while d < datetime.now():
         nd = (d.replace(day=28) + timedelta(days=4)).replace(day=1)
         months.append((d.date().isoformat(), nd.date().isoformat())); d = nd
-    series = []
+    def prices(row, b):
+            for s, (ds, p) in px.items():
+                i = bisect.bisect_left(ds, b) - 1
+                if i < 0:
+                    continue
+                k = {"QQQ": "q", "SOXX": "s", "BTC-USD": "b"}[s]
+                hi = max(p[max(0, i - 251):i + 1])
+                row[k + "dd"] = round((p[i] / hi - 1) * 100, 1)
+                fut = p[i:i + 253]
+                if len(fut) > 1:
+                    j = max(range(len(fut)), key=lambda t: fut[t])
+                    row[k + "pk"] = round(j / 21, 1)                                    # 이후 1년 안 최고점까지 개월
+                    row[k + "up"] = round((fut[j] / p[i] - 1) * 100, 1)                 # 그 고점까지 추가 상승
+                    row[k + "mdd"] = round((min(fut[j:]) / fut[j] - 1) * 100, 1) if j < len(fut) - 1 else 0.0   # 그 고점 뒤 1년 창 안 최대 하락
+                for h, n in (("f6", 126), ("f12", 252)):
+                    row[k + h] = round((p[i + n] / p[i] - 1) * 100, 1) if i + n < len(p) else None
+    OUT = "data/news_hype_study.json"
+    try:   # 이어 하기: 작업 시간 제한에 걸려도 다음 실행이 남은 달부터
+        with open(OUT, encoding="utf-8") as f:
+            done = {r["m"]: r for r in json.load(f).get("series", []) if r.get("final")}
+    except Exception:  # noqa
+        done = {}
+    t0 = time.time(); series = []
+    def dump(extra=None):
+        with open(OUT, "w", encoding="utf-8") as f:
+            json.dump({"partial": True, "series": series, **(extra or {})}, f, ensure_ascii=False, indent=0)
     for a, b in months:
+        if a[:7] in done:
+            r = done[a[:7]]; prices(r, b); series.append(r)   # 기사 수는 재사용, 가격 지표만 다시 계산
+            continue
+        if time.time() - t0 > 280 * 60:
+            dump(); print("time limit, partial saved", flush=True); return
         arts = [x for x in collect(after=a, before=b) if not x["date"] or a <= x["date"] < b]
         row = {"m": a[:7], **_count(arts), "titles": [x["title"][:80] for x in sorted(arts, key=lambda x: -x["diff"])[:4]]}
-        for s, (ds, p) in px.items():
-            i = bisect.bisect_left(ds, b) - 1
-            if i < 0:
-                continue
-            k = {"QQQ": "q", "SOXX": "s", "BTC-USD": "b"}[s]
-            hi = max(p[max(0, i - 251):i + 1])
-            row[k + "dd"] = round((p[i] / hi - 1) * 100, 1)
-            fut = p[i:i + 253]
-            if len(fut) > 1:
-                j = max(range(len(fut)), key=lambda t: fut[t])
-                row[k + "pk"] = round(j / 21, 1)                                    # 이후 1년 안 최고점까지 개월
-                row[k + "up"] = round((fut[j] / p[i] - 1) * 100, 1)                 # 그 고점까지 추가 상승
-                row[k + "mdd"] = round((min(fut[j:]) / fut[j] - 1) * 100, 1) if j < len(fut) - 1 else 0.0   # 그 고점 뒤 1년 창 안 최대 하락
-            for h, n in (("f6", 126), ("f12", 252)):
-                row[k + h] = round((p[i + n] / p[i] - 1) * 100, 1) if i + n < len(p) else None
+        prices(row, b)
+        row["final"] = b <= datetime.now().date().isoformat()
         series.append(row); print(row["m"], row["n"], row["wave"], row["diff"], row.get("qdd"), flush=True)
+        dump()
     # 언론 기사 수 자체가 해마다 늘어 절대 건수는 최근으로 쏠림 → 직전 24개월 대비 위치(롤링 상위 10%)로 '과열 달'을 정함
     for i, r in enumerate(series):
         past = [x["n"] for x in series[max(0, i - 24):i]]
