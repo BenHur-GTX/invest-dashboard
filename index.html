@@ -205,6 +205,12 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .mexp{margin-top:18px} .mexp summary{cursor:pointer} .mx{margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink2)} .mx li{margin:4px 0} .mx b{color:var(--ink)}
 .cands button{all:unset;cursor:pointer;font-size:13.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s ease,background-color .15s ease}
 .cands button:hover{border-color:var(--brand)} .cands button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.tact{padding:4px 12px 10px} .tact .tr{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none} .tact .tr:last-of-type{border-bottom:0}
+.tact .tr.none{color:var(--ok);font-weight:700} .tact .tm{flex:1;min-width:0} .tact .tm b{font-size:15px} .tact .tx{font-size:12px;color:var(--ink2)} .tact .ta{font-weight:700;white-space:nowrap} .tact .tg{color:var(--brand);font-size:18px}
+.tb{font-size:11.5px;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap} .tb.buy{background:var(--ok);color:#fff} .tb.sell{background:var(--bad);color:#fff} .tb.wait,.tb.chk{background:#e8e6e0;color:var(--ink2)}
+.tmore{font-size:12px;color:var(--ink2);padding:2px 0 4px} .tchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .tchip{font-size:12.5px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);background:#f7f6f2;color:var(--ink2);text-decoration:none}
+.tchip.g{background:#e6f2eb;border-color:#b9dcc6;color:#1d5c3a} .tchip.y{background:#fff6e0;border-color:#efd08a;color:#7a4b00} .tchip.r{background:#fdecea;border-color:#f2b8b1;color:#8a1c12}
+.ord .orow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)} .ord .orow:last-of-type{border-bottom:0} .ord .on{flex:1;min-width:0} .ord .os{font-size:12px;color:var(--ink2)} .ord .oa{font-weight:700;white-space:nowrap}
 .picks .pk{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:7px 0;border-bottom:1px solid var(--line)} .picks .pk:last-of-type{border-bottom:0} .picks .pa{min-width:92px;font-size:13px;color:var(--ink2)} .picks .sig{margin-left:0} .picks details{margin-top:8px}
 .cands button.s3{border-color:#0b4d2c;border-width:2px;background:#d3eadc;font-weight:600} .cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
 .symbtn{all:unset;cursor:pointer;border-radius:4px;transition:color .15s ease}
@@ -1004,14 +1010,13 @@ function irpOrders(E){
 }
 
 function ordersHTML(){
-  if(!E.acc.list.find(a=>a.id==="irp"||a.id==="swing")) return `<h3>IRP·스윙 오늘 주문</h3><div class="panel"><p class="muted">보유 내역이 열려야 계산됩니다. 이 기기에 키 파일을 등록하세요(규칙 탭 맨 아래).</p></div>`;
- const io=irpOrders(E), so=swingOrders(E);
-    const irpT = io? `<h3>④ IRP — 오늘 기준</h3>
-  <div class="tbl"><table><tr><th>종목</th><th>금액</th><th>현재가</th><th>주수</th><th class="l">이유</th></tr>
-  ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
-  </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
-    const swT = so? swingOrdersHTML(so, "⑤ 스윙 계좌 — 오늘 기준") : "";
-    return irpT + swT;
+  if(!E.acc.list.find(a=>a.id==="irp"||a.id==="swing")) return `<h3>IRP·스윙 주문</h3><div class="panel"><p class="muted">보유 내역 키를 등록하면 계산됩니다(규칙 탭 맨 아래).</p></div>`;
+  const io=irpOrders(E), so=swingOrders(E);
+  const irpT = io? `<h3>⑤ IRP <span class="muted" style="font-weight:400">위험자산 ${pct(io.irp.cur,1,false)} → ${io.irp.lo}~${io.irp.hi}%</span></h3>
+  <div class="panel ord">${io.rows.length? io.rows.map(r=>`<div class="orow"><span class="tb buy">매수</span><span class="on"><b>${esc(r.name)}</b> <span class="os">${r.sh??"–"}주</span></span><span class="oa">${won(r.amt)}</span></div>`).join("") : `<div class="orow"><span class="tb wait">대기</span><span class="on">오늘 살 것 없음</span></div>`}
+  <details class="mexp sm"><summary>설명 보기</summary>${io.rows.map(r=>`<p><b>${esc(r.name)}</b> 현재가 ${r.px? num(r.px,0)+"원":"대기"} · ${esc(r.why)}</p>`).join("")}<p>재원은 IRP 머니마켓(안전자산). 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p></details></div>` : "";
+  const swT = so? swingOrdersHTML(so, "⑥ 스윙 계좌") : "";
+  return irpT + swT;
 }
 
 /* 연금·IRP 나스닥100 (Ben 2026-11-08): 평상시 TIGER 지수형, QQQ 5년 고점 −20% 이하 폭락장에서는 고베타 TIME 액티브(레버리지 대용, 매도 없음) */
@@ -1114,10 +1119,9 @@ function tradeTodayLine(E){
   return `<b>트레이딩</b>: 진입 신호 ${t.on} · 근접 ${t.near} · 보유 ${t.open}${t.todo? ` · <b class="dn">오늘 처리 ${t.todo}건</b>`:""} — <a href="#trade">트레이딩 탭</a>`;
 }
 function swingOrdersHTML(so, title){
-  return `<h3>${title} (예수금 ${won(so.cash0)})</h3>
-  <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
-  ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
-  </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회까지. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>`;
+  return `<h3>${title} <span class="muted" style="font-weight:400">예수금 ${won(so.cash0)}</span></h3>
+  <div class="panel ord">${so.out.length? so.out.map(r=>`<div class="orow"><span class="tb buy">매수</span><span class="on"><b>${esc(r.t)}</b> <span class="os">${r.sh}주 · ${usd(r.px)}</span></span><span class="oa">${won(r.amt)}</span></div>`).join("") : `<div class="orow"><span class="tb wait">대기</span><span class="on">오늘 진입 신호 없음</span></div>`}
+  <details class="mexp sm"><summary>설명 보기</summary>${so.out.map(r=>`<p><b>${esc(r.t)}</b> 신호 ${esc(r.why)} · 다음 분할 ${esc(r.next)} · 매도 ${esc(r.sell)}</p>`).join("")}<p>남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회까지.${so.skip.length? " 건너뜀: "+so.skip.map(esc).join(" · "):""}</p></details></div>`;
 }
 // 11-16 Ben: 장투+스윙(+현금 계좌) 레버리지 합산 노출. 규칙 변경 없이 표시·경고만 (직투 자산 30% 초과 시 노랑)
 const LEV_T = ["QLD","TQQQ","SOXL"];
@@ -1298,6 +1302,45 @@ function renderHero(){
   $("#meta").innerHTML = `${E.M.snapshot? "스냅샷 · " : ""}갱신 ${g.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} · 원/달러 ${num(E.fx,1)}`;
 }
 
+// 11-18 Ben: 오늘 할 일 = 행동 최대 3줄(배지·종목·금액). 문장은 '상세 점검'으로 접음. 계좌별 주문표는 이번 달 매수 탭에만
+function todayActions(lt, am, irp, bw){
+  const A = [];   // {k:"buy"|"sell"|"wait"|"chk", n:종목, x:계좌·이유(짧게), a:금액·주수, go:탭}
+  const bo = planBoost(E);
+  if(bo.fire) A.push({k:"buy", n:"QLD", x:"장투 · 반등 가속 1차", a:won(bo.amt), go:"plan"});
+  if(bo.gc) A.push({k:"buy", n:"QLD", x:"장투 · 반등 가속 2차", a:won(bo.amt2), go:"plan"});
+  if(bo.dead) A.push({k:"sell", n:"QLD → SGOV", x:"장투 · 가속 2차 정리", a:"전량", go:"plan"});
+  if(bo.stop) A.push({k:"sell", n:"QLD → SGOV", x:"장투 · 가속 1차 정리", a:"1차분", go:"plan"});
+  const bc = bigCut(E.M.macro||{}); if(bc) A.push({k:"sell", n:"주식 비중 축소", x:`빅컷 ${bc.days}일째`, a:"단계별", go:"today"});
+  if(am.action?.ready) A.push({k:"buy", n:mixText(am.action.t.mix), x:`현금 계좌 ${am.action.t.n}차`, a: am.bal>0? won(am.action.amt) : `${am.action.pctUse}%`, go:"crash"});
+  else if(am.action) A.push({k:"wait", n:`현금 ${am.action.t.n}차`, x:"보조지표 2개 미충족", a:`${E.auxN}/6`, go:"crash"});
+  if(am.settle) A.push({k:"sell", n:"현금 계좌 정산", x:"전고점 회복", a:won(am.settle.half), go:"crash"});
+  const t = tradeSummary(E); if(t.todo) A.push({k:"sell", n:`트레이딩 ${t.todo}건`, x:"익절·손절·만기", a:"", go:"trade"});
+  const so = swingOrders(E);
+  if(so?.out.length) so.out.forEach(r=>A.push({k:"buy", n:r.t, x:`스윙 · ${r.sh}주`, a:won(r.amt), go:"plan"}));
+  else { const on = swingSignals(E).filter(s=>s.on); on.forEach(s=>A.push({k:"buy", n:s.t, x:"스윙 진입 신호", a:"계좌 25%", go:"trade"})); }
+  const io = irpOrders(E);
+  if(io?.rows.length){ const sum=io.rows.reduce((a,r)=>a+r.amt,0); A.push({k:"buy", n: io.rows.length===1? io.rows[0].name : `${io.rows[0].name} 외 ${io.rows.length-1}`, x:"IRP", a:won(sum), go:"plan"}); }
+  else if(irp?.todayBuy) A.push({k:"buy", n:"KODEX 200", x:"IRP · 음봉 매수일", a:won(irp.tick), go:"plan"});
+  if(!lt.below && E.S.QLD?.chg<=-2) A.push({k:"buy", n:"QLD", x:"장투 · −2% 매수일", a:"QLD 몫", go:"plan"});
+  if(bw.inWindow) A.push({k:"buy", n:"이번 달 적립", x:"장투·연금저축", a:won(E.H.settings.monthly_longterm_krw+E.H.settings.monthly_pension_krw), go:"plan"});
+  else A.push({k:"wait", n:"이번 달 적립", x:bw.label, a:`D-${bw.dday}`, go:"plan"});
+  return A;
+}
+function todayActionsHTML(lt, am, irp, bw){
+  const A = todayActions(lt, am, irp, bw), act = A.filter(a=>a.k!=="wait"), show = (act.length? act : []).slice(0,3);
+  if(show.length<3) show.push(...A.filter(a=>a.k==="wait").slice(0, 3-show.length));
+  const more = A.length - show.length;
+  const B = {buy:"매수", sell:"매도", wait:"대기", chk:"점검"};
+  const t = tradeSummary(E), oh = overheat(E), x = w40Info();
+  const chips = [];
+  if(t.near) chips.push(`<a class="tchip" href="#trade">근접 ${t.near}</a>`);
+  if(x) chips.push(`<span class="tchip ${x.w.up?"g":"y"}">40주선 ${x.w.up?"위":"아래"}${x.w.cross&&x.w.weeks!=null? ` · ${x.w.cross==="golden"?"골든":"데드"} ${x.w.weeks}주`:""}</span>`);
+  chips.push(`<span class="tchip ${oh.score>=2?"r":"g"}">과열 ${oh.score}/5</span>`);
+  return `<div class="panel tact">${show.length? show.map(a=>`<a class="tr" href="#${a.go}"><span class="tb ${a.k}">${B[a.k]}</span><span class="tm"><b>${esc(a.n)}</b> <span class="tx">${esc(a.x)}</span></span><span class="ta">${esc(a.a)}</span><span class="tg">›</span></a>`).join("")
+    : `<div class="tr none">오늘 할 것 없음</div>`}
+    ${more>0? `<div class="tmore">+${more}개 더 · 상세 점검에서</div>`:""}
+    <div class="tchips">${chips.join("")}</div></div>`;
+}
 function vToday(){
   const lt = planLongterm(E), am = planAmmo(E), sw = planSwing(E), irp = planIRP(E);
   const bw = buyWindow(E.H?.settings?.buy_day||25);
@@ -1335,11 +1378,9 @@ function vToday(){
   <div class="alerts">${alerts}</div>
   ${humanSummary()}
   <h2>오늘 할 일</h2>
-  <div class="panel"><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></div>
-  ${bigCutHTML(true)}
-  ${candAcctHTML()}
-  ${ordersHTML()}
-  ${E.acc.list.length? `<h2>계좌 요약</h2>${accountsTable(true)}`:""}`;
+  ${todayActionsHTML(lt, am, irp, bw)}
+  <details class="mexp sm"><summary>상세 점검 ${todo.length}줄 보기</summary><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></details>
+  ${bigCutHTML(true)}`;
 }
 // 11-15 Ben: 게이지. zones=[[끝값,색]...] (min부터 순서대로), ticks=[값...]
 function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt}){
@@ -1420,7 +1461,7 @@ function planBody(){
   return `
   <h2>이번 달 적립 (${bw.label})</h2>
   <div class="panel"><p class="lead">현재 구간: <b>${esc(lt.row.label)}</b> · QQQ 고점 대비 ${pct(E.dd)} · 상태 ${E.state}. ${RULES.states[E.state].name}</p>
-  <p class="muted">장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></details></div>
   ${allocBody()}
   ${fxHTML()}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
@@ -1432,17 +1473,19 @@ function planBody(){
   ${candAcctHTML()}
   ${lt.notes.length? `<div class="nlist">${lt.notes.map(n=>{ const [k,v,t,full]=Array.isArray(n)? n : ["참고", n, "n"]; return `<div class="nrow"${full? ` title="${esc(full)}"`:""}><span class="ntag t-${t}">${esc(k)}</span><span>${esc(v)}</span></div>`; }).join("")}</div>`:""}
   <h3>② 현금 계좌 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
-  <div class="panel"><p>매달 SGOV로 적립합니다 (원하면 SGOV 80 + 엔화 20). 현재 잔액 ${won(am.bal)} · 집행 차수 ${am.done.length? am.done.join(", ")+"차":"없음"}.
-  ${am.action? `<br><b>이번 달 현금 ${am.action.t.n}차 대상</b> — 폭락 대응 탭 참고.`:""}</p></div>
+  <div class="panel ord"><div class="orow"><span class="tb buy">매수</span><span class="on"><b>SGOV</b> <span class="os">잔액 ${won(am.bal)} · 차수 ${am.done.length? am.done.join(",")+"차":"없음"}</span></span><span class="oa">${won(E.H.settings.monthly_ammo_krw)}</span></div>
+  ${am.action? `<div class="orow"><span class="tb ${am.action.ready?"buy":"wait"}">${am.action.ready?"집행":"대기"}</span><span class="on"><b>현금 ${am.action.t.n}차</b> <a class="os" href="#crash">폭락 대응 탭</a></span></div>`:""}
+  <details class="mexp sm"><summary>설명 보기</summary><p>매달 SGOV로 적립합니다(원하면 SGOV 80 + 엔화 20). QQQ 5년 고점 대비 낙폭 사다리에서만 꺼내 씁니다.</p></details></div>
   <h3>③ 연금저축 계좌 ${won(pn.amt)} (국내상장, 레버리지 불가)</h3>
   ${pensionCheckHTML(pensionCheck(pn.amt, irpAnnual()), false)}
   <div class="tbl"><table>
     <tr><th>종목</th><th>비중</th><th>금액</th><th>현재가</th><th>주수</th></tr>
     ${pn.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.w}%</td><td>${won(r.won)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td></tr>`).join("")}
   </table></div>
-  <p class="note">${pn.merged? `${pn.merged.join("·")} 몫이 1주 가격보다 작아 이번 달은 예수금으로 두고 다음 달 같은 몫과 합쳐 삽니다. `:""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p>
+  <details class="mexp sm"><summary>설명 보기</summary><p>${pn.merged? `${pn.merged.join("·")} 몫이 1주 가격보다 작아 이번 달은 예수금으로 두고 다음 달 같은 몫과 합쳐 삽니다. `:""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p></details>
   ${lt.side?.gold? `<h3>④ 금현물 계좌 ${won(lt.side.gold*1e4)} → KRX 금현물 1g</h3>
-  <div class="panel"><p>장투 계좌와 별개 계좌입니다. 가격과 관계없이 매달 1g을 삽니다(1g 약 ${won(lt.side.gold*1e4)}, GLD 시세로 환산한 추정치). ${lt.side.goldExtra? "월 저축 밖에서 따로 넣는 돈입니다." : "장투 몫에서 떼어 옮긴 돈입니다."} 팔지 않는 것이 기본이고, 주봉 RSI 75 이상 + 200일선 +20%면 10%를 SGOV로 돌립니다.</p></div>`:""}
+  <div class="panel ord"><div class="orow"><span class="tb buy">매수</span><span class="on"><b>KRX 금현물</b> <span class="os">1g</span></span><span class="oa">≈${won(lt.side.gold*1e4)}</span></div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>장투 계좌와 별개 계좌입니다. 가격과 관계없이 매달 1g을 삽니다(1g 약 ${won(lt.side.gold*1e4)}, GLD 시세로 환산한 추정치). ${lt.side.goldExtra? "월 저축 밖에서 따로 넣는 돈입니다." : "장투 몫에서 떼어 옮긴 돈입니다."} 팔지 않는 것이 기본이고, 주봉 RSI 75 이상 + 200일선 +20%면 10%를 SGOV로 돌립니다.</p></details></div>`:""}
   ${ordersHTML()}`;
 }
 
