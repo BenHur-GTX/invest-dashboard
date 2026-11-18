@@ -68,6 +68,20 @@ def fed_margin(fred):
     raise ValueError("FRED 마진 시계열 없음")
 
 
+def _yt_contrary(S):
+    """판정 사전 단어 중 데이터상 반대 방향(탐욕 단어가 하락장에 1.5배↑, 공포 단어가 고점권에 1.5배↑)"""
+    lx, kw = S.get("lexicon") or {}, S.get("keywords") or {}
+    out = []
+    for st, words in lx.items():
+        for w in words:
+            l = (kw.get(w) or {}).get("lift_all")
+            if l is None:
+                continue
+            if (st in ("탐욕", "극탐욕") and l >= 1.5) or (st in ("공포", "극공포") and l <= 0.67):
+                out.append(f"{w}({l}배)")
+    return out
+
+
 def youtube(key, cache, data_dir="data"):
     """과거 검증과 같은 방식: 채널별 최근 7일 일반 영상(3분 이상) 중 댓글 많은 2개 → 관련도순 댓글 100개(업로드 후 10일 안).
     댓글마다 단계(극공포·공포·저가매수·탐욕·극탐욕)를 매기고 0(극공포)~100(극탐욕) 점수. 쿼터: 채널당 하루 약 4유닛."""
@@ -131,8 +145,7 @@ def youtube(key, cache, data_dir="data"):
         out["study"] = {"from": next((x["w"] for x in S.get("series", []) if x.get("score") is not None), None), "weeks": len(hist),
                         "greed_f26": b.get("탐욕 상위10%", {}).get("f26"), "fear_f26": b.get("공포 하위10%", {}).get("f26"), "all_f26": b.get("전체", {}).get("f26"),
                         "rho_dd_test": sp.get("test", {}).get("dd"), "rho_f13_test": sp.get("test", {}).get("f13"), "rho_f13_train": sp.get("train", {}).get("f13"),
-                        "greed_words": (S.get("lexicon") or {}).get("탐욕", []) + (S.get("lexicon") or {}).get("극탐욕", []),
-                        "flipped": [w for w, r in (S.get("keywords") or {}).items() if r.get("hyp") in ("탐욕", "극탐욕") and w in (S.get("lexicon") or {}).get("공포", [])],
+                        "contrary": _yt_contrary(S),
                         "fear_eps": len(S.get("episodes", {}).get("공포", [])), "greed_eps": len(S.get("episodes", {}).get("탐욕", []))}
     except Exception:  # noqa
         pass
