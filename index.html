@@ -174,8 +174,12 @@ tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var
 .rc{display:inline-block;min-width:26px;padding:1px 4px;border-radius:4px;text-align:center;font-weight:600;background:#f0eee8}
 .rc.lo{background:var(--down);color:#fff} .rc.lo2{background:#dbe6fb;color:#1d3f99} .rc.hi{background:var(--bad);color:#fff}
 .mtbl td.px{color:var(--ink2)}
+/* 11-18 Ben: 그룹 안 매수 우선순위 (기본 정렬) */
+.rk{display:inline-block;min-width:18px;height:18px;line-height:18px;margin-right:5px;border-radius:9px;text-align:center;font-size:11px;font-weight:700;background:#ebe9e3;color:var(--ink2);vertical-align:1px}
+.rk.r1{background:var(--brand);color:#fff} .rk.r2{background:var(--brand-soft);color:var(--brand)} .rk.off{background:transparent;color:#8a877f;box-shadow:inset 0 0 0 1px #d6d3cb}
+.rkw{display:block;font-size:11px;color:var(--ink2);font-weight:400;margin-top:2px;white-space:nowrap}
 .sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
-.sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
+.sig.s3{background:#0b4d2c;color:#fff;box-shadow:0 0 0 2px #9fd4b4} .sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
 .cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .cl-hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .cl-v{font-size:26px;font-weight:800;color:var(--dn,#1d4ed8)}
 .cl{position:relative;margin:14px 0 2px;height:14px} .cl-tr{display:flex;height:14px;border-radius:7px;overflow:hidden} .cl-tr .z0{background:#eef3ef} .cl-tr .z1{background:#f6ecd0} .cl-tr .z2{background:#f6dcd8}
@@ -201,7 +205,27 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .mexp{margin-top:18px} .mexp summary{cursor:pointer} .mx{margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink2)} .mx li{margin:4px 0} .mx b{color:var(--ink)}
 .cands button{all:unset;cursor:pointer;font-size:13.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s ease,background-color .15s ease}
 .cands button:hover{border-color:var(--brand)} .cands button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
+.lad{padding:12px 14px} .lad .ltop{display:flex;justify-content:space-between;align-items:baseline;font-size:13px} .lad .lnow{font-size:26px;font-weight:700;color:var(--bad)}
+.lbar{position:relative;height:12px;background:#ece9e2;border-radius:6px;margin:26px 4px 44px} .lbar .lf{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,#e7b4ad,var(--bad))}
+.lbar .lm{position:absolute;top:-6px;width:2px;height:24px;background:#9b978e;margin-left:-1px} .lbar .lm.c{background:var(--brand);width:3px}
+.lbar .lml{position:absolute;top:22px;transform:translateX(-50%);font-size:11px;color:var(--ink2);white-space:nowrap;text-align:center;line-height:1.25} .lbar .lml b{color:var(--ink);font-size:11.5px}
+.lbar .lme{position:absolute;top:-22px;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--bad)}
+.lnx{display:flex;gap:6px} .lnx div{flex:1;background:#f7f6f2;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--ink2)} .lnx b{display:block;font-size:18px;color:var(--ink)}
+.th3{margin:14px 2px 8px} .th3 .muted{font-size:12px;font-weight:400}
+.tic{min-width:42px;height:28px;padding:0 8px;border-radius:6px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:13px} .tic.buy{background:var(--ok)} .tic.sell{background:var(--bad)} .tic.wait,.tic.chk{background:#c9c5bc}
+.tmini{height:6px;background:#ece9e2;border-radius:3px;margin-top:6px;position:relative} .tmini i{position:absolute;left:0;top:0;bottom:0;background:var(--ok);border-radius:3px} .tmini s{position:absolute;top:-3px;width:2px;height:12px;background:var(--brand)}
+.tlab{font-size:11.5px;color:var(--ink2);margin-top:3px} .tnone{color:var(--ok);font-weight:700;padding:10px 0}
+.tsig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px} .tsc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--ink);text-decoration:none;transition:border-color .15s ease}
+.tsc:hover{border-color:var(--brand)} .tsc .k{font-size:12px;color:var(--ink2)} .tsc .v{font-size:20px;font-weight:700} .tsc .v small{font-size:12px;color:var(--ink2);font-weight:500}
+.tdots{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px} .tdots i{width:11px;height:11px;border-radius:50%;background:#e3e1db} .tdots i.g{background:var(--ok)} .tdots i.y{background:#e0a400} .tdots i.r{background:var(--bad)}
+.tact{padding:4px 12px 10px} .tact .tr{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none} .tact .tr:last-of-type{border-bottom:0}
+.tact .tr.none{color:var(--ok);font-weight:700} .tact .tm{flex:1;min-width:0} .tact .tm b{font-size:15px} .tact .tx{font-size:12px;color:var(--ink2)} .tact .ta{font-weight:700;white-space:nowrap} .tact .tg{color:var(--brand);font-size:18px}
+.tb{font-size:11.5px;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap} .tb.buy{background:var(--ok);color:#fff} .tb.sell{background:var(--bad);color:#fff} .tb.wait,.tb.chk{background:#e8e6e0;color:var(--ink2)}
+.tmore{font-size:12px;color:var(--ink2);padding:2px 0 4px} .tchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .tchip{font-size:12.5px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);background:#f7f6f2;color:var(--ink2);text-decoration:none}
+.tchip.g{background:#e6f2eb;border-color:#b9dcc6;color:#1d5c3a} .tchip.y{background:#fff6e0;border-color:#efd08a;color:#7a4b00} .tchip.r{background:#fdecea;border-color:#f2b8b1;color:#8a1c12}
+.ord .orow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)} .ord .orow:last-of-type{border-bottom:0} .ord .on{flex:1;min-width:0} .ord .os{font-size:12px;color:var(--ink2)} .ord .oa{font-weight:700;white-space:nowrap}
+.picks .pk{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:7px 0;border-bottom:1px solid var(--line)} .picks .pk:last-of-type{border-bottom:0} .picks .pa{min-width:92px;font-size:13px;color:var(--ink2)} .picks .sig{margin-left:0} .picks details{margin-top:8px}
+.cands button.s3{border-color:#0b4d2c;border-width:2px;background:#d3eadc;font-weight:600} .cands button.s2{border-color:var(--ok);background:#e6f2eb} .cands button.s1{border-color:#8cbf5a}
 .symbtn{all:unset;cursor:pointer;border-radius:4px;transition:color .15s ease}
 .symbtn:hover b{color:var(--brand);text-decoration:underline;text-underline-offset:3px} .symbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 td.l .symbtn{display:block}
@@ -999,14 +1023,13 @@ function irpOrders(E){
 }
 
 function ordersHTML(){
-  if(!E.acc.list.find(a=>a.id==="irp"||a.id==="swing")) return `<h3>IRP·스윙 오늘 주문</h3><div class="panel"><p class="muted">보유 내역이 열려야 계산됩니다. 이 기기에 키 파일을 등록하세요(규칙 탭 맨 아래).</p></div>`;
- const io=irpOrders(E), so=swingOrders(E);
-    const irpT = io? `<h3>④ IRP — 오늘 기준</h3>
-  <div class="tbl"><table><tr><th>종목</th><th>금액</th><th>현재가</th><th>주수</th><th class="l">이유</th></tr>
-  ${io.rows.length? io.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${won(r.amt)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td><td class="l muted">${esc(r.why)}</td></tr>`).join("") : `<tr><td colspan="5" class="muted">오늘 살 것 없음 (위험자산 ${pct(io.irp.cur,1,false)}, 목표 ${io.irp.lo}~${io.irp.hi}%)</td></tr>`}
-  </table></div><p class="note">재원은 IRP 머니마켓(안전자산). 위험자산 현재 ${pct(io.irp.cur,1,false)} → 목표 ${io.irp.lo}~${io.irp.hi}%, 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p>` : "";
-    const swT = so? swingOrdersHTML(so, "⑤ 스윙 계좌 — 오늘 기준") : "";
-    return irpT + swT;
+  if(!E.acc.list.find(a=>a.id==="irp"||a.id==="swing")) return `<h3>IRP·스윙 주문</h3><div class="panel"><p class="muted">보유 내역 키를 등록하면 계산됩니다(규칙 탭 맨 아래).</p></div>`;
+  const io=irpOrders(E), so=swingOrders(E);
+  const irpT = io? `<h3>⑤ IRP <span class="muted" style="font-weight:400">위험자산 ${pct(io.irp.cur,1,false)} → ${io.irp.lo}~${io.irp.hi}%</span></h3>
+  <div class="panel ord">${io.rows.length? io.rows.map(r=>`<div class="orow"><span class="tb buy">매수</span><span class="on"><b>${esc(r.name)}</b> <span class="os">${r.sh??"–"}주</span></span><span class="oa">${won(r.amt)}</span></div>`).join("") : `<div class="orow"><span class="tb wait">대기</span><span class="on">오늘 살 것 없음</span></div>`}
+  <details class="mexp sm"><summary>설명 보기</summary>${io.rows.map(r=>`<p><b>${esc(r.name)}</b> 현재가 ${r.px? num(r.px,0)+"원":"대기"} · ${esc(r.why)}</p>`).join("")}<p>재원은 IRP 머니마켓(안전자산). 구성 S&P500 40 · 나스닥100 30 · 미국배당다우존스 30. 법정 한도 70%.</p></details></div>` : "";
+  const swT = so? swingOrdersHTML(so, "⑥ 스윙 계좌") : "";
+  return irpT + swT;
 }
 
 /* 연금·IRP 나스닥100 (Ben 2026-11-08): 평상시 TIGER 지수형, QQQ 5년 고점 −20% 이하 폭락장에서는 고베타 TIME 액티브(레버리지 대용, 매도 없음) */
@@ -1109,10 +1132,9 @@ function tradeTodayLine(E){
   return `<b>트레이딩</b>: 진입 신호 ${t.on} · 근접 ${t.near} · 보유 ${t.open}${t.todo? ` · <b class="dn">오늘 처리 ${t.todo}건</b>`:""} — <a href="#trade">트레이딩 탭</a>`;
 }
 function swingOrdersHTML(so, title){
-  return `<h3>${title} (예수금 ${won(so.cash0)})</h3>
-  <div class="tbl"><table style="min-width:760px"><tr><th>종목</th><th>주수</th><th>현재가</th><th>금액</th><th class="l">신호</th><th class="l">다음 분할</th><th class="l">매도 계획</th></tr>
-  ${so.out.length? so.out.map(r=>`<tr><td><b>${r.t}</b> <span class="muted">${esc(r.group)}</span></td><td>${r.sh}</td><td>${usd(r.px)}</td><td>${won(r.amt)}</td><td class="l muted">${esc(r.why)}</td><td class="l muted">${esc(r.next)}</td><td class="l muted">${esc(r.sell)}</td></tr>`).join("") : `<tr><td colspan="7" class="muted">오늘 진입 신호 없음</td></tr>`}
-  </table></div><p class="note">남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회까지. 같은 종목 추가 매수는 5거래일 뒤 신호가 다시 켜질 때.${so.skip.length? "<br>건너뜀: "+so.skip.map(esc).join(" · "):""}</p>`;
+  return `<h3>${title} <span class="muted" style="font-weight:400">예수금 ${won(so.cash0)}</span></h3>
+  <div class="panel ord">${so.out.length? so.out.map(r=>`<div class="orow"><span class="tb buy">매수</span><span class="on"><b>${esc(r.t)}</b> <span class="os">${r.sh}주 · ${usd(r.px)}</span></span><span class="oa">${won(r.amt)}</span></div>`).join("") : `<div class="orow"><span class="tb wait">대기</span><span class="on">오늘 진입 신호 없음</span></div>`}
+  <details class="mexp sm"><summary>설명 보기</summary>${so.out.map(r=>`<p><b>${esc(r.t)}</b> 신호 ${esc(r.why)} · 다음 분할 ${esc(r.next)} · 매도 ${esc(r.sell)}</p>`).join("")}<p>남는 예수금 ${won(so.cashLeft)}${so.sw.scale<1? " · 거시 수비라 1회 금액 절반":""}. 1회 계좌 25%(성장주 12.5%), 동시 4개, 종목당 2회까지.${so.skip.length? " 건너뜀: "+so.skip.map(esc).join(" · "):""}</p></details></div>`;
 }
 // 11-16 Ben: 장투+스윙(+현금 계좌) 레버리지 합산 노출. 규칙 변경 없이 표시·경고만 (직투 자산 30% 초과 시 노랑)
 const LEV_T = ["QLD","TQQQ","SOXL"];
@@ -1293,6 +1315,69 @@ function renderHero(){
   $("#meta").innerHTML = `${E.M.snapshot? "스냅샷 · " : ""}갱신 ${g.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} · 원/달러 ${num(E.fx,1)}`;
 }
 
+// 11-18 Ben: 오늘 할 일 = 행동 최대 3줄(배지·종목·금액). 문장은 '상세 점검'으로 접음. 계좌별 주문표는 이번 달 매수 탭에만
+function todayActions(lt, am, irp, bw){
+  const A = [];   // {k:"buy"|"sell"|"wait"|"chk", n:종목, x:계좌·이유(짧게), a:금액·주수, go:탭}
+  const bo = planBoost(E);
+  if(bo.fire) A.push({k:"buy", n:"QLD", x:"장투 · 반등 가속 1차", a:won(bo.amt), go:"plan"});
+  if(bo.gc) A.push({k:"buy", n:"QLD", x:"장투 · 반등 가속 2차", a:won(bo.amt2), go:"plan"});
+  if(bo.dead) A.push({k:"sell", n:"QLD → SGOV", x:"장투 · 가속 2차 정리", a:"전량", go:"plan"});
+  if(bo.stop) A.push({k:"sell", n:"QLD → SGOV", x:"장투 · 가속 1차 정리", a:"1차분", go:"plan"});
+  const bc = bigCut(E.M.macro||{}); if(bc) A.push({k:"sell", n:"주식 비중 축소", x:`빅컷 ${bc.days}일째`, a:"단계별", go:"today"});
+  if(am.action?.ready) A.push({k:"buy", n:mixText(am.action.t.mix), x:`현금 계좌 ${am.action.t.n}차`, a: am.bal>0? won(am.action.amt) : `${am.action.pctUse}%`, go:"crash"});
+  else if(am.action) A.push({k:"wait", n:`현금 ${am.action.t.n}차`, x:"보조지표 2개 미충족", a:`${E.auxN}/6`, go:"crash"});
+  if(am.settle) A.push({k:"sell", n:"현금 계좌 정산", x:"전고점 회복", a:won(am.settle.half), go:"crash"});
+  const t = tradeSummary(E); if(t.todo) A.push({k:"sell", n:`트레이딩 ${t.todo}건`, x:"익절·손절·만기", a:"", go:"trade"});
+  const so = swingOrders(E);
+  if(so?.out.length) so.out.forEach(r=>A.push({k:"buy", n:r.t, x:`스윙 · ${r.sh}주 · 계좌 ${num(r.amt/(so.sw.a.val||1)*100,0)}%`, a:"+"+won(r.amt), go:"plan"}));
+  else { const on = swingSignals(E).filter(s=>s.on); on.forEach(s=>A.push({k:"buy", n:s.t, x:"스윙 진입 신호", a:"계좌 25%", go:"trade"})); }
+  const io = irpOrders(E);
+  if(io?.rows.length){ const sum=io.rows.reduce((a,r)=>a+r.amt,0); A.push({k:"buy", n:"IRP 추가 매수", x:`${io.rows.length}종목 · 부족분 1/3`, a:"+"+won(sum), go:"plan", bar:{v:io.irp.cur, max:70, mk:io.irp.lo, lab:`위험자산 ${num(io.irp.cur,1)}% → 목표 ${io.irp.lo}%`}}); }
+  else if(irp?.todayBuy) A.push({k:"buy", n:"KODEX 200", x:"IRP · 음봉 매수일", a:won(irp.tick), go:"plan"});
+  if(!lt.below && E.S.QLD?.chg<=-2) A.push({k:"buy", n:"QLD", x:"장투 · −2% 매수일", a:"QLD 몫", go:"plan"});
+  // 11-18 Ben: 적립 D-day는 이번 달 매수 탭에. 대신 다음 장투 SGOV 차수(무엇을 얼마나 사게 되나)
+  { const dd=E.dd??0, i=LT_POOL.findIndex(x=>dd>x.lvl);
+    if(i>=0){ const L=LT_POOL[i], prev=i? LT_POOL[i-1].lvl : 0, ltA=E.acc.list.find(a=>a.id==="longterm"), sg=(ltA?.pos||[]).filter(p=>p.t==="SGOV").reduce((a,p)=>a+p.v,0);
+      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`QQQ ${L.lvl}% 도달 시`, a: sg>0? won(sg*L.pct/100) : `SGOV ${L.pct}%`, go:"plan", bar:{v:Math.max(0,prev-dd), max:prev-L.lvl, mk:null, lab:`${L.mix} · ${num(Math.max(0,prev-dd),1)}/${prev-L.lvl}%p 진행`}}); } }
+  return A;
+}
+function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼마나 남았나 (장투 SGOV 차수 + 현금 계좌 차수)
+  const dd = E.dd ?? 0, cut = RULES.tranches.map(t=>t.dd);
+  const lv = [...new Set([...LT_POOL.map(x=>x.lvl), ...cut])].sort((a,b)=>b-a);
+  const span = Math.max(33, -dd+12), X = v => Math.min(100, -v/span*100);
+  const shown = lv.filter(v=>-v<=span);
+  const nLt = LT_POOL.findIndex(x=>dd>x.lvl), nC = RULES.tranches.findIndex(t=>dd>t.dd);
+  const lt = nLt>=0? LT_POOL[nLt] : null, ca = nC>=0? RULES.tranches[nC] : null;
+  const sub = v => dd<=v? "✓" : (lt&&v===lt.lvl)? `장투 ${nLt+1}차` : (ca&&v===ca.dd)? `현금 ${ca.n}차` : "";
+  return `<div class="panel lad"><div class="ltop"><span class="muted">QQQ 5년 고점 대비</span><span class="lnow">${pct(dd,1)}</span></div>
+    <div class="lbar"><div class="lf" style="width:${X(dd)}%"></div><span class="lme" style="left:${X(dd)}%">지금</span>
+    ${shown.map(v=>`<span class="lm${cut.includes(v)?" c":""}" style="left:${X(v)}%"></span><span class="lml" style="left:${X(v)}%"><b>${v}</b><br>${sub(v)}</span>`).join("")}</div>
+    <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${num(dd-lt.lvl,1)}%p</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${num(dd-ca.dd,1)}%p</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
+}
+function todayActionsHTML(lt, am, irp, bw){
+  const A = todayActions(lt, am, irp, bw), act = A.filter(a=>a.k!=="wait"), show = act.slice(0,3);
+  if(show.length<3) show.push(...A.filter(a=>a.k==="wait").slice(0, 3-show.length));
+  const more = A.length - show.length;
+  const IC = {buy:"매수", sell:"매도", chk:"점검", wait:"대기"};
+  const bar = b => b? `<div class="tmini"><i style="width:${Math.max(2,Math.min(100,b.v/b.max*100))}%"></i>${b.mk!=null? `<s style="left:${Math.min(100,b.mk/b.max*100)}%"></s>`:""}</div>${b.lab? `<div class="tlab">${esc(b.lab)}</div>`:""}` : "";
+  const t = tradeSummary(E), oh = overheat(E), x = w40Info(), hs = humanSignals().rows.filter(r=>r.alert);
+  const dots = (arr) => `<div class="tdots">${arr.map(c=>`<i class="${c}"></i>`).join("")}</div>`;
+  const rep = (n,c) => Array(Math.max(0,n)).fill(c);
+  const chips = [];
+  if(x) chips.push(`<span class="tchip ${x.w.up?"g":"y"}">40주선 ${x.w.up?"위":"아래"}${x.w.cross&&x.w.weeks!=null? ` · ${x.w.cross==="golden"?"골든":"데드"} ${x.w.weeks}주`:""}</span>`);
+  hs.forEach(r=>chips.push(`<span class="tchip y">${esc(r.k.split(" (")[0])} 과열</span>`));
+  const auxT = E.aux?.length || 6;
+  return `${ladderHTML()}
+  <h3 class="th3">지금 살 것 <span class="muted">매수 ${act.filter(a=>a.k==="buy").length}건</span></h3>
+  <div class="panel tact">${show.map(a=>`<a class="tr" href="#${a.go}"><span class="tic ${a.k}">${IC[a.k]}</span><span class="tm"><b>${esc(a.n)}</b> <span class="tx">${esc(a.x)}</span>${bar(a.bar)}</span><span class="ta">${esc(a.a)}</span></a>`).join("")}
+    ${!act.length? `<div class="tnone">오늘 살 것 없음</div>`:""}${more>0? `<div class="tmore">+${more}개 더 · 상세 점검에서</div>`:""}</div>
+  <div class="tsig">
+    <a class="tsc" href="#crash"><div class="k">현금 투입 지표</div><div class="v">${E.auxN}/${auxT}</div>${dots([...rep(E.auxN,"g"), ...rep(auxT-E.auxN,"")])}</a>
+    <a class="tsc" href="#trade"><div class="k">트레이딩 진입</div><div class="v">${t.on}</div><div class="tlab">대기 ${t.near} · 조건 근접</div>${dots([...rep(t.on,"g"), ...rep(Math.min(t.near,6),"y")])}</a>
+    <a class="tsc" href="#heat"><div class="k">과열</div><div class="v">${oh.score}/5</div>${dots([...rep(oh.score,"r"), ...rep(5-oh.score,"")])}</a>
+  </div>
+  ${chips.length? `<div class="tchips">${chips.join("")}</div>`:""}`;
+}
 function vToday(){
   const lt = planLongterm(E), am = planAmmo(E), sw = planSwing(E), irp = planIRP(E);
   const bw = buyWindow(E.H?.settings?.buy_day||25);
@@ -1316,7 +1401,7 @@ function vToday(){
   todo.unshift(tradeTodayLine(E));   // 11-16 Ben: 트레이딩 요약 한 줄, 상세는 트레이딩 탭
   { const x=w40Info(); if(x) todo.push(x.fresh? `<b>40주선 ${x.w.cross==="golden"? "골든 크로스":"데드 크로스"}</b> (경보): ${x.txt}. ${x.w.cross==="golden"? "추세 회복 신호, 규칙대로 적립을 이어갑니다." : "하락 추세 경계, 규칙(낙폭 사다리)은 그대로입니다."}` : x.long? `<b>40주선 하락 지속 경계</b>: ${x.txt}. 과거 11번 중 4번은 이후 10% 넘게 더 빠졌고 7번은 바닥 근처였습니다. 규칙(낙폭 사다리)은 그대로입니다.` : `40주선: ${x.txt}.`); }
   { const oh=overheat(E); todo.push(oh.score>=2? `<b>과열 신호 ${oh.score}개</b>: ${esc(oh.lt)} · ${esc(oh.sw)}` : `과열 신호 ${oh.score}개 — 현금화 없음.`); }
-  { const cl=candList(); if(cl.length) todo.push(`<b>매수 후보 ${cl.length}개</b>: ${cl.slice(0,4).map(([t,s,b])=>`${esc(t)}(${esc(acctFor(t,s).a)})`).join(", ")} — 아래 '어느 계좌에서' 표 참고.`); }
+  { const pk=candPicks().picks; if(pk.length) todo.push(`<b>계좌별 추천</b>: ${pk.map(p=>`${esc(p.a)} ${esc(tName(p.t))}`).join(" · ")}`); }
   { const bc=bigCut(E.M.macro||{}); if(bc) todo.push(`<b>빅컷 ${bc.days}일째</b>: 아래 '빅컷 안전장치' 단계대로 계좌별 주식 비중을 낮춥니다.`); }
   if(irp){ todo.push(irp.kodexOn ? `IRP KODEX 200 슬리브 가동 중 (코스피 고점 대비 ${pct(irp.ksDD,0)}, RSI ${num(irp.ks.rsi,1)}). ${irp.todayBuy? `<b>오늘 음봉 매수일</b>: ${won(irp.tick)}` : "다음 -1.5% 음봉일에 매수."}` : "IRP KODEX 200: 가동 조건 미충족."); }
 
@@ -1331,11 +1416,9 @@ function vToday(){
   <div class="alerts">${alerts}</div>
   ${humanSummary()}
   <h2>오늘 할 일</h2>
-  <div class="panel"><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></div>
-  ${bigCutHTML(true)}
-  ${candAcctHTML()}
-  ${ordersHTML()}
-  ${E.acc.list.length? `<h2>계좌 요약</h2>${accountsTable(true)}`:""}`;
+  ${todayActionsHTML(lt, am, irp, bw)}
+  <details class="mexp sm"><summary>상세 점검 ${todo.length}줄 보기</summary><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></details>
+  ${bigCutHTML(true)}`;
 }
 // 11-15 Ben: 게이지. zones=[[끝값,색]...] (min부터 순서대로), ticks=[값...]
 function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt}){
@@ -1416,7 +1499,7 @@ function planBody(){
   return `
   <h2>이번 달 적립 (${bw.label})</h2>
   <div class="panel"><p class="lead">현재 구간: <b>${esc(lt.row.label)}</b> · QQQ 고점 대비 ${pct(E.dd)} · 상태 ${E.state}. ${RULES.states[E.state].name}</p>
-  <p class="muted">장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>장투는 평상 구간엔 SGOV 70 : 주식 30, QQQ가 5년 고점 대비 −10% 아래면 신규 적립 전액 주식(하락 사다리)입니다. 주말·휴일이면 다음 영업일부터 3영업일 안에 집행합니다.</p></details></div>
   ${allocBody()}
   ${fxHTML()}
   <h3>① 장투 계좌 ${num(lt.budget,0)}만 → 달러 환전 (${num(E.fx,1)}원 기준)</h3>
@@ -1428,17 +1511,19 @@ function planBody(){
   ${candAcctHTML()}
   ${lt.notes.length? `<div class="nlist">${lt.notes.map(n=>{ const [k,v,t,full]=Array.isArray(n)? n : ["참고", n, "n"]; return `<div class="nrow"${full? ` title="${esc(full)}"`:""}><span class="ntag t-${t}">${esc(k)}</span><span>${esc(v)}</span></div>`; }).join("")}</div>`:""}
   <h3>② 현금 계좌 ${won(E.H.settings.monthly_ammo_krw)} → SGOV</h3>
-  <div class="panel"><p>매달 SGOV로 적립합니다 (원하면 SGOV 80 + 엔화 20). 현재 잔액 ${won(am.bal)} · 집행 차수 ${am.done.length? am.done.join(", ")+"차":"없음"}.
-  ${am.action? `<br><b>이번 달 현금 ${am.action.t.n}차 대상</b> — 폭락 대응 탭 참고.`:""}</p></div>
+  <div class="panel ord"><div class="orow"><span class="tb buy">매수</span><span class="on"><b>SGOV</b> <span class="os">잔액 ${won(am.bal)} · 차수 ${am.done.length? am.done.join(",")+"차":"없음"}</span></span><span class="oa">${won(E.H.settings.monthly_ammo_krw)}</span></div>
+  ${am.action? `<div class="orow"><span class="tb ${am.action.ready?"buy":"wait"}">${am.action.ready?"집행":"대기"}</span><span class="on"><b>현금 ${am.action.t.n}차</b> <a class="os" href="#crash">폭락 대응 탭</a></span></div>`:""}
+  <details class="mexp sm"><summary>설명 보기</summary><p>매달 SGOV로 적립합니다(원하면 SGOV 80 + 엔화 20). QQQ 5년 고점 대비 낙폭 사다리에서만 꺼내 씁니다.</p></details></div>
   <h3>③ 연금저축 계좌 ${won(pn.amt)} (국내상장, 레버리지 불가)</h3>
   ${pensionCheckHTML(pensionCheck(pn.amt, irpAnnual()), false)}
   <div class="tbl"><table>
     <tr><th>종목</th><th>비중</th><th>금액</th><th>현재가</th><th>주수</th></tr>
     ${pn.rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.w}%</td><td>${won(r.won)}</td><td>${r.px? num(r.px,0)+"원":"가격 대기"}</td><td>${r.sh??"–"}</td></tr>`).join("")}
   </table></div>
-  <p class="note">${pn.merged? `${pn.merged.join("·")} 몫이 1주 가격보다 작아 이번 달은 예수금으로 두고 다음 달 같은 몫과 합쳐 삽니다. `:""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p>
+  <details class="mexp sm"><summary>설명 보기</summary><p>${pn.merged? `${pn.merged.join("·")} 몫이 1주 가격보다 작아 이번 달은 예수금으로 두고 다음 달 같은 몫과 합쳐 삽니다. `:""}${pn.tilt? "QQQ 낙폭 -10% 이상이라 나스닥100을 50%로 높였습니다. ":""}KIWOOM S&P500&GOLD는 정리 후보입니다(금 혼합으로 목적이 겹치지 않음). 배당형(TIGER 미국배당다우존스, 월배당) 60 + 나스닥100 40으로 모읍니다. 분배금은 적립일에 같이 재매수. 기존 보유분은 팔지 않고 신규 적립금으로 비중을 맞춥니다.</p></details>
   ${lt.side?.gold? `<h3>④ 금현물 계좌 ${won(lt.side.gold*1e4)} → KRX 금현물 1g</h3>
-  <div class="panel"><p>장투 계좌와 별개 계좌입니다. 가격과 관계없이 매달 1g을 삽니다(1g 약 ${won(lt.side.gold*1e4)}, GLD 시세로 환산한 추정치). ${lt.side.goldExtra? "월 저축 밖에서 따로 넣는 돈입니다." : "장투 몫에서 떼어 옮긴 돈입니다."} 팔지 않는 것이 기본이고, 주봉 RSI 75 이상 + 200일선 +20%면 10%를 SGOV로 돌립니다.</p></div>`:""}
+  <div class="panel ord"><div class="orow"><span class="tb buy">매수</span><span class="on"><b>KRX 금현물</b> <span class="os">1g</span></span><span class="oa">≈${won(lt.side.gold*1e4)}</span></div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>장투 계좌와 별개 계좌입니다. 가격과 관계없이 매달 1g을 삽니다(1g 약 ${won(lt.side.gold*1e4)}, GLD 시세로 환산한 추정치). ${lt.side.goldExtra? "월 저축 밖에서 따로 넣는 돈입니다." : "장투 몫에서 떼어 옮긴 돈입니다."} 팔지 않는 것이 기본이고, 주봉 RSI 75 이상 + 200일선 +20%면 10%를 SGOV로 돌립니다.</p></details></div>`:""}
   ${ordersHTML()}`;
 }
 
@@ -1743,8 +1828,7 @@ function vAccounts(){
   <p class="muted">현금 차수 집행, QLD 이월액도 캡처와 함께 한 줄로 알려주면 같이 기록합니다.</p></div>`;
 }
 
-const MSORT = {};   // 시세 탭 정렬 상태 {그룹: {k, dir}} — 1회 내림, 2회 오름, 3회 원래 순서
-const MSORT_GROUPS = ["섹터","빅테크","성장주","배당"];
+const MSORT = {};   // 시세 탭 정렬 상태 {그룹: {k, dir}} — 1회 내림, 2회 오름, 3회 매수 우선순위
 const MSORT_KEYS = {dd:s=>s.dd_ath ?? s.dd52, v200:s=>s.vs200, rsi:s=>s.rsi, bb:s=>s.bb_pctb};
 function rsiCls(v){ return v==null? "" : v<=30? "dn" : v>=70? "up" : ""; }
 // 매수 후보 하이라이트 (11-13 Ben). 장투·적립 후보 ETF는 4개 신호 중 개수, 개별 빅테크는 큰 낙폭 + 과매도일 때만
@@ -1760,9 +1844,25 @@ function jpSig(s){
   if(d!=null && d<=-10 && aux.length>=1) return {lv:1, label:"관찰", why:`${why} · MDD −15%↑ + 보조 2개면 매수`};
   return null;
 }
+// 11-18 Ben: 최상위 '강력 매수 찬스' = 기존 최상위 신호 + RSI ≤ 30 + QQQ 5년 고점 −20% 이하(장투 하락 사다리 −20% 단계) + 거시 수비·HY 6%↑ 아님
 function buySig(t, s){
+  const b = baseSig(t, s);
+  if(b && b.lv===2 && s.rsi!=null && s.rsi<=30 && E && E.dd!=null && E.dd<=-20 && !E.noLev)
+    return {lv:3, label:"강력 매수 찬스", why:`${b.why} · QQQ ${pct(E.dd,0)} · 거시 ${E.mode.name}`};
+  return b;
+}
+const LEV_SW = {"QLD":-40, "TQQQ":-55, "SOXL":-55};   // 스윙 A안 진입 낙폭 (1년 고점 대비) + RSI ≤ 30
+const KR_SKIP = ["0048J0","0046A0"];   // 국내 머니마켓·초단기채는 현금성
+function baseSig(t, s){
   if(!s) return null;
   if(t==="1489.T") return jpSig(s);
+  if(s.group==="레버리지" && LEV_SW[t]!=null){   // 스윙 A안 진입선, 그 10%p 위 + RSI ≤ 40이면 관찰
+    const d=s.dd52, r=s.rsi, L=LEV_SW[t];
+    if(d!=null && r!=null && d<=L && r<=30) return {lv:2, label:"스윙 진입", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
+    if(d!=null && r!=null && d<=L+10 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)} · 진입선 ${L}%`};
+    return null;
+  }
+  const etfLike = BUY_ETF.includes(t) || t==="MAGS" || s.group==="섹터" || (s.group==="국내" && !KR_SKIP.includes(t));   // 섹터·국내 ETF도 1배 ETF와 같은 4개 신호
   const hot = s.rsi!=null && s.rsi>=70 && s.vs200!=null && s.vs200>=10;
   if(s.group==="빅테크" && t!=="MAGS"){
     const d=s.dd52, r=s.rsi;
@@ -1776,7 +1876,7 @@ function buySig(t, s){
     if(d!=null && r!=null && d<=-60 && r<=40) return {lv:1, label:"관찰", why:`1년 고점 ${pct(d,0)} · RSI ${num(r,0)}`};
     return null;
   }
-  if(!BUY_ETF.includes(t) && !(t==="MAGS")) return null;
+  if(!etfLike) return null;
   const hits = [];
   if(s.rsi!=null && s.rsi<=35) hits.push(`RSI ${num(s.rsi,0)}`);
   if(s.vs200!=null && s.vs200<=0) hits.push("200일선 아래");
@@ -1787,14 +1887,52 @@ function buySig(t, s){
   if(hot) return {lv:-1, label:"과열·보류", why:`RSI ${num(s.rsi,0)} · 200일선 ${pct(s.vs200,0)}`};
   return null;
 }
-const sigCls = b => !b? "" : b.lv===2? "buy2" : b.lv===1? "buy1" : "hot";
-const sigTag = b => !b? "" : `<span class="sig ${b.lv===2?"s2":b.lv===1?"s1":"sh"}">${esc(b.label)}</span>`;
+const sigCls = b => !b? "" : b.lv>=2? "buy2" : b.lv===1? "buy1" : "hot";
+const sigTag = b => !b? "" : `<span class="sig ${b.lv===3?"s3":b.lv===2?"s2":b.lv===1?"s1":"sh"}">${esc(b.label)}</span>`;
+// 11-18 Ben: 시세 탭 그룹 안 매수 우선순위. 새 지표 없이 기존 신호로 '얼마나 싼가' 점수(0~100) + 매수 후보/과열 가감.
+// 1배·배당·빅테크 = 쌀수록 위(쌀 때 산다). 레버리지 = 싼 정도 + 40주선 위(추세 회복) 가점, 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래.
+const RANK_SKIP = ["지수","현금·채권"];   // 지수·환율·VIX·SGOV·TLT(매도 예정)는 순위 대상 아님, 원래 순서 유지
+const RANK_OFF = {"BITU":"매수 제외", "IBIT":"참고용", "BTC-USD":"참고용"};   // 규칙상 사지 않는 종목은 맨 아래
+const LEV_DD = {"QLD":40, "TQQQ":55, "SOXL":55};   // 스윙 A안 진입 낙폭(1년 고점 대비)을 만점 기준으로
+const DD_SCALE = {"레버리지":60, "성장주":70, "금·비트코인":50, "빅테크":35, "섹터":30, "국내":30, "현금·채권":20};
+const cl01 = v => Math.max(0, Math.min(1, v));
+function rankScore(t, s){
+  const parts = [], why = [];
+  const ddScale = LEV_DD[t] ?? DD_SCALE[s.group] ?? 25;
+  if(s.dd52!=null){ parts.push([30, cl01(-s.dd52/ddScale)]); if(s.dd52<=-10) why.push(`고점 ${num(s.dd52,0)}%`); }
+  if(s.rsi!=null){ parts.push([30, cl01((65-s.rsi)/35)]); if(s.rsi<=40) why.push(`RSI ${num(s.rsi,0)}`); }
+  if(s.vs200!=null){ parts.push([25, cl01((5-s.vs200)/20)]); if(s.vs200<=-5) why.push(`200일 ${num(s.vs200,0)}%`); }
+  if(s.bb_pctb!=null){ parts.push([15, cl01((60-s.bb_pctb)/60)]); if(s.bb_pctb<=5) why.push("볼린저 하단"); }
+  const wsum = parts.reduce((a,p)=>a+p[0],0);
+  let sc = wsum? parts.reduce((a,p)=>a+p[0]*p[1],0)/wsum*100 : 0;
+  const b = buySig(t, s);
+  if(b) sc += b.lv>=2? 25 : b.lv===1? 12 : -30;
+  let hold = null;
+  if(s.group==="레버리지"){
+    if(s.w40){ sc += s.w40.up? 10 : 0; if(s.w40.up) why.unshift("40주선 위"); }
+    if(t!=="QLD" && !(E.dd!=null && E.dd<=-30)) sc -= 15;   // 장투 규칙: 3배는 QQQ −30% 구간에서만, 그 전엔 QLD가 먼저
+    if(E.noLev) hold = "거시 수비·보류";
+    else if(overheat(E).score>=2) hold = "과열·보류";
+  }
+  if(b && b.lv<0) why.unshift("과열");
+  if(RANK_OFF[t]) hold = RANK_OFF[t];
+  // 11-18 Ben: 신호 배지 단계가 먼저(드문 기회·매수 적기 > 분할 매수 > 관찰 > 신호 없음 > 과열), 같은 단계 안에서만 점수
+  const tier = !b? 0 : b.lv>=3? 4 : b.lv===2? 3 : b.lv===1? (b.label==="관찰"? 1 : 2) : -1;
+  return {sc: Math.round(sc), tier, hold, why: why.slice(0,2).join(" · ")};
+}
+function rankGroup(g, rows){   // rows: [[t,s]] → [[t,s,rk]] 우선순위 순
+  if(RANK_SKIP.includes(g) || rows.length<2) return rows.map(r=>[...r, null]);
+  const x = rows.map(([t,s])=>[t,s,rankScore(t,s)]);
+  x.sort((a,b)=> (!!a[2].hold - !!b[2].hold) || b[2].tier-a[2].tier || b[2].sc-a[2].sc);
+  x.forEach((r,i)=> r[2].n = i+1);
+  return x;
+}
 function candidatesHTML(S){
-  const list = Object.entries(S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || (a[1].rsi??99)-(b[1].rsi??99));
+  const list = Object.entries(S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || rankScore(b[0],b[1]).sc-rankScore(a[0],a[1]).sc);
   return `<div class="panel"><b>지금 매수 후보</b> <span class="muted">· 누르면 차트</span>
     ${list.length? `<div class="cands">${list.map(([t,s,b])=>`<button type="button" class="s${b.lv}" data-chart="${esc(t)}" title="${esc(b.why)}"><b>${esc(t)}</b> ${esc(b.label)} <span class="muted">${esc(b.why)}</span></button>`).join("")}</div>`
       : `<p class="muted" style="margin:6px 0 0">조건을 채운 종목이 없습니다. 이번 달은 기존 적립 규칙대로 사면 됩니다.</p>`}
-    <div class="lgd"><span class="sig s2">매수 적기</span><span>4개 중 3개↑</span><span class="sig s1">분할 매수 고려</span><span>2개</span><span class="sig sh">과열·보류</span><span>RSI 70↑ + 200일선 +10%↑</span></div>
+    <div class="lgd"><span class="sig s3">강력 매수 찬스</span><span>최상위 신호 + RSI ≤ 30 + QQQ −20%↓ + 거시 수비 아님</span><span class="sig s2">매수 적기</span><span>4개 중 3개↑</span><span class="sig s1">분할 매수 고려</span><span>2개</span><span class="sig sh">과열·보류</span><span>RSI 70↑ + 200일선 +10%↑</span></div>
     <div class="lgd muted">4개 = RSI ≤ 35 · 200일선 아래 · 볼린저 하단 · 1년 고점 −10%↓ · 빅테크·성장주 기준은 맨 아래 설명</div></div>`;
 }
 // 매수 후보 → 계좌 (계좌 역할 기준, 11-14 Ben). 후보는 돈을 더 넣는 게 아니라 그 계좌의 이번 달 몫·현금 안에서 우선순위를 바꿉니다
@@ -1807,17 +1945,39 @@ function acctFor(t, s){
   if(t==="GLD") return {a:"금현물 계좌", how:"이번 달 KRX 금현물을 1g → 2g으로(GLD는 가격 참고용, 직접 사지 않음)."};
   if(t==="1489.T") return {a:"직투 엔화 예수금", how:"모아 둔 엔화로만 삽니다(원화 환전 매수 안 함). MDD −15/−25%에서 보조지표(RSI ≤ 30, 200일선 −10%, 볼린저 하단) 2개 이상이면 1/3씩, −35%면 남은 전부. 3~5거래일 나눠서."};
   if(t==="BITO") return {a:"장투 계좌 (BITO 칸)", how:"상한은 비트코인 현물 낙폭에 따라 3%(평소)·6%(−70%)·9%(−80% 이하). 상한의 2배를 넘으면 상한까지 차익. 업비트·해외 거래소 현물은 쓰지 않습니다."};
+  if(s?.group==="국내") return {a:"연금저축·IRP", how:"이번 달 연금저축·IRP 적립분 안에서 이 종목 칸을 먼저 채웁니다. 돈을 더 넣지 않습니다."};
+  if(s?.group==="레버리지") return {a:"스윙 계좌", how:"스윙 A안: 1회 계좌 25%, 최대 4개. +5% 절반·+10% 나머지 익절, −10% 손절, 10거래일 안에 정리. 거시 수비면 보류."};
   if(s?.group==="성장주") return {a:"스윙 계좌", how:"1회 계좌 12.5%만, 종목당 2회(5거래일 간격). +5% 절반·+10% 나머지 익절, −10% 손절, 10거래일 안에 정리."};
   if(s?.group==="빅테크"||s?.group==="섹터") return {a:"스윙 계좌", how:"스윙 현금으로 계좌의 3~5%씩 2~3번(5거래일 간격) 나눠 삽니다. 개별주는 동시에 3종목 이하."};
   return {a:"–", how:""};
 }
 function candList(){ return Object.entries(E.S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || (a[1].rsi??99)-(b[1].rsi??99)); }
+const PICK_NAME = {"GLD":"KRX 금현물 +1g", "1489.T":"도쿄 1489"};
+const tName = t => PICK_NAME[t] || KR_NAMES[t] || t;   // 11-18 Ben: 국내 ETF는 코드 대신 이름
+// 11-18 Ben: 계좌별로 가장 추천하는 1개만. 후보 전체는 접힘.
+function candPicks(){
+  const nq = nasdaqPick(E);
+  const L = candList().filter(([t,s])=>{
+    if(t==="0137W0") return false;                              // 연금저축 정리 후보, 신규 매수 안 함
+    if(t==="069500") return false;                              // KODEX 200은 IRP 음봉 규칙(코스피 폭락)으로만
+    if((t==="426030"||t==="133690") && t!==nq) return false;    // 나스닥100은 낙폭 규칙으로 하나만
+    if(s?.group==="레버리지" && rankScore(t,s).hold) return false;  // 거시 수비·과열이면 보류
+    return acctFor(t,s).a!=="–";
+  });
+  const pick = new Map();
+  L.filter(x=>x[2].label!=="관찰").forEach(([t,s,b])=>{ const a=acctFor(t,s).a.replace(/ \(.*\)$/,""); const r=rankScore(t,s); const cur=pick.get(a);
+    if(!cur || b.lv>cur.b.lv || (b.lv===cur.b.lv && r.sc>cur.r.sc)) pick.set(a,{t,s,b,r,a}); });
+  const ORDER=["장투 계좌","연금저축·IRP","금현물 계좌","스윙 계좌","직투 엔화 예수금"];
+  return {all:L, picks:[...pick.values()].sort((x,y)=>ORDER.indexOf(x.a)-ORDER.indexOf(y.a))};
+}
 function candAcctHTML(){
-  const L = candList(); if(!L.length) return "";
-  return `<h2>매수 후보 → 어느 계좌에서</h2><div class="tbl"><table>
-    <tr><th class="l">종목</th><th class="l">신호</th><th class="l">계좌</th><th class="l">이렇게</th></tr>
-    ${L.map(([t,s,b])=>{ const a=acctFor(t,s); return `<tr class="${sigCls(b)}"><td class="l"><button type="button" class="symbtn" data-chart="${esc(t)}"><b>${esc(t)}</b></button></td><td class="l">${sigTag(b)} <span class="muted">${esc(b.why)}</span></td><td class="l"><b>${esc(a.a)}</b></td><td class="l" style="white-space:normal;min-width:260px">${esc(a.how)}</td></tr>`; }).join("")}
-  </table></div><p class="note">후보는 추가 돈이 아니라 그 계좌의 이번 달 몫·보유 현금 안에서 순서를 바꾸는 신호입니다. 현금 계좌(폭락 대비 SGOV)는 낙폭 사다리 규칙으로만 씁니다.</p>`;
+  const {all, picks} = candPicks(); if(!picks.length) return "";
+  return `<h2>계좌별 추천 1개</h2><div class="panel picks">
+    ${picks.map(({t,s,b,a})=>`<div class="pk"><span class="pa">${esc(a)}</span><button type="button" class="symbtn" data-chart="${esc(t)}"><b>${esc(tName(t))}</b></button>${sigTag(b)}</div>`).join("")}
+    <details class="mexp sm"><summary>후보 전체 ${all.length}개 보기</summary><div class="tbl"><table>
+    <tr><th class="l">종목</th><th class="l">신호</th><th class="l">계좌</th></tr>
+    ${all.map(([t,s,b])=>`<tr class="${sigCls(b)}"><td class="l"><button type="button" class="symbtn" data-chart="${esc(t)}"><b>${esc(tName(t))}</b></button></td><td class="l">${sigTag(b)} <span class="muted">${esc(b.why)}</span></td><td class="l">${esc(acctFor(t,s).a)}</td></tr>`).join("")}
+    </table></div><p class="note">후보는 추가 돈이 아니라 그 계좌의 이번 달 몫 안에서 순서만 바꿉니다. 현금 계좌는 낙폭 사다리로만.</p></details></div>`;
 }
 let CHARTS = null;
 async function chartData(){
@@ -1916,29 +2076,34 @@ function vMarket(){
   const S=E.S; const groups={};
   for(const [t,s] of Object.entries(S)){ (groups[s.group]=groups[s.group]||[]).push([t,s]); }
   const order=["지수","1배 지수","섹터","레버리지","빅테크","성장주","배당","금·비트코인","현금·채권","국내","기타"];
-  const th=(g,k,label)=>{ if(!MSORT_GROUPS.includes(g)) return `<th>${label}</th>`;
+  const th=(g,k,label)=>{
     const st=MSORT[g]; const on=st&&st.k===k; const arrow=on? (st.dir<0?" ▼":" ▲") : "";
     return `<th class="sortable${on?" on":""}"><button type="button" class="sortbtn" data-g="${g}" data-k="${k}" aria-label="${label} 정렬">${label}${arrow||'<span class="hint"> ↕</span>'}</button></th>`; };
-  const rows=g=>{ const r=groups[g].slice(); const st=MSORT[g];
+  const rows=g=>{ const r=rankGroup(g, groups[g]); const st=MSORT[g];   // 기본 = 매수 우선순위, 제목 누르면 그 지표로
     if(st){ const f=MSORT_KEYS[st.k]; r.sort((a,b)=>{ const x=f(a[1]), y=f(b[1]); if(x==null) return 1; if(y==null) return -1; return st.dir<0 ? y-x : x-y; }); }
     return r; };
+  const rkTag = rk => !rk? "" : `<span class="rk ${rk.hold? "off" : rk.n===1? "r1" : rk.n<=3? "r2" : ""}" title="매수 우선순위 ${rk.n} · 점수 ${rk.sc}${rk.why? " · "+esc(rk.why):""}">${rk.n}</span>`;
+  const rkWhy = rk => !rk? "" : rk.hold? `<span class="rkw">${esc(rk.hold)}</span>` : "";   // 이유는 표 숫자와 겹쳐서 번호 툴팁으로만
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <span class="rc lo">30↓</span> <span class="rc lo2">40↓</span> <span class="rc hi">70↑</span></span><span>40주 ▲골든 ▼데드</span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
+  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <span class="rc lo">30↓</span> <span class="rc lo2">40↓</span> <span class="rc hi">70↑</span></span><span>40주 ▲골든 ▼데드</span><span><span class="rk r1">1</span>매수 우선순위(그룹 안, 갱신마다 다시 계산)</span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table class="mtbl">
     <tr><th>종목</th><th>일간</th>${th(g,"dd","고점")}${th(g,"v200","200일")}${th(g,"rsi","RSI")}<th>40주</th>${th(g,"bb","%B")}<th>현재가</th><th class="l">6개월</th></tr>
-    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${cpct(s.chg,1)}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
+    ${rows(g).map(([t,s,rk])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기">${rkTag(rk)}<b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}${rkWhy(rk)}</td><td>${cpct(s.chg,1)}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
   <details class="panel mexp"><summary><b>표·지표 설명 보기</b></summary>
     <ul class="mx">
       <li><b>매수 후보 (ETF: QQQM·SPYM·MGK·배당·O·금·BITO)</b> RSI ≤ 35, 200일선 아래, 볼린저 하단, 1년 고점 −10% 이하 중 3개↑ 매수 적기, 2개 분할 매수 고려. RSI ≥ 70이면서 200일선 +10% 이상은 과열·보류. 레버리지·섹터는 오늘·폭락 대응 탭 규칙을 따릅니다. 아직 백테스트 전 초안 기준입니다.</li>
+      <li><b>강력 매수 찬스</b> 그 종목의 최상위 신호(매수 적기·드문 기회·스윙 진입 등) + RSI ≤ 30 + QQQ 5년 고점 −20% 이하(장투 하락 사다리 −20% 단계) + 거시 수비·HY 6%↑ 아님. 넷이 겹칠 때만 뜹니다.</li>
+      <li><b>섹터·국내 ETF</b> 1배 ETF와 같은 4개 신호(머니마켓·초단기채 제외). <b>레버리지</b> 스윙 A안 진입선 QLD −40%, TQQQ·SOXL −55% + RSI ≤ 30이면 스윙 진입, 진입선 10%p 위 + RSI ≤ 40이면 관찰.</li>
       <li><b>빅테크</b> 1년 고점 −30% 이하 + RSI ≤ 30이면 드문 매수 기회(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰.</li>
       <li><b>성장주 (아이온큐·로켓랩)</b> 모니터링용. 1년 고점 −70% + RSI ≤ 30일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI ≤ 40이면 관찰.</li>
       <li><b>고점 대비</b> 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비).</li>
       <li><b>볼린저 %B</b> 20일 밴드 안 위치. 0 아래면 하단 이탈.</li>
       <li><b>40주선</b> 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈)와 경과 주수(마감 주 기준). 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 주에 반대로 넘어간 상태(금요일 종가로 확정).</li>
       <li><b>차트</b> 기본 3년 주봉 + 40주선, 골든▲·데드▼ 지점, 이격도·RSI 패널. 6개월·1년은 일봉 50·200일선. 뒤로 가기로 닫힙니다.</li>
-      <li><b>정렬</b> 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서.</li>
+      <li><b>매수 우선순위 (기본 정렬)</b> 신호 배지가 있는 종목이 맨 위(강력 매수 찬스 → 드문 기회·매수 적기·스윙 진입 → 분할 매수 고려 → 관찰), 과열·보류는 맨 아래. 같은 단계 안에서는 '얼마나 싼가' 점수 0~100 순서. 1년 고점 대비 낙폭 30 · RSI 30 · 200일선 이격 25 · 볼린저 %B 15 (낙폭 만점 기준: 빅테크 −35%, 성장주 −70%, 금·비트 −50%, 그 외 −25~30%). 매수 적기·드문 기회 +25, 분할 매수·관찰 +12, 과열·보류 −30. 레버리지는 낙폭 만점 기준이 스윙 진입선(QLD −40%, TQQQ·SOXL −55%), 40주선 위면 +10(추세 회복), 3배는 QQQ −30% 전까지 −15(QLD 먼저), 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래. BITU(매수 제외)·IBIT·비트코인 현물(참고용)도 맨 아래. 지수·환율·현금·채권 표는 순위 없음. 번호에 마우스를 올리면 점수와 이유. 순위는 '같은 그룹 안에서 상대적으로 더 싼 것'이지, 사도 된다는 판정이 아닙니다. 실제 금액은 이번 달 매수 표를 따릅니다.</li>
+      <li><b>정렬</b> 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 다시 매수 우선순위.</li>
       <li><b>SPCX</b> 2026년 6월 상장이라 200일선이 아직 없습니다.</li>
     </ul></details>
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;

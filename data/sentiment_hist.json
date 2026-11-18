@@ -15,16 +15,23 @@
 "news_greed": 21
 },
 "2026-W47": {
-"yt_neg_ratio": 19.5,
-"yt_comments": 278,
-"news_fear_ratio": 83.7,
-"news_fear": 82,
-"news_greed": 16
+"yt_score": 46.4,
+"yt_comments": 727,
+"news_fear_ratio": 85.5,
+"news_fear": 65,
+"news_greed": 11
 }
 },
 "cache": {
 "yt_ids": {
 "디벨롭몽": "UCvrOll07bwpNzGhBHRB5_yw"
+},
+"yt_uploads": {
+"UCvrOll07bwpNzGhBHRB5_yw": "UUvrOll07bwpNzGhBHRB5_yw",
+"UChlv4GSd7OQl3js-jkLOnFA": "UUhlv4GSd7OQl3js-jkLOnFA",
+"UCC3yfxS5qC6PCwDzetUuEWg": "UUC3yfxS5qC6PCwDzetUuEWg",
+"UCwSSqi-s0wcH6pJbH3YPZqQ": "UUwSSqi-s0wcH6pJbH3YPZqQ",
+"UCr7XsrSrvAn_WcU4kF99bbQ": "UUr7XsrSrvAn_WcU4kF99bbQ"
 }
 }
 }
