@@ -1,5 +1,5 @@
 {
-"generated": "2026-11-18T08:24+00:00",
+"generated": "2026-11-18T08:25+00:00",
 "lexicon": {
 "극공포": [
 "폭망",
@@ -6649,6 +6649,7 @@
 "hits": 22,
 "lift": 1.66,
 "rho_dd_all": -0.021,
+"hits_all": 51,
 "lift_all": 1.53
 },
 "깡통": {
@@ -6656,6 +6657,7 @@
 "hits": 87,
 "lift": 1.55,
 "rho_dd_all": -0.11,
+"hits_all": 129,
 "lift_all": 1.99
 },
 "마진콜": {
@@ -6663,6 +6665,7 @@
 "hits": 15,
 "lift": 1.98,
 "rho_dd_all": -0.016,
+"hits_all": 29,
 "lift_all": 2.24
 },
 "강제청산": {
@@ -6670,6 +6673,7 @@
 "hits": 3,
 "lift": 0.62,
 "rho_dd_all": 0.03,
+"hits_all": 13,
 "lift_all": 1.5
 },
 "손절": {
@@ -6677,6 +6681,7 @@
 "hits": 497,
 "lift": 2.24,
 "rho_dd_all": -0.262,
+"hits_all": 922,
 "lift_all": 2.11
 },
 "다팔았": {
@@ -6684,6 +6689,7 @@
 "hits": 70,
 "lift": 2.39,
 "rho_dd_all": -0.107,
+"hits_all": 148,
 "lift_all": 1.36
 },
 "전량매도": {
@@ -6691,6 +6697,7 @@
 "hits": 41,
 "lift": 0.56,
 "rho_dd_all": 0.07,
+"hits_all": 136,
 "lift_all": 0.38
 },
 "한강": {
@@ -6698,6 +6705,7 @@
 "hits": 484,
 "lift": 1.89,
 "rho_dd_all": -0.237,
+"hits_all": 778,
 "lift_all": 2.02
 },
 "탈출": {
@@ -6705,6 +6713,7 @@
 "hits": 171,
 "lift": 1.35,
 "rho_dd_all": -0.065,
+"hits_all": 479,
 "lift_all": 1.08
 },
 "끝났": {
@@ -6712,6 +6721,7 @@
 "hits": 168,
 "lift": 2.0,
 "rho_dd_all": -0.154,
+"hits_all": 449,
 "lift_all": 1.38
 },
 "망했": {
@@ -6719,6 +6729,7 @@
 "hits": 174,
 "lift": 1.09,
 "rho_dd_all": 0.002,
+"hits_all": 465,
 "lift_all": 0.95
 },
 "폭망": {
@@ -6726,6 +6737,7 @@
 "hits": 126,
 "lift": 1.31,
 "rho_dd_all": -0.034,
+"hits_all": 288,
 "lift_all": 0.92
 },
 "살려": {
@@ -6733,6 +6745,7 @@
 "hits": 299,
 "lift": 1.58,
 "rho_dd_all": -0.111,
+"hits_all": 919,
 "lift_all": 1.07
 },
 "멘탈나": {
@@ -6740,6 +6753,7 @@
 "hits": 7,
 "lift": null,
 "rho_dd_all": -0.016,
+"hits_all": 18,
 "lift_all": 2.01
 },
 "포기": {
@@ -6747,6 +6761,7 @@
 "hits": 526,
 "lift": 1.28,
 "rho_dd_all": -0.065,
+"hits_all": 1075,
 "lift_all": 1.18
 },
 "그만할": {
@@ -6754,6 +6769,7 @@
 "hits": 2,
 "lift": null,
 "rho_dd_all": 0.01,
+"hits_all": 7,
 "lift_all": 0.0
 },
 "주식접": {
@@ -6761,6 +6777,7 @@
 "hits": 9,
 "lift": 3.23,
 "rho_dd_all": -0.006,
+"hits_all": 22,
 "lift_all": 0.99
 },
 "손실": {
@@ -6768,6 +6785,7 @@
 "hits": 640,
 "lift": 1.86,
 "rho_dd_all": -0.295,
+"hits_all": 1268,
 "lift_all": 1.74
 },
 "-50%": {
@@ -6775,6 +6793,7 @@
 "hits": 41,
 "lift": 4.08,
 "rho_dd_all": -0.106,
+"hits_all": 147,
 "lift_all": 1.93
 },
 "-30%": {
@@ -6782,6 +6801,7 @@
 "hits": 36,
 "lift": 1.07,
 "rho_dd_all": -0.046,
+"hits_all": 95,
 "lift_all": 1.01
 },
 "반토막": {
@@ -6789,6 +6809,7 @@
 "hits": 197,
 "lift": 2.6,
 "rho_dd_all": -0.206,
+"hits_all": 392,
 "lift_all": 2.31
 },
 "손절해야": {
@@ -6796,6 +6817,7 @@
 "hits": 30,
 "lift": 1.4,
 "rho_dd_all": -0.032,
+"hits_all": 52,
 "lift_all": 1.75
 },
 "손절할까": {
@@ -6803,6 +6825,7 @@
 "hits": 0,
 "lift": null,
 "rho_dd_all": 0.025,
+"hits_all": 2,
 "lift_all": 0.0
 },
 "손절각": {
@@ -6810,6 +6833,7 @@
 "hits": 2,
 "lift": null,
 "rho_dd_all": 0.008,
+"hits_all": 3,
 "lift_all": 8.44
 },
 "손절했": {
@@ -6817,6 +6841,7 @@
 "hits": 43,
 "lift": 8.59,
 "rho_dd_all": -0.146,
+"hits_all": 96,
 "lift_all": 2.74
 },
 "완전망": {
@@ -6824,6 +6849,7 @@
 "hits": 3,
 "lift": null,
 "rho_dd_all": 0.01,
+"hits_all": 11,
 "lift_all": 1.79
 },
 "망필": {
@@ -6831,6 +6857,7 @@
 "hits": 1,
 "lift": null,
 "rho_dd_all": 0.013,
+"hits_all": 1,
 "lift_all": null
 },
 "떡락": {
@@ -6838,6 +6865,7 @@
 "hits": 93,
 "lift": 1.22,
 "rho_dd_all": -0.084,
+"hits_all": 185,
 "lift_all": 1.09
 },
 "무섭": {
@@ -6845,6 +6873,7 @@
 "hits": 591,
 "lift": 1.48,
 "rho_dd_all": -0.097,
+"hits_all": 1210,
 "lift_all": 1.35
 },
 "무서워": {
@@ -6852,6 +6881,7 @@
 "hits": 250,
 "lift": 1.33,
 "rho_dd_all": -0.113,
+"hits_all": 498,
 "lift_all": 1.27
 },
 "불안": {
@@ -6859,6 +6889,7 @@
 "hits": 635,
 "lift": 1.29,
 "rho_dd_all": -0.084,
+"hits_all": 1407,
 "lift_all": 1.14
 },
 "공포": {
@@ -6866,6 +6897,7 @@
 "hits": 445,
 "lift": 3.2,
 "rho_dd_all": -0.397,
+"hits_all": 979,
 "lift_all": 2.71
 },
 "폭락": {
@@ -6873,6 +6905,7 @@
 "hits": 1172,
 "lift": 2.57,
 "rho_dd_all": -0.327,
+"hits_all": 2587,
 "lift_all": 1.85
 },
 "대폭락": {
@@ -6880,6 +6913,7 @@
 "hits": 122,
 "lift": 3.03,
 "rho_dd_all": -0.196,
+"hits_all": 265,
 "lift_all": 2.34
 },
 "하락장": {
@@ -6887,6 +6921,7 @@
 "hits": 793,
 "lift": 4.27,
 "rho_dd_all": -0.466,
+"hits_all": 1488,
 "lift_all": 3.52
 },
 "약세장": {
@@ -6894,6 +6929,7 @@
 "hits": 44,
 "lift": 21.01,
 "rho_dd_all": -0.162,
+"hits_all": 61,
 "lift_all": 11.5
 },
 "침체": {
@@ -6901,6 +6937,7 @@
 "hits": 763,
 "lift": 5.66,
 "rho_dd_all": -0.406,
+"hits_all": 1175,
 "lift_all": 5.14
 },
 "대공황": {
@@ -6908,6 +6945,7 @@
 "hits": 78,
 "lift": 2.7,
 "rho_dd_all": -0.159,
+"hits_all": 165,
 "lift_all": 2.71
 },
 "붕괴": {
@@ -6915,6 +6953,7 @@
 "hits": 215,
 "lift": 2.5,
 "rho_dd_all": -0.183,
+"hits_all": 490,
 "lift_all": 1.65
 },
 "물렸": {
@@ -6922,6 +6961,7 @@
 "hits": 89,
 "lift": 2.6,
 "rho_dd_all": -0.149,
+"hits_all": 212,
 "lift_all": 1.95
 },
 "멘붕": {
@@ -6929,6 +6969,7 @@
 "hits": 31,
 "lift": 1.23,
 "rho_dd_all": -0.008,
+"hits_all": 62,
 "lift_all": 1.2
 },
 "패닉": {
@@ -6936,6 +6977,7 @@
 "hits": 136,
 "lift": 4.71,
 "rho_dd_all": -0.268,
+"hits_all": 230,
 "lift_all": 3.99
 },
 "바닥이어디": {
@@ -6943,6 +6985,7 @@
 "hits": 2,
 "lift": null,
 "rho_dd_all": 0.009,
+"hits_all": 3,
 "lift_all": null
 },
 "지하실": {
@@ -6950,6 +6993,7 @@
 "hits": 39,
 "lift": 1.46,
 "rho_dd_all": -0.056,
+"hits_all": 60,
 "lift_all": 1.98
 },
 "현금확보": {
@@ -6957,6 +7001,7 @@
 "hits": 81,
 "lift": 1.38,
 "rho_dd_all": -0.084,
+"hits_all": 172,
 "lift_all": 1.18
 },
 "지옥": {
@@ -6964,6 +7009,7 @@
 "hits": 238,
 "lift": 1.11,
 "rho_dd_all": -0.078,
+"hits_all": 473,
 "lift_all": 1.06
 },
 "위기": {
@@ -6971,6 +7017,7 @@
 "hits": 1561,
 "lift": 2.39,
 "rho_dd_all": -0.318,
+"hits_all": 2748,
 "lift_all": 2.12
 },
 "버블": {
@@ -6978,6 +7025,7 @@
 "hits": 502,
 "lift": 1.67,
 "rho_dd_all": -0.108,
+"hits_all": 1127,
 "lift_all": 1.39
 },
 "거품": {
@@ -6985,6 +7033,7 @@
 "hits": 401,
 "lift": 2.71,
 "rho_dd_all": -0.148,
+"hits_all": 785,
 "lift_all": 1.96
 },
 "떨어지": {
@@ -6992,6 +7041,7 @@
 "hits": 1556,
 "lift": 1.84,
 "rho_dd_all": -0.296,
+"hits_all": 3166,
 "lift_all": 1.62
 },
 "줍줍": {
@@ -6999,6 +7049,7 @@
 "hits": 760,
 "lift": 2.79,
 "rho_dd_all": -0.368,
+"hits_all": 1314,
 "lift_all": 2.55
 },
 "바겐세일": {
@@ -7006,6 +7057,7 @@
 "hits": 47,
 "lift": 17.28,
 "rho_dd_all": -0.171,
+"hits_all": 106,
 "lift_all": 5.6
 },
 "세일": {
@@ -7013,6 +7065,7 @@
 "hits": 177,
 "lift": 2.38,
 "rho_dd_all": -0.231,
+"hits_all": 367,
 "lift_all": 1.86
 },
 "기회": {
@@ -7020,6 +7073,7 @@
 "hits": 1704,
 "lift": 1.51,
 "rho_dd_all": -0.252,
+"hits_all": 3594,
 "lift_all": 1.38
 },
 "분할매수": {
@@ -7027,6 +7081,7 @@
 "hits": 593,
 "lift": 4.34,
 "rho_dd_all": -0.386,
+"hits_all": 1255,
 "lift_all": 3.08
 },
 "추매": {
@@ -7034,6 +7089,7 @@
 "hits": 361,
 "lift": 2.75,
 "rho_dd_all": -0.2,
+"hits_all": 703,
 "lift_all": 1.86
 },
 "추가매수": {
@@ -7041,6 +7097,7 @@
 "hits": 139,
 "lift": 0.88,
 "rho_dd_all": -0.019,
+"hits_all": 292,
 "lift_all": 0.76
 },
 "물타기": {
@@ -7048,6 +7105,7 @@
 "hits": 130,
 "lift": 2.77,
 "rho_dd_all": -0.122,
+"hits_all": 262,
 "lift_all": 2.21
 },
 "저점매수": {
@@ -7055,6 +7113,7 @@
 "hits": 55,
 "lift": 3.9,
 "rho_dd_all": -0.122,
+"hits_all": 119,
 "lift_all": 2.31
 },
 "싸게": {
@@ -7062,6 +7121,7 @@
 "hits": 394,
 "lift": 2.01,
 "rho_dd_all": -0.121,
+"hits_all": 844,
 "lift_all": 1.32
 },
 "모아가": {
@@ -7069,6 +7129,7 @@
 "hits": 219,
 "lift": 1.11,
 "rho_dd_all": -0.032,
+"hits_all": 490,
 "lift_all": 0.95
 },
 "수익": {
@@ -7076,6 +7137,7 @@
 "hits": 2596,
 "lift": 0.63,
 "rho_dd_all": 0.29,
+"hits_all": 5964,
 "lift_all": 0.59
 },
 "익절": {
@@ -7083,6 +7145,7 @@
 "hits": 204,
 "lift": 1.07,
 "rho_dd_all": 0.047,
+"hits_all": 633,
 "lift_all": 0.65
 },
 "떡상": {
@@ -7090,6 +7153,7 @@
 "hits": 216,
 "lift": 0.51,
 "rho_dd_all": 0.093,
+"hits_all": 346,
 "lift_all": 0.7
 },
 "신고가": {
@@ -7097,6 +7161,7 @@
 "hits": 63,
 "lift": 0.76,
 "rho_dd_all": 0.08,
+"hits_all": 188,
 "lift_all": 0.48
 },
 "불장": {
@@ -7104,6 +7169,7 @@
 "hits": 44,
 "lift": 2.11,
 "rho_dd_all": 0.006,
+"hits_all": 171,
 "lift_all": 0.69
 },
 "상승장": {
@@ -7111,6 +7177,7 @@
 "hits": 367,
 "lift": 2.38,
 "rho_dd_all": -0.206,
+"hits_all": 642,
 "lift_all": 2.26
 },
 "가즈아": {
@@ -7118,6 +7185,7 @@
 "hits": 633,
 "lift": 0.71,
 "rho_dd_all": 0.172,
+"hits_all": 1193,
 "lift_all": 0.8
 },
 "축하": {
@@ -7125,6 +7193,7 @@
 "hits": 1547,
 "lift": 0.35,
 "rho_dd_all": 0.133,
+"hits_all": 2891,
 "lift_all": 0.37
 },
 "올랐": {
@@ -7132,6 +7201,7 @@
 "hits": 757,
 "lift": 1.42,
 "rho_dd_all": -0.059,
+"hits_all": 1553,
 "lift_all": 1.3
 },
 "회복": {
@@ -7139,6 +7209,7 @@
 "hits": 436,
 "lift": 1.74,
 "rho_dd_all": -0.179,
+"hits_all": 847,
 "lift_all": 1.56
 },
 "반등": {
@@ -7146,6 +7217,7 @@
 "hits": 575,
 "lift": 6.19,
 "rho_dd_all": -0.449,
+"hits_all": 1266,
 "lift_all": 4.33
 },
 "+%": {
@@ -7153,6 +7225,7 @@
 "hits": 69,
 "lift": 1.83,
 "rho_dd_all": -0.008,
+"hits_all": 174,
 "lift_all": 1.06
 },
 "%수익": {
@@ -7160,6 +7233,7 @@
 "hits": 117,
 "lift": 0.42,
 "rho_dd_all": 0.083,
+"hits_all": 321,
 "lift_all": 0.33
 },
 "풀매수": {
@@ -7167,6 +7241,7 @@
 "hits": 143,
 "lift": 1.78,
 "rho_dd_all": -0.09,
+"hits_all": 375,
 "lift_all": 1.1
 },
 "몰빵": {
@@ -7174,6 +7249,7 @@
 "hits": 280,
 "lift": 0.87,
 "rho_dd_all": 0.011,
+"hits_all": 623,
 "lift_all": 0.81
 },
 "영끌": {
@@ -7181,6 +7257,7 @@
 "hits": 281,
 "lift": 5.69,
 "rho_dd_all": -0.224,
+"hits_all": 422,
 "lift_all": 4.4
 },
 "빚투": {
@@ -7188,6 +7265,7 @@
 "hits": 30,
 "lift": 4.47,
 "rho_dd_all": -0.049,
+"hits_all": 103,
 "lift_all": 1.48
 },
 "대출": {
@@ -7195,6 +7273,7 @@
 "hits": 942,
 "lift": 1.73,
 "rho_dd_all": -0.088,
+"hits_all": 2017,
 "lift_all": 1.28
 },
 "신용": {
@@ -7202,6 +7281,7 @@
 "hits": 241,
 "lift": 1.68,
 "rho_dd_all": -0.15,
+"hits_all": 426,
 "lift_all": 1.72
 },
 "졸업": {
@@ -7209,6 +7289,7 @@
 "hits": 213,
 "lift": 0.77,
 "rho_dd_all": -0.031,
+"hits_all": 364,
 "lift_all": 0.85
 },
 "퇴사": {
@@ -7216,6 +7297,7 @@
 "hits": 90,
 "lift": 1.31,
 "rho_dd_all": 0.002,
+"hits_all": 181,
 "lift_all": 1.34
 },
 "인증": {
@@ -7223,6 +7305,7 @@
 "hits": 150,
 "lift": 1.14,
 "rho_dd_all": 0.022,
+"hits_all": 393,
 "lift_all": 0.78
 },
 "포모": {
@@ -7230,6 +7313,7 @@
 "hits": 28,
 "lift": 0.35,
 "rho_dd_all": 0.069,
+"hits_all": 260,
 "lift_all": 0.1
 },
 "fomo": {
@@ -7237,6 +7321,7 @@
 "hits": 24,
 "lift": 0.62,
 "rho_dd_all": 0.051,
+"hits_all": 55,
 "lift_all": 0.43
 },
 "벼락거지": {
@@ -7244,6 +7329,7 @@
 "hits": 27,
 "lift": 1.39,
 "rho_dd_all": 0.021,
+"hits_all": 58,
 "lift_all": 1.3
 },
 "나만못": {
@@ -7251,6 +7337,7 @@
 "hits": 3,
 "lift": null,
 "rho_dd_all": -0.001,
+"hits_all": 6,
 "lift_all": 2.36
 },
 "인생역전": {
@@ -7258,6 +7345,7 @@
 "hits": 7,
 "lift": null,
 "rho_dd_all": 0.04,
+"hits_all": 16,
 "lift_all": 0.0
 },
 "경제적자유": {
@@ -7265,6 +7353,7 @@
 "hits": 251,
 "lift": 0.93,
 "rho_dd_all": -0.067,
+"hits_all": 370,
 "lift_all": 1.07
 },
 "파이어족": {
@@ -7272,6 +7361,7 @@
 "hits": 9,
 "lift": 10.12,
 "rho_dd_all": -0.024,
+"hits_all": 22,
 "lift_all": 2.6
 },
 "부자": {
@@ -7279,6 +7369,7 @@
 "hits": 1570,
 "lift": 1.0,
 "rho_dd_all": -0.041,
+"hits_all": 2878,
 "lift_all": 1.02
 },
 "천만원": {
@@ -7286,6 +7377,7 @@
 "hits": 308,
 "lift": 1.03,
 "rho_dd_all": -0.007,
+"hits_all": 769,
 "lift_all": 0.83
 },
 "억벌": {
@@ -7293,6 +7385,7 @@
 "hits": 25,
 "lift": 0.65,
 "rho_dd_all": 0.012,
+"hits_all": 56,
 "lift_all": 0.74
 },
 "영끌매수": {
@@ -7300,6 +7393,7 @@
 "hits": 4,
 "lift": 5.61,
 "rho_dd_all": 0.013,
+"hits_all": 5,
 "lift_all": 4.33
 },
 "영끌해서": {
@@ -7307,6 +7401,7 @@
 "hits": 59,
 "lift": 5.46,
 "rho_dd_all": -0.112,
+"hits_all": 96,
 "lift_all": 4.33
 },
 "영끌로": {
@@ -7314,6 +7409,7 @@
 "hits": 9,
 "lift": 5.68,
 "rho_dd_all": -0.025,
+"hits_all": 11,
 "lift_all": 4.91
 },
 "계좌인증": {
@@ -7321,6 +7417,7 @@
 "hits": 26,
 "lift": 1.22,
 "rho_dd_all": -0.035,
+"hits_all": 46,
 "lift_all": 1.48
 },
 "수익인증": {
@@ -7328,6 +7425,7 @@
 "hits": 4,
 "lift": null,
 "rho_dd_all": 0.04,
+"hits_all": 14,
 "lift_all": 0.0
 },
 "수익률": {
@@ -7335,6 +7433,7 @@
 "hits": 661,
 "lift": 0.56,
 "rho_dd_all": 0.229,
+"hits_all": 1486,
 "lift_all": 0.53
 },
 "자랑": {
@@ -7342,6 +7441,7 @@
 "hits": 300,
 "lift": 1.15,
 "rho_dd_all": -0.025,
+"hits_all": 616,
 "lift_all": 1.0
 },
 "파이어": {
@@ -7349,6 +7449,7 @@
 "hits": 20,
 "lift": 3.3,
 "rho_dd_all": -0.037,
+"hits_all": 81,
 "lift_all": 1.24
 },
 "레버리지": {
@@ -7357,6 +7458,7 @@
 "lift": null,
 "product": true,
 "rho_dd_all": -0.191,
+"hits_all": 1527,
 "lift_all": 1.41
 },
 "tqqq": {
@@ -7365,6 +7467,7 @@
 "lift": null,
 "product": true,
 "rho_dd_all": -0.175,
+"hits_all": 598,
 "lift_all": 1.74
 },
 "3배": {
@@ -7373,6 +7476,7 @@
 "lift": null,
 "product": true,
 "rho_dd_all": -0.07,
+"hits_all": 544,
 "lift_all": 1.62
 },
 "qld": {
@@ -7381,6 +7485,7 @@
 "lift": null,
 "product": true,
 "rho_dd_all": -0.16,
+"hits_all": 1387,
 "lift_all": 1.26
 },
 "sqqq": {
@@ -7389,6 +7494,7 @@
 "lift": null,
 "product": true,
 "rho_dd_all": -0.188,
+"hits_all": 99,
 "lift_all": 7.38
 },
 "soxl": {
@@ -7397,6 +7503,7 @@
 "lift": null,
 "product": true,
 "rho_dd_all": -0.076,
+"hits_all": 581,
 "lift_all": 1.02
 }
 },
