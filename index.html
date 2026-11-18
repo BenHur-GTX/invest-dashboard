@@ -174,6 +174,10 @@ tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var
 .rc{display:inline-block;min-width:26px;padding:1px 4px;border-radius:4px;text-align:center;font-weight:600;background:#f0eee8}
 .rc.lo{background:var(--down);color:#fff} .rc.lo2{background:#dbe6fb;color:#1d3f99} .rc.hi{background:var(--bad);color:#fff}
 .mtbl td.px{color:var(--ink2)}
+/* 11-18 Ben: 그룹 안 매수 우선순위 (기본 정렬) */
+.rk{display:inline-block;min-width:18px;height:18px;line-height:18px;margin-right:5px;border-radius:9px;text-align:center;font-size:11px;font-weight:700;background:#ebe9e3;color:var(--ink2);vertical-align:1px}
+.rk.r1{background:var(--brand);color:#fff} .rk.r2{background:var(--brand-soft);color:var(--brand)} .rk.off{background:transparent;color:#8a877f;box-shadow:inset 0 0 0 1px #d6d3cb}
+.rkw{display:block;font-size:11px;color:var(--ink2);font-weight:400;margin-top:2px;white-space:nowrap}
 .sig{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap;vertical-align:1px}
 .sig.s2{background:var(--ok);color:#fff} .sig.s1{background:#dcebdf;color:#1d5c3a} .sig.sh{background:#f6d5d0;color:#8a1c12}
 .cands{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -1729,8 +1733,7 @@ function vAccounts(){
   <p class="muted">현금 차수 집행, QLD 이월액도 캡처와 함께 한 줄로 알려주면 같이 기록합니다.</p></div>`;
 }
 
-const MSORT = {};   // 시세 탭 정렬 상태 {그룹: {k, dir}} — 1회 내림, 2회 오름, 3회 원래 순서
-const MSORT_GROUPS = ["섹터","빅테크","성장주","배당"];
+const MSORT = {};   // 시세 탭 정렬 상태 {그룹: {k, dir}} — 1회 내림, 2회 오름, 3회 매수 우선순위
 const MSORT_KEYS = {dd:s=>s.dd_ath ?? s.dd52, v200:s=>s.vs200, rsi:s=>s.rsi, bb:s=>s.bb_pctb};
 function rsiCls(v){ return v==null? "" : v<=30? "dn" : v>=70? "up" : ""; }
 // 매수 후보 하이라이트 (11-13 Ben). 장투·적립 후보 ETF는 4개 신호 중 개수, 개별 빅테크는 큰 낙폭 + 과매도일 때만
@@ -1775,8 +1778,46 @@ function buySig(t, s){
 }
 const sigCls = b => !b? "" : b.lv===2? "buy2" : b.lv===1? "buy1" : "hot";
 const sigTag = b => !b? "" : `<span class="sig ${b.lv===2?"s2":b.lv===1?"s1":"sh"}">${esc(b.label)}</span>`;
+// 11-18 Ben: 시세 탭 그룹 안 매수 우선순위. 새 지표 없이 기존 신호로 '얼마나 싼가' 점수(0~100) + 매수 후보/과열 가감.
+// 1배·배당·빅테크 = 쌀수록 위(쌀 때 산다). 레버리지 = 싼 정도 + 40주선 위(추세 회복) 가점, 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래.
+const RANK_SKIP = ["지수","현금·채권"];   // 지수·환율·VIX·SGOV·TLT(매도 예정)는 순위 대상 아님, 원래 순서 유지
+const RANK_OFF = {"BITU":"매수 제외", "IBIT":"참고용", "BTC-USD":"참고용"};   // 규칙상 사지 않는 종목은 맨 아래
+const LEV_DD = {"QLD":40, "TQQQ":55, "SOXL":55};   // 스윙 A안 진입 낙폭(1년 고점 대비)을 만점 기준으로
+const DD_SCALE = {"레버리지":60, "성장주":70, "금·비트코인":50, "빅테크":35, "섹터":30, "국내":30, "현금·채권":20};
+const cl01 = v => Math.max(0, Math.min(1, v));
+function rankScore(t, s){
+  const parts = [], why = [];
+  const ddScale = LEV_DD[t] ?? DD_SCALE[s.group] ?? 25;
+  if(s.dd52!=null){ parts.push([30, cl01(-s.dd52/ddScale)]); if(s.dd52<=-10) why.push(`고점 ${num(s.dd52,0)}%`); }
+  if(s.rsi!=null){ parts.push([30, cl01((65-s.rsi)/35)]); if(s.rsi<=40) why.push(`RSI ${num(s.rsi,0)}`); }
+  if(s.vs200!=null){ parts.push([25, cl01((5-s.vs200)/20)]); if(s.vs200<=-5) why.push(`200일 ${num(s.vs200,0)}%`); }
+  if(s.bb_pctb!=null){ parts.push([15, cl01((60-s.bb_pctb)/60)]); if(s.bb_pctb<=5) why.push("볼린저 하단"); }
+  const wsum = parts.reduce((a,p)=>a+p[0],0);
+  let sc = wsum? parts.reduce((a,p)=>a+p[0]*p[1],0)/wsum*100 : 0;
+  const b = buySig(t, s);
+  if(b) sc += b.lv===2? 25 : b.lv===1? 12 : -30;
+  let hold = null;
+  if(s.group==="레버리지"){
+    if(s.w40){ sc += s.w40.up? 10 : 0; if(s.w40.up) why.unshift("40주선 위"); }
+    if(t!=="QLD" && !(E.dd!=null && E.dd<=-30)) sc -= 15;   // 장투 규칙: 3배는 QQQ −30% 구간에서만, 그 전엔 QLD가 먼저
+    if(E.noLev) hold = "거시 수비·보류";
+    else if(overheat(E).score>=2) hold = "과열·보류";
+  }
+  if(b && b.lv<0) why.unshift("과열");
+  if(RANK_OFF[t]) hold = RANK_OFF[t];
+  // 11-18 Ben: 신호 배지 단계가 먼저(드문 기회·매수 적기 > 분할 매수 > 관찰 > 신호 없음 > 과열), 같은 단계 안에서만 점수
+  const tier = !b? 0 : b.lv>=2? 3 : b.lv===1? (b.label==="관찰"? 1 : 2) : -1;
+  return {sc: Math.round(sc), tier, hold, why: why.slice(0,2).join(" · ")};
+}
+function rankGroup(g, rows){   // rows: [[t,s]] → [[t,s,rk]] 우선순위 순
+  if(RANK_SKIP.includes(g) || rows.length<2) return rows.map(r=>[...r, null]);
+  const x = rows.map(([t,s])=>[t,s,rankScore(t,s)]);
+  x.sort((a,b)=> (!!a[2].hold - !!b[2].hold) || b[2].tier-a[2].tier || b[2].sc-a[2].sc);
+  x.forEach((r,i)=> r[2].n = i+1);
+  return x;
+}
 function candidatesHTML(S){
-  const list = Object.entries(S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || (a[1].rsi??99)-(b[1].rsi??99));
+  const list = Object.entries(S).map(([t,s])=>[t,s,buySig(t,s)]).filter(x=>x[2] && x[2].lv>0).sort((a,b)=>b[2].lv-a[2].lv || rankScore(b[0],b[1]).sc-rankScore(a[0],a[1]).sc);
   return `<div class="panel"><b>지금 매수 후보</b> <span class="muted">· 누르면 차트</span>
     ${list.length? `<div class="cands">${list.map(([t,s,b])=>`<button type="button" class="s${b.lv}" data-chart="${esc(t)}" title="${esc(b.why)}"><b>${esc(t)}</b> ${esc(b.label)} <span class="muted">${esc(b.why)}</span></button>`).join("")}</div>`
       : `<p class="muted" style="margin:6px 0 0">조건을 채운 종목이 없습니다. 이번 달은 기존 적립 규칙대로 사면 됩니다.</p>`}
@@ -1902,18 +1943,20 @@ function vMarket(){
   const S=E.S; const groups={};
   for(const [t,s] of Object.entries(S)){ (groups[s.group]=groups[s.group]||[]).push([t,s]); }
   const order=["지수","1배 지수","섹터","레버리지","빅테크","성장주","배당","금·비트코인","현금·채권","국내","기타"];
-  const th=(g,k,label)=>{ if(!MSORT_GROUPS.includes(g)) return `<th>${label}</th>`;
+  const th=(g,k,label)=>{
     const st=MSORT[g]; const on=st&&st.k===k; const arrow=on? (st.dir<0?" ▼":" ▲") : "";
     return `<th class="sortable${on?" on":""}"><button type="button" class="sortbtn" data-g="${g}" data-k="${k}" aria-label="${label} 정렬">${label}${arrow||'<span class="hint"> ↕</span>'}</button></th>`; };
-  const rows=g=>{ const r=groups[g].slice(); const st=MSORT[g];
+  const rows=g=>{ const r=rankGroup(g, groups[g]); const st=MSORT[g];   // 기본 = 매수 우선순위, 제목 누르면 그 지표로
     if(st){ const f=MSORT_KEYS[st.k]; r.sort((a,b)=>{ const x=f(a[1]), y=f(b[1]); if(x==null) return 1; if(y==null) return -1; return st.dir<0 ? y-x : x-y; }); }
     return r; };
+  const rkTag = rk => !rk? "" : `<span class="rk ${rk.hold? "off" : rk.n===1? "r1" : rk.n<=3? "r2" : ""}" title="매수 우선순위 ${rk.n} · 점수 ${rk.sc}${rk.why? " · "+esc(rk.why):""}">${rk.n}</span>`;
+  const rkWhy = rk => !rk? "" : rk.hold? `<span class="rkw">${esc(rk.hold)}</span>` : "";   // 이유는 표 숫자와 겹쳐서 번호 툴팁으로만
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
   ${candidatesHTML(S)}
-  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <span class="rc lo">30↓</span> <span class="rc lo2">40↓</span> <span class="rc hi">70↑</span></span><span>40주 ▲골든 ▼데드</span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
+  <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <span class="rc lo">30↓</span> <span class="rc lo2">40↓</span> <span class="rc hi">70↑</span></span><span>40주 ▲골든 ▼데드</span><span><span class="rk r1">1</span>매수 우선순위(그룹 안, 갱신마다 다시 계산)</span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
   ${order.filter(g=>groups[g]).map(g=>`<h3>${g}</h3><div class="tbl"><table class="mtbl">
     <tr><th>종목</th><th>일간</th>${th(g,"dd","고점")}${th(g,"v200","200일")}${th(g,"rsi","RSI")}<th>40주</th>${th(g,"bb","%B")}<th>현재가</th><th class="l">6개월</th></tr>
-    ${rows(g).map(([t,s])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기"><b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}</td><td>${cpct(s.chg,1)}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
+    ${rows(g).map(([t,s,rk])=>{ const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc(t.replace("^",""))} 차트 보기">${rkTag(rk)}<b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span></button>${sigTag(b)}${rkWhy(rk)}</td><td>${cpct(s.chg,1)}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td class="l">${spark(s.spark)}</td></tr>`; }).join("")}
   </table></div>`).join("")}
   <details class="panel mexp"><summary><b>표·지표 설명 보기</b></summary>
     <ul class="mx">
@@ -1924,7 +1967,8 @@ function vMarket(){
       <li><b>볼린저 %B</b> 20일 밴드 안 위치. 0 아래면 하단 이탈.</li>
       <li><b>40주선</b> 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈)와 경과 주수(마감 주 기준). 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 주에 반대로 넘어간 상태(금요일 종가로 확정).</li>
       <li><b>차트</b> 기본 3년 주봉 + 40주선, 골든▲·데드▼ 지점, 이격도·RSI 패널. 6개월·1년은 일봉 50·200일선. 뒤로 가기로 닫힙니다.</li>
-      <li><b>정렬</b> 섹터·빅테크·배당 표는 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 원래 순서.</li>
+      <li><b>매수 우선순위 (기본 정렬)</b> 신호 배지가 있는 종목이 맨 위(드문 기회·매수 적기 → 분할 매수 고려 → 관찰), 과열·보류는 맨 아래. 같은 단계 안에서는 '얼마나 싼가' 점수 0~100 순서. 1년 고점 대비 낙폭 30 · RSI 30 · 200일선 이격 25 · 볼린저 %B 15 (낙폭 만점 기준: 빅테크 −35%, 성장주 −70%, 금·비트 −50%, 그 외 −25~30%). 매수 적기·드문 기회 +25, 분할 매수·관찰 +12, 과열·보류 −30. 레버리지는 낙폭 만점 기준이 스윙 진입선(QLD −40%, TQQQ·SOXL −55%), 40주선 위면 +10(추세 회복), 3배는 QQQ −30% 전까지 −15(QLD 먼저), 거시 수비·HY 6%↑·과열 2개↑면 '보류'로 맨 아래. BITU(매수 제외)·IBIT·비트코인 현물(참고용)도 맨 아래. 지수·환율·현금·채권 표는 순위 없음. 번호에 마우스를 올리면 점수와 이유. 순위는 '같은 그룹 안에서 상대적으로 더 싼 것'이지, 사도 된다는 판정이 아닙니다. 실제 금액은 이번 달 매수 표를 따릅니다.</li>
+      <li><b>정렬</b> 고점 대비·200일선·RSI·볼린저 제목을 누르면 내림차순 → 오름차순 → 다시 매수 우선순위.</li>
       <li><b>SPCX</b> 2026년 6월 상장이라 200일선이 아직 없습니다.</li>
     </ul></details>
   ${E.M.errors?.length? `<p class="note">수신 실패: ${esc(E.M.errors.join(" / "))}</p>`:""}`;
