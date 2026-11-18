@@ -1338,7 +1338,7 @@ function todayActions(lt, am, irp, bw){
   // 11-18 Ben: 적립 D-day는 이번 달 매수 탭에. 대신 다음 장투 SGOV 차수(무엇을 얼마나 사게 되나)
   { const dd=E.dd??0, i=LT_POOL.findIndex(x=>dd>x.lvl);
     if(i>=0){ const L=LT_POOL[i], prev=i? LT_POOL[i-1].lvl : 0, ltA=E.acc.list.find(a=>a.id==="longterm"), sg=(ltA?.pos||[]).filter(p=>p.t==="SGOV").reduce((a,p)=>a+p.v,0);
-      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`QQQ ${L.lvl}% 도달 시`, a: sg>0? won(sg*L.pct/100) : `SGOV ${L.pct}%`, go:"plan", bar:{v:Math.max(0,prev-dd), max:prev-L.lvl, mk:null, lab:`${L.mix} · ${num(Math.max(0,prev-dd),1)}/${prev-L.lvl}%p 진행`}}); } }
+      A.push({k:"wait", n:`장투 SGOV ${i+1}차`, x:`${L.lvl}%까지 ${num(dd-L.lvl,1)}%p 남음`, a: sg>0? won(sg*L.pct/100) : `${L.pct}% 투입`, go:"plan", bar:{v:Math.max(0,prev-dd), max:prev-L.lvl, mk:null, lab:`도달하면 모은 SGOV ${L.pct}% → ${L.mix.replace(/·/g," · ")} 매수`}}); } }
   return A;
 }
 function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼마나 남았나 (장투 SGOV 차수 + 현금 계좌 차수)
