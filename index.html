@@ -573,16 +573,16 @@ function engine(D){
   const bc = bigCut(mac);
   if(bc) alerts.push({c:"bad", t:`<b>연준 빅컷</b> ${esc(bc.date)} ${num(bc.delta*100,0)}bp 인하 후 <b>${bc.days}일째</b> (45일 경보 구간). 과거 2001·2007·2020년 빅컷 뒤 큰 하락이 이어졌고, 2024년은 헛경보였습니다. 첫 반등에 현금 투입 금지, 안전장치 규칙은 확정 대기.`});
   const flee = fleeAlert(M);
-  if(flee.on && mode.name!=="수비") mode = {name:"수비", c:"r"};   // 도망은 수비 행동 + 레버리지 정리
+  if(flee.on && mode.name!=="수비") mode = {name:"수비", c:"r"};   // 대피는 수비 행동 + 레버리지 정리
   if(flee.on) noLev = true;
-  const ladder = flee.on? {name:"도망", c:"r", step:3} : mode.name==="수비"? {...mode, step:2} : {...mode, step: mode.name==="중립"?1:0};
-  if(flee.on) alerts.push({c:"bad", t:`<b>도망 경보 ${flee.months}개월째</b> QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위. 이번 달 장투 QLD·TQQQ <b>${flee.sellTxt}</b> 매도 → SGOV (3개월 분할, 경보 꺼지면 중단). 신규 적립은 규칙대로(신규 레버리지는 멈춤), 1배·연금저축 매도 없음.`});
+  const ladder = flee.on? {name:"대피", c:"r", step:3} : mode.name==="수비"? {...mode, step:2} : {...mode, step: mode.name==="중립"?1:0};
+  if(flee.on) alerts.push({c:"bad", t:`<b>대피 경보 ${flee.months}개월째</b> QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위. 이번 달 장투 QLD·TQQQ <b>${flee.sellTxt}</b> 매도 → SGOV (3개월 분할, 경보 꺼지면 중단). 신규 적립은 규칙대로(신규 레버리지는 멈춤), 1배·연금저축 매도 없음.`});
   if(acc.directTotal >= (H?.settings?.cash_trigger_krw||1e8)) alerts.push({c:"info", t:`직투 자산 1억 도달 — 스윙 계좌 현금 50% 규칙 적용.`});
 
   return {M,S,H,fx,q,vix,fng,dd,state,stage,aux,auxN,L,mode,noLev,hy,acc,alerts,flee,ladder,defP};
 }
 
-// 11-18 Ben: 도망 경보 = QQQ 월말 종가 10개월선 아래 AND 실업률 > 최근 12개월 평균. 기존 수비 모드와 별개.
+// 11-18 Ben: 대피 경보 = QQQ 월말 종가 10개월선 아래 AND 실업률 > 최근 12개월 평균. 기존 수비 모드와 별개.
 // 검증(1971~ S&P500): 연 12.1% / MDD −29% vs 보유 11.0% / −51%. 효과는 2000·2008만, 1987·2020·2022는 못 피함. 나스닥100 MDD −81→−56%.
 function fleeAlert(M){
   const q=M.symbols?.QQQ?.m10, u=(M.macro?.unrate?.spark||[]).filter(v=>v!=null);
@@ -596,9 +596,9 @@ function fleeAlert(M){
   const step=Math.min(3,months), sellTxt=["","남은 것의 1/3","남은 것의 절반","남은 것 전량"][step]||"";
   return {on: p&&un, p, un, q, uv, u12, known: !!q && u12!=null, months, step, sellTxt};
 }
-// 11-18 Ben: 공격 → 중립 → 수비 → 도망 한 줄 사다리
+// 11-18 Ben: 공격 → 중립 → 수비 → 대피 한 줄 사다리
 function stageStripHTML(){
-  const st=[["공격","g","규칙대로 적립·레버리지 허용"],["중립","y","레버리지 절반만"],["수비","r","신규 레버리지 멈춤, 1배로"],["도망","r","보유 레버리지 3개월 분할 매도"]];
+  const st=[["공격","g","규칙대로 적립·레버리지 허용"],["중립","y","레버리지 절반만"],["수비","r","신규 레버리지 멈춤, 1배로"],["대피","r","보유 레버리지 3개월 분할 매도"]];
   const cur=E.ladder.step;
   return `<div class="stl">${st.map(([n,c,t],i)=>`<div class="${i===cur?"on "+c:""}"><b>${n}</b><span>${t}</span></div>`).join("")}</div>
   ${E.mode.wait? `<p class="muted" style="margin:4px 0 0">빨강 2개 ${E.mode.wait}주째 · 3주 연속이면 수비</p>`:""}`;
@@ -606,7 +606,7 @@ function stageStripHTML(){
 function fleeHTML(){
   const f=E.flee, q=f.q;
   const tile=(t,on,v,sub)=>`<div class="light"><div class="t">${t}</div><div class="st ${on?"r":"g"}"><span class="dot ${on?"r":"g"}"></span>${on?"충족":"아님"}</div><div class="d">${v}${sub? `<br><span class="muted">${sub}</span>`:""}</div></div>`;
-  return `<div class="panel"><p style="margin:0 0 10px">${f.on? pill(`도망 경보 ${f.months}개월째`,"r") : pill("꺼짐","g")} <span class="muted">${f.on? `이번 달 장투 QLD·TQQQ ${f.sellTxt} 매도 → SGOV` : "2개 모두 충족할 때만 켜짐"}</span></p>
+  return `<div class="panel"><p style="margin:0 0 10px">${f.on? pill(`대피 경보 ${f.months}개월째`,"r") : pill("꺼짐","g")} <span class="muted">${f.on? `이번 달 장투 QLD·TQQQ ${f.sellTxt} 매도 → SGOV` : "2개 모두 충족할 때만 켜짐"}</span></p>
   <div class="lights">
     ${tile("가격: QQQ 월말 10개월선 아래", f.p, q? `${esc(q.month)} 종가 ${num(q.close,2)} · 10개월선 ${num(q.sma10,2)} (${q.gap>0?"+":""}${num(q.gap,1)}%)` : "데이터 대기", q? `이번 달 진행 중 ${q.live_gap>0?"+":""}${num(q.live_gap,1)}%${q.live_below!==q.below? (q.live_below? " · 월말 아래면 충족":" · 월말 위면 해제") : ""}` : "")}
     ${tile("고용: 실업률 12개월 평균 위", f.un, f.uv!=null? `실업률 ${num(f.uv,1)}% · 12개월 평균 ${num(f.u12,2)}%` : "데이터 대기", "")}
@@ -869,11 +869,11 @@ function planLongterm(E){
       notes.push(`${why}이지만 QQQ 고점 대비 ${pct(E.dd)}로 가격 신호 우선: 1배는 계속 사고 레버리지 몫만 QQQM으로.`);
     }
   }
-  // ⓪ 도망 경보 (11-18 Ben): 신규 적립 전액 SGOV, 보유 레버리지 정리. 1배 보유분은 그대로
+  // ⓪ 대피 경보 (11-18 Ben): 신규 적립 전액 SGOV, 보유 레버리지 정리. 1배 보유분은 그대로
   // 11-19 Ben 확정: 신규 적립은 평소 규칙(수비와 같이 신규 레버리지만 멈춤), 보유 레버리지만 3개월 분할 매도
   if(E.flee?.on){
     const lv=(E.acc.list.find(a=>a.id==="longterm")?.pos||[]).filter(p=>p.t==="QLD"||p.t==="TQQQ").reduce((a,p)=>a+p.v,0)/1e4, frac=[0,1/3,1/2,1][E.flee.step]||0;
-    notes.push(["도망 경보", `${E.flee.months}개월째 · 보유 QLD·TQQQ ${E.flee.sellTxt}${lv>0? ` (약 ${num(lv*frac,0)}만)`:""} 매도 → SGOV · 신규 적립은 규칙대로, 신규 레버리지 멈춤`, "r"]);
+    notes.push(["대피 경보", `${E.flee.months}개월째 · 보유 QLD·TQQQ ${E.flee.sellTxt}${lv>0? ` (약 ${num(lv*frac,0)}만)`:""} 매도 → SGOV · 신규 적립은 규칙대로, 신규 레버리지 멈춤`, "r"]);
   }
   // ② 과열 점수
   if(hot && (alloc.QLD||0)>0){ const q=alloc.QLD; mv("QLD","SCHD",q/2); mv("QLD","SGOV",q/2); let extra=0; if(oh.score>=3) extra=mv("QQQM","SCHD",20*k200);
@@ -1526,11 +1526,11 @@ function segGauge({t, c, st, vtxt, labels, idx, cols, d}){
     <div class="gsegl">${labels.map((l,i)=>`<i class="${i===idx?"on":""}">${esc(l)}</i>`).join("")}</div>${d? `<div class="d">${d}</div>`:""}</div>`;
 }
 function macroSummary(){
-  const lc=l=>l.mode??l.c, L=E.L, r=L.filter(l=>lc(l)==="r").length, y=L.filter(l=>lc(l)==="y").length, g=L.filter(l=>lc(l)==="g").length, m=E.flee?.on? {name:"도망", c:"r"} : E.mode;
-  const act = m.name==="도망"? `보유 QLD·TQQQ ${E.flee.sellTxt} 매도 → SGOV (${E.flee.months}개월째/3), 신규 레버리지 중단` : m.name==="수비"? "신규 레버리지 중단, 현금 투입은 1배 지수로만" : m.name==="중립"? "규칙대로 적립. −10% 구간 QLD 몫은 절반을 QQQM으로" : m.name==="공격"? "규칙대로 적립·레버리지 허용" : "데이터 갱신 대기";
+  const lc=l=>l.mode??l.c, L=E.L, r=L.filter(l=>lc(l)==="r").length, y=L.filter(l=>lc(l)==="y").length, g=L.filter(l=>lc(l)==="g").length, m=E.flee?.on? {name:"대피", c:"r"} : E.mode;
+  const act = m.name==="대피"? `보유 QLD·TQQQ ${E.flee.sellTxt} 매도 → SGOV (${E.flee.months}개월째/3), 신규 레버리지 중단` : m.name==="수비"? "신규 레버리지 중단, 현금 투입은 1배 지수로만" : m.name==="중립"? "규칙대로 적립. −10% 구간 QLD 몫은 절반을 QQQM으로" : m.name==="공격"? "규칙대로 적립·레버리지 허용" : "데이터 갱신 대기";
   const short={"금리 사이클":"금리","장기금리 (미 10년물)":"10년물","고용":"고용","유동성":"유동성","신용":"신용"};
   return `<div class="msum"><div class="tlamp" aria-hidden="true"><i class="${m.c==="r"?"on r":""}"></i><i class="${m.c==="y"?"on y":""}"></i><i class="${m.c==="g"?"on g":""}"></i></div>
-    <div><div class="mn ${m.c}">${esc(m.name)} 모드</div><div class="mc">빨강 ${r} · 노랑 ${y} · 초록 ${g} <br>빨강 2개 3주 연속 수비 · 빨강 1개 또는 노랑 2개↑ 중립 · 도망 경보는 별도</div>
+    <div><div class="mn ${m.c}">${esc(m.name)} 모드</div><div class="mc">빨강 ${r} · 노랑 ${y} · 초록 ${g} <br>빨강 2개 3주 연속 수비 · 빨강 1개 또는 노랑 2개↑ 중립 · 대피 경보는 별도</div>
     <div class="ma"><b>${act}</b></div>
     <div class="mdots">${L.map(l=>`<span><span class="dot ${lc(l)}"></span>${esc(short[l.t]||l.t)}</span>`).join("")}</div></div></div>`;
 }
@@ -2266,13 +2266,13 @@ function vMacro(){
   const cards = E.L.map(l=>`<div class="light"><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
   const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
-  <h2>도망 경보</h2>${fleeHTML()}
+  <h2>대피 경보</h2>${fleeHTML()}
   <h2>금리 한눈에</h2>${ratesHTML(m)}
   <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
   <h2>거시 신호등 · 현재 단계: ${pill(E.ladder.name,E.ladder.c)}</h2>${stageStripHTML()}
   <div class="lights">${cards}</div>
-  <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 단계를 정합니다. 빨강 2개가 3주 연속(2주 넘게)이면 수비, 수비 중엔 빨강 1개 이하가 4주 이어져야 풀립니다. 빨강 1개 또는 노랑 2개는 중립. 도망은 거시 신호등과 별개로 '도망 경보'(QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위)가 켜질 때입니다.</p><p>11-18부터 고정 숫자 대신 변화폭으로 판정합니다. 10년물은 6개월 +1%p 빨강·+0.5%p 노랑(5% 이상 표시 경고는 그대로), 실업수당은 52주 저점 대비 +20% 빨강·+10% 노랑. 고정 기준(10년물 5.5%, 실업수당 30만)은 1971년 이후 61% 기간을 수비로 판정했고, 변화폭 기준은 약 22%입니다. 수익 차이는 없었습니다. 데이터: FRED(무료).</p></details>
+  <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 단계를 정합니다. 빨강 2개가 3주 연속(2주 넘게)이면 수비, 수비 중엔 빨강 1개 이하가 4주 이어져야 풀립니다. 빨강 1개 또는 노랑 2개는 중립. 대피는 거시 신호등과 별개로 '대피 경보'(QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위)가 켜질 때입니다.</p><p>11-18부터 고정 숫자 대신 변화폭으로 판정합니다. 10년물은 6개월 +1%p 빨강·+0.5%p 노랑(5% 이상 표시 경고는 그대로), 실업수당은 52주 저점 대비 +20% 빨강·+10% 노랑. 고정 기준(10년물 5.5%, 실업수당 30만)은 1971년 이후 61% 기간을 수비로 판정했고, 변화폭 기준은 약 22%입니다. 수익 차이는 없었습니다. 데이터: FRED(무료).</p></details>
   <h2>저등급 신용 · 사모대출 <span class="muted">경고용</span></h2>${creditWatchHTML(m)}
   <h2>공포탐욕</h2>
   <div class="panel">${fngGauge(E.fng, E.M.fng)}</div>
@@ -2611,7 +2611,7 @@ function vRules(){
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개가 3주 연속(빨강 1개 이하 4주면 해제) 또는 HY ≥ 6% → 신규 레버리지 중단. 10년물은 6개월 +1%p, 실업수당은 52주 저점 +20%가 빨강(11-18 변화폭 기준).</li>
-    <li><b>도망 경보</b> QQQ 월말 종가 10개월선 아래 + 실업률 12개월 평균 위 → 장투 QLD·TQQQ 보유분을 3개월에 나눠 SGOV로(1/3 → 남은 것 절반 → 전량, 경보 꺼지면 중단). 신규 적립은 규칙대로, 신규 레버리지만 멈춤. 1배 보유분·다른 계좌 매도 없음.</li>
+    <li><b>대피 경보</b> QQQ 월말 종가 10개월선 아래 + 실업률 12개월 평균 위 → 장투 QLD·TQQQ 보유분을 3개월에 나눠 SGOV로(1/3 → 남은 것 절반 → 전량, 경보 꺼지면 중단). 신규 적립은 규칙대로, 신규 레버리지만 멈춤. 1배 보유분·다른 계좌 매도 없음.</li>
     <li><b>나스닥 −3%</b>(조던 룰)은 장투 매도 신호로 쓰지 않음. 경보 + 스윙 신규 비중 절반, 23일 내 4회면 스윙 신규 중단.</li>
     <li><b>현금 비중</b>: 직투 1억 도달 시 스윙 계좌 현금 50%. IRP 위험자산 평상 55~60%, 폭락 70%.</li>
   </ol></div>
