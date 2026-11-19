@@ -2268,6 +2268,7 @@ function vMacro(){
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
   <h2>대피 경보</h2>${fleeHTML()}
   <h2>금리 한눈에</h2>${ratesHTML(m)}
+  <h2>기준금리 vs 10년물</h2><div class="panel"><div class="muted">월평균 · FRED (FEDFUNDS·GS10)</div><div id="rfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
   <h2>거시 신호등 · 현재 단계: ${pill(E.ladder.name,E.ladder.c)}</h2>${stageStripHTML()}
@@ -2373,6 +2374,45 @@ function cycleRing(el, d){
     <div class="muted" style="font-size:12px">S&P500 1971~2025 · 평균 14% / +9.4% · 경고용, 매매 판정 미반영</div>
   </div></div>
   <details class="mexp sm"><summary>설명 보기</summary><p>돈이 풀리면 물가가 오르고, 연준이 금리를 올리고(동결 포함), 경기가 식으면 내리는 순서를 기준금리·CPI·실업률로 나눴습니다. 첫 인상부터 첫 인하 전까지는 동결도 '금리 인상' 국면으로 봅니다. 첫 인하부터 마지막 인하 뒤 6개월까지는 '금리 인하', 이때 실업률이 12개월 저점보다 0.5%p 이상 오르면 '침체형 인하'입니다. 그 밖에 CPI 3% 이상이면서 오르는 중이면 '물가 상승', 나머지는 '돈 풀림·안정'입니다.</p><p>위험이 큰 국면은 물가 상승(1년 안에 −15% 하락 47%, 표본 19개월로 적음)과 침체형 인하(27%)입니다. 금리 인상 국면 자체는 12%로 평균(14%)과 비슷합니다. 하락장 시작 8번(1970년 이후) 중 5번이 금리 인상 국면, 2번이 금리 인하(2007·2020), 1번이 물가 상승(2022)이었습니다. 8~12년 주기설은 표본이 4개뿐이라 넣지 않았습니다.</p></details>`;
+}
+// 11-19 Ben: 연준 기준금리와 10년물을 같은 기간·같은 축으로 비교 (월간, macro_long.json)
+function rateCompareChart(el, d){
+  const M=d.months, A=d.ff, B=d.gs10||[], PH=cyclePhases(d), PC=Object.fromEntries(CYC.map(c=>[c.k,c.col]));
+  let yrs=10;
+  function draw(){
+    let last=M.length-1; while(last>0 && A[last]==null && B[last]==null) last--;
+    const i0=Math.max(0,M.findIndex(m=>m>=String(+M[last].slice(0,4)-yrs)+M[last].slice(4)));
+    const W=Math.max(320,Math.min(900,el.clientWidth||720)), H=W<560?240:300, L=30, R=46, T=24, Bm=24, n=Math.max(1,last-i0);
+    const xs=i=>L+(i-i0)/n*(W-L-R);
+    let hi=0; for(let i=i0;i<=last;i++){ for(const v of [A[i],B[i]]) if(v!=null) hi=Math.max(hi,v); }
+    hi=Math.ceil(hi+0.5); const lo=0, step=hi>10?2:1, ys=v=>T+(hi-v)/(hi-lo)*(H-T-Bm);
+    let g=""; for(let v=lo;v<=hi;v+=step) g+=`<line x1="${L}" x2="${W-R}" y1="${ys(v)}" y2="${ys(v)}" stroke="${v===0?"#b9b6ad":"#ecebe6"}"/><text x="${L-6}" y="${ys(v)+4}" text-anchor="end" font-size="11" fill="#55534e">${v}</text>`;
+    const yStep=yrs>15?10:yrs>6?2:1; for(let i=i0;i<=last;i++){ const y=+M[i].slice(0,4); if(M[i].endsWith("-01") && y%yStep===0) g+=`<text x="${xs(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#55534e">${y}</text>`; }
+    const bw=(W-L-R)/n; for(let i=i0;i<=last;i++){ const k=PH[i]; if(k) g+=`<rect x="${(xs(i)-bw/2).toFixed(1)}" y="4" width="${(bw+0.6).toFixed(1)}" height="10" fill="${PC[k]}"/>`; }
+    // 역전 구간(기준금리 > 10년물) 음영
+    for(let i=i0;i<=last;i++){ if(!(A[i]!=null&&B[i]!=null&&A[i]>B[i])) continue; let j=i; while(j+1<=last && A[j+1]!=null&&B[j+1]!=null&&A[j+1]>B[j+1]) j++;
+      g+=`<rect x="${(xs(i)-bw/2).toFixed(1)}" y="${T}" width="${(xs(j)-xs(i)+bw).toFixed(1)}" height="${H-T-Bm}" fill="#b42318" opacity=".07"/>`; i=j; }
+    const line=(a,col)=>{ let p="",pen=false; for(let i=i0;i<=last;i++){ const v=a[i]; if(v==null){pen=false;continue;} p+=(pen?"L":"M")+xs(i).toFixed(1)+","+ys(v).toFixed(1); pen=true; } return `<path d="${p}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>`; };
+    const lastOf=a=>{ for(let i=last;i>=i0;i--) if(a[i]!=null) return [i,a[i]]; return [null,null]; };
+    const [ia,va]=lastOf(A), [ib,vb]=lastOf(B);
+    let ends=[{v:va,i:ia,col:"#2a78d6"},{v:vb,i:ib,col:"#6250d6"}].filter(e=>e.i!=null).map(e=>({...e,y:ys(e.v)})).sort((a,b)=>a.y-b.y);
+    for(let j=1;j<ends.length;j++) if(ends[j].y-ends[j-1].y<13) ends[j].y=ends[j-1].y+13;
+    const lab=ends.map(e=>`<circle cx="${xs(e.i)}" cy="${ys(e.v)}" r="3.5" fill="${e.col}" stroke="#fff" stroke-width="2"/><text x="${xs(e.i)+7}" y="${e.y+4}" font-size="11.5" font-weight="700" fill="#1c1c1a">${num(e.v,2)}%</text>`).join("");
+    el.querySelector(".rfw").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="연준 기준금리와 10년물 금리 비교">${g}${line(A,"#2a78d6")}${line(B,"#6250d6")}${lab}<line class="ch" y1="${T}" y2="${H-Bm}" stroke="#55534e" opacity="0"/></svg><div class="tip"></div>`;
+    const svg=el.querySelector("svg"), tip=el.querySelector(".tip"), ch=svg.querySelector(".ch");
+    svg.addEventListener("pointermove",ev=>{ const r=svg.getBoundingClientRect(), px=(ev.clientX-r.left)/r.width*W; let i=Math.round(i0+(px-L)/(W-L-R)*n); i=Math.max(i0,Math.min(last,i));
+      ch.setAttribute("x1",xs(i)); ch.setAttribute("x2",xs(i)); ch.setAttribute("opacity",".5");
+      const sp=A[i]!=null&&B[i]!=null? B[i]-A[i] : null;
+      tip.innerHTML=`<b>${M[i]}</b> ${PH[i]? esc(CYC.find(c=>c.k===PH[i]).n):""}<br>기준금리 ${num(A[i],2)}% · 10년물 ${num(B[i],2)}%${sp!=null? `<br>차이 ${sp>=0?"+":""}${num(sp,2)}%p`:""}`;
+      tip.style.opacity=1; const tx=xs(i)/W*r.width; tip.style.left=Math.min(tx+10, r.width-tip.offsetWidth-4)+"px"; tip.style.top="8px"; });
+    svg.addEventListener("pointerleave",()=>{ tip.style.opacity=0; ch.setAttribute("opacity",0); });
+    el.querySelectorAll("[data-ry]").forEach(b=>b.classList.toggle("on",+b.dataset.ry===yrs));
+    const sp=va!=null&&vb!=null? vb-va : null;
+    el.querySelector(".rfs").innerHTML=`<span><i style="border-color:#2a78d6"></i>기준금리 <b>${num(va,2)}%</b></span><span><i style="border-color:#6250d6"></i>10년물 <b>${num(vb,2)}%</b></span><span class="muted">차이 ${sp==null?"–":(sp>=0?"+":"")+num(sp,2)+"%p"} · 붉은 음영 = 기준금리가 10년물보다 높음(역전) · 맨 위 띠 = 사이클 국면</span>`;
+  }
+  el.innerHTML=`<div class="lfc"><div class="lfbar"><button data-ry="5">5년</button><button data-ry="10">10년</button><button data-ry="30">30년</button><button data-ry="66">1960~</button></div><div class="lg rfs"></div><div class="lfw rfw"></div></div>`;
+  el.querySelectorAll("[data-ry]").forEach(b=>b.onclick=()=>{ yrs=+b.dataset.ry; draw(); });
+  draw();
 }
 function liqInflChart(el, d, opt={}){
   const M=d.months, yoy=a=>a.map((v,i)=>i<12||v==null||a[i-12]==null? null : (v/a[i-12]-1)*100);
@@ -2650,7 +2690,7 @@ function render(){
   if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
   if(view==="trade") bindTrade();
-  if(view==="macro"){ const el=$("#lfc"); (DATA.ml? Promise.resolve(DATA.ml) : getJSON("data/macro_long.json").then(d=>DATA.ml=d)).then(d=>{ const c=$("#cyc"); if(c) cycleRing(c,d); liqInflChart(el,d,{yrs:10}); }).catch(e=>{ el.innerHTML=`<p class="muted">장기 거시 데이터 없음 (${esc(e.message)})</p>`; }); }
+  if(view==="macro"){ const el=$("#lfc"); (DATA.ml? Promise.resolve(DATA.ml) : getJSON("data/macro_long.json").then(d=>DATA.ml=d)).then(d=>{ const c=$("#cyc"); if(c) cycleRing(c,d); const r=$("#rfc"); if(r) rateCompareChart(r,d); liqInflChart(el,d,{yrs:10}); }).catch(e=>{ el.innerHTML=`<p class="muted">장기 거시 데이터 없음 (${esc(e.message)})</p>`; }); }
   document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openChart(b.dataset.chart); });   // 시세 표는 줄 전체를 눌러도 열림
   if(view==="rules"){
     $("#pkfile").onchange=async e=>{ const f=e.target.files[0]; if(f){ $("#pk").value=(await f.text()).trim(); } };
