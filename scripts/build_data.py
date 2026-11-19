@@ -302,7 +302,10 @@ def summarize(sym, name, group, cur, rows):
         live10 = (sum(mc[k] for k in done[-9:]) + last) / 10
         m10 = {"month": done[-1], "close": r2(mc[done[-1]], 4), "sma10": r2(sma10, 4),
                "gap": r2((mc[done[-1]] / sma10 - 1) * 100), "below": mc[done[-1]] < sma10,
-               "live_sma10": r2(live10, 4), "live_gap": r2((last / live10 - 1) * 100), "live_below": last < live10}
+               "live_sma10": r2(live10, 4), "live_gap": r2((last / live10 - 1) * 100), "live_below": last < live10,
+               # 최근 6개 마감 월의 10개월선 아래 여부 (도망 경보 몇 개월째인지 계산용, 오래된 것 → 최근)
+               "hist": [{"month": done[j], "below": mc[done[j]] < sum(mc[k] for k in done[j - 9:j + 1]) / 10}
+                        for j in range(max(9, len(done) - 6), len(done))]}
     return {
         "name": name, "group": group, "cur": cur, "date": rows[-1][0], "w40": w40, "x50": x50, "m10": m10,
         "bb_lo": r2(bb_lo, 4), "bb_pctb": r2(pctb, 0), "bb_break": bool(bb_lo is not None and last < bb_lo),

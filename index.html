@@ -576,7 +576,7 @@ function engine(D){
   if(flee.on && mode.name!=="수비") mode = {name:"수비", c:"r"};   // 도망은 수비 행동 + 레버리지 정리
   if(flee.on) noLev = true;
   const ladder = flee.on? {name:"도망", c:"r", step:3} : mode.name==="수비"? {...mode, step:2} : {...mode, step: mode.name==="중립"?1:0};
-  if(flee.on) alerts.push({c:"bad", t:`<b>도망 경보</b> QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위. 장투 보유 QLD·TQQQ 전량 → SGOV, 신규 적립 전액 SGOV. 1배 보유분·연금저축은 그대로.`});
+  if(flee.on) alerts.push({c:"bad", t:`<b>도망 경보 ${flee.months}개월째</b> QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위. 이번 달 장투 QLD·TQQQ <b>${flee.sellTxt}</b> 매도 → SGOV (3개월 분할, 경보 꺼지면 중단). 신규 적립은 규칙대로(신규 레버리지는 멈춤), 1배·연금저축 매도 없음.`});
   if(acc.directTotal >= (H?.settings?.cash_trigger_krw||1e8)) alerts.push({c:"info", t:`직투 자산 1억 도달 — 스윙 계좌 현금 50% 규칙 적용.`});
 
   return {M,S,H,fx,q,vix,fng,dd,state,stage,aux,auxN,L,mode,noLev,hy,acc,alerts,flee,ladder,defP};
@@ -588,11 +588,17 @@ function fleeAlert(M){
   const q=M.symbols?.QQQ?.m10, u=(M.macro?.unrate?.spark||[]).filter(v=>v!=null);
   const u12 = u.length>=12? u.slice(-12).reduce((a,b)=>a+b,0)/12 : null, uv=u.length? u[u.length-1] : null;
   const p = !!q?.below, un = uv!=null && u12!=null && uv>u12;
-  return {on: p&&un, p, un, q, uv, u12, known: !!q && u12!=null};
+  // 몇 개월째인지: 마감 월마다 (10개월선 아래) AND (그 시점 실업률 > 직전 12개월 평균)를 최근부터 거꾸로 셈
+  let months=0;
+  if(p&&un){ const H=(q.hist||[]).slice().reverse();
+    for(let k=0;k<H.length;k++){ const uu=u.slice(0,u.length-k); if(uu.length<12) break;
+      const a=uu.slice(-12).reduce((x,y)=>x+y,0)/12; if(H[k].below && uu[uu.length-1]>a) months++; else break; } months=Math.max(1,months); }
+  const step=Math.min(3,months), sellTxt=["","남은 레버리지의 1/3","남은 레버리지의 절반","남은 레버리지 전량"][step]||"";
+  return {on: p&&un, p, un, q, uv, u12, known: !!q && u12!=null, months, step, sellTxt};
 }
 // 11-18 Ben: 공격 → 중립 → 수비 → 도망 한 줄 사다리
 function stageStripHTML(){
-  const st=[["공격","g","규칙대로 적립·레버리지 허용"],["중립","y","레버리지 절반만"],["수비","r","신규 레버리지 멈춤, 1배로"],["도망","r","보유 레버리지 정리, 신규 전액 SGOV"]];
+  const st=[["공격","g","규칙대로 적립·레버리지 허용"],["중립","y","레버리지 절반만"],["수비","r","신규 레버리지 멈춤, 1배로"],["도망","r","보유 레버리지 3개월 분할 매도"]];
   const cur=E.ladder.step;
   return `<div class="stl">${st.map(([n,c,t],i)=>`<div class="${i===cur?"on "+c:""}"><b>${n}</b><span>${t}</span></div>`).join("")}</div>
   ${E.mode.wait? `<p class="muted" style="margin:4px 0 0">빨강 2개 ${E.mode.wait}주째 · 3주 연속이면 수비</p>`:""}`;
@@ -600,12 +606,12 @@ function stageStripHTML(){
 function fleeHTML(){
   const f=E.flee, q=f.q;
   const tile=(t,on,v,sub)=>`<div class="light"><div class="t">${t}</div><div class="st ${on?"r":"g"}"><span class="dot ${on?"r":"g"}"></span>${on?"충족":"아님"}</div><div class="d">${v}${sub? `<br><span class="muted">${sub}</span>`:""}</div></div>`;
-  return `<div class="panel"><p style="margin:0 0 10px">${f.on? pill("도망 경보 켜짐","r") : pill("꺼짐","g")} <span class="muted">${f.on? "장투 QLD·TQQQ 정리 → SGOV, 신규 적립 전액 SGOV" : "2개 모두 충족할 때만 켜짐"}</span></p>
+  return `<div class="panel"><p style="margin:0 0 10px">${f.on? pill(`도망 경보 ${f.months}개월째`,"r") : pill("꺼짐","g")} <span class="muted">${f.on? `이번 달 장투 QLD·TQQQ ${f.sellTxt} 매도 → SGOV` : "2개 모두 충족할 때만 켜짐"}</span></p>
   <div class="lights">
     ${tile("가격: QQQ 월말 10개월선 아래", f.p, q? `${esc(q.month)} 종가 ${num(q.close,2)} · 10개월선 ${num(q.sma10,2)} (${q.gap>0?"+":""}${num(q.gap,1)}%)` : "데이터 대기", q? `이번 달 진행 중 ${q.live_gap>0?"+":""}${num(q.live_gap,1)}%${q.live_below!==q.below? (q.live_below? " · 월말 아래면 충족":" · 월말 위면 해제") : ""}` : "")}
     ${tile("고용: 실업률 12개월 평균 위", f.un, f.uv!=null? `실업률 ${num(f.uv,1)}% · 12개월 평균 ${num(f.u12,2)}%` : "데이터 대기", "")}
   </div>
-  <details class="mexp sm"><summary>설명 보기</summary><p>눌림이 아니라 침체형 하락장일 때만 비중을 줄이는 경보입니다. 기존 거시 수비 모드(신규 매수 조절)는 그대로 두고 따로 판정합니다. 켜지면 장투 계좌의 QLD·TQQQ 보유분을 팔아 SGOV로, 신규 적립과 모은 SGOV 사다리 투입은 멈춥니다. 1배 지수 보유분, 연금저축·IRP·현금 계좌·스윙 계좌는 바꾸지 않습니다. 둘 중 하나라도 꺼지면 다음 달부터 평소 규칙으로 돌아갑니다.</p><p>1971년 이후 S&P500 기준 연 12.1%·최대낙폭 −29%(보유 11.0%·−51%), 나스닥100은 최대낙폭 −81% → −56%. 효과는 2000·2008년 두 번에서 나왔고 1987·2020·2022년은 못 피했습니다. 2010년 이후만 보면 보유보다 연 1.7%p 낮습니다. 다시 살 때는 저점보다 17~36% 위입니다.</p></details></div>`;
+  <details class="mexp sm"><summary>설명 보기</summary><p>눌림이 아니라 침체형 하락장일 때만 비중을 줄이는 경보입니다. 기존 거시 수비 모드(신규 매수 조절)는 그대로 두고 따로 판정합니다. 켜지면 장투 계좌의 QLD·TQQQ 보유분을 3개월에 나눠 팔아 SGOV로 옮깁니다(1개월째 남은 것의 1/3, 2개월째 절반, 3개월째 전량). 중간에 경보가 꺼지면 남은 건 팔지 않습니다. 신규 적립은 평소 규칙(SGOV 7:3·하락 사다리) 그대로이고, 수비 단계처럼 신규 레버리지만 멈춥니다. 1배 지수 보유분, 연금저축·IRP·현금 계좌·스윙 계좌는 바꾸지 않습니다.</p><p>1971년 이후 S&P500 기준 연 12.1%·최대낙폭 −29%(보유 11.0%·−51%), 나스닥100은 최대낙폭 −81% → −56%. 효과는 2000·2008년 두 번에서 나왔고 1987·2020·2022년은 못 피했습니다. 3개월 분할 매도는 즉시 전량보다 큰 하락장 방어는 비슷하고(최대낙폭 −44% vs −42%) 2025년 4월 같은 헛경보 손실은 절반 이하였습니다(−1.7% vs −4.0%).</p></details></div>`;
 }
 // 주 단위 과거 시점 거시값 (스파크라인 끝에서 wk주 전): 일간 ×5, 주간 ×1, 월간 ÷4.33
 function macroAt(m, wk){
@@ -864,9 +870,10 @@ function planLongterm(E){
     }
   }
   // ⓪ 도망 경보 (11-18 Ben): 신규 적립 전액 SGOV, 보유 레버리지 정리. 1배 보유분은 그대로
+  // 11-19 Ben 확정: 신규 적립은 평소 규칙(수비와 같이 신규 레버리지만 멈춤), 보유 레버리지만 3개월 분할 매도
   if(E.flee?.on){
-    for(const t of Object.keys(alloc)) if(t!=="SGOV") mv(t,"SGOV",alloc[t]);
-    notes.push(["도망 경보", "신규 적립 전액 SGOV · 보유 QLD·TQQQ 전량 매도 → SGOV · 모은 SGOV 사다리 투입 멈춤 · 1배 보유분은 그대로", "r"]);
+    const lv=(E.acc.list.find(a=>a.id==="longterm")?.pos||[]).filter(p=>p.t==="QLD"||p.t==="TQQQ").reduce((a,p)=>a+p.v,0)/1e4, frac=[0,1/3,1/2,1][E.flee.step]||0;
+    notes.push(["도망 경보", `${E.flee.months}개월째 · 보유 QLD·TQQQ ${E.flee.sellTxt}${lv>0? ` (약 ${num(lv*frac,0)}만)`:""} 매도 → SGOV · 신규 적립은 규칙대로, 신규 레버리지 멈춤`, "r"]);
   }
   // ② 과열 점수
   if(hot && (alloc.QLD||0)>0){ const q=alloc.QLD; mv("QLD","SCHD",q/2); mv("QLD","SGOV",q/2); let extra=0; if(oh.score>=3) extra=mv("QQQM","SCHD",20*k200);
@@ -2590,7 +2597,7 @@ function vRules(){
     <li><b>QLD 3층</b>: 1층 QQQ 200일선 위 −2% 적립(과열 2개↑ 보류, RSI ≤50 2배, 월말 절반 이월) · 2층 낙폭 −10/−15/−20/−30% 현금 10/20/30/나머지 (QLD 비중 30→40→80→80+TQQQ) · 3층 30% 초과분 QQQM, 전고점 회복 시 TQQQ 전량·2층 QLD 절반 → QQQM, 과열 3개↑에서 QLD 20% → 현금 풀(연 2회).</li>
     <li><b>시장 상태</b>는 QQQ 일봉 종가로 자동 판정. 200일선 −3% 2일 연속 = 추세 이탈, +3% 2일 연속 = 회복.</li>
     <li><b>거시 신호등</b> 빨강 2개가 3주 연속(빨강 1개 이하 4주면 해제) 또는 HY ≥ 6% → 신규 레버리지 중단. 10년물은 6개월 +1%p, 실업수당은 52주 저점 +20%가 빨강(11-18 변화폭 기준).</li>
-    <li><b>도망 경보</b> QQQ 월말 종가 10개월선 아래 + 실업률 12개월 평균 위 → 장투 QLD·TQQQ 보유분 SGOV로, 신규 적립 전액 SGOV, SGOV 사다리 투입 멈춤. 1배 보유분·다른 계좌 매도 없음.</li>
+    <li><b>도망 경보</b> QQQ 월말 종가 10개월선 아래 + 실업률 12개월 평균 위 → 장투 QLD·TQQQ 보유분을 3개월에 나눠 SGOV로(1/3 → 남은 것 절반 → 전량, 경보 꺼지면 중단). 신규 적립은 규칙대로, 신규 레버리지만 멈춤. 1배 보유분·다른 계좌 매도 없음.</li>
     <li><b>나스닥 −3%</b>(조던 룰)은 장투 매도 신호로 쓰지 않음. 경보 + 스윙 신규 비중 절반, 23일 내 4회면 스윙 신규 중단.</li>
     <li><b>현금 비중</b>: 직투 1억 도달 시 스윙 계좌 현금 50%. IRP 위험자산 평상 55~60%, 폭락 70%.</li>
   </ol></div>
