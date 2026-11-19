@@ -90,7 +90,11 @@ def youtube(key, cache, data_dir="data"):
     lex = L.load_stages(data_dir)
     now = datetime.now(timezone.utc); since = now - timedelta(days=7)
     up = cache.setdefault("yt_uploads", {})
-    tot = Counter(); n_all = 0; chans = []
+    tot = Counter(); n_all = 0; chans = []; hy = Counter()
+    try:
+        import news_hype as NH
+    except Exception:  # noqa
+        NH = None
     def api(path, **q):
         q["key"] = key
         return json.loads(_get(f"https://www.googleapis.com/youtube/v3/{path}?" + urllib.parse.urlencode(q)))
@@ -123,6 +127,9 @@ def youtube(key, cache, data_dir="data"):
                     if datetime.fromisoformat(s["publishedAt"].replace("Z", "+00:00")) > p0 + timedelta(days=10):
                         continue
                     n += 1
+                    hc = NH.classify("ko", s.get("textDisplay", "")) if NH else None   # 테마 광풍·'이번엔 다르다' 댓글(참고)
+                    if hc:
+                        hy["wave"] += hc["wave"]; hy["diff"] += hc["diff"]
                     stg = L.stage_of(L.hits(s.get("textDisplay", ""), lex), lex)
                     if stg:
                         c[stg] += 1
@@ -131,7 +138,8 @@ def youtube(key, cache, data_dir="data"):
         except Exception as e:  # noqa
             chans.append({"name": name, "error": f"{type(e).__name__}: {e}"[:120]})
     sc = L.score(tot)
-    out = {"channels": chans, "comments_7d": n_all, "stages": {k: tot.get(k, 0) for k in L.WEIGHT}, "score": sc}
+    out = {"channels": chans, "comments_7d": n_all, "stages": {k: tot.get(k, 0) for k in L.WEIGHT}, "score": sc,
+           "hype": {"wave": hy.get("wave", 0), "diff": hy.get("diff", 0)}}
     # 과거(2019-07~) 주간 점수 분포 대비 위치
     try:
         with open(os.path.join(data_dir, "yt_study.json"), encoding="utf-8") as f:
@@ -281,6 +289,11 @@ def collect(data_dir, fred, now):
         run("tragic", lambda: NX.live(14, data_dir))
     except Exception as e:  # noqa
         out["errors"].append(f"tragic: {e}"[:200])
+    try:
+        import news_hype as NH
+        run("hype", lambda: NH.live(30, data_dir))
+    except Exception as e:  # noqa
+        out["errors"].append(f"hype: {e}"[:200])
     dk = os.environ.get("DATA_GO_KR_KEY")
     if dk:
         run("kofia", lambda: kofia(dk))
