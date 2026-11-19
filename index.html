@@ -2309,40 +2309,45 @@ function ratesHTML(m){
   </div>`;
 }
 
-// 11-18 Ben: 금리·물가 사이클 국면. 돈 풀림 → 물가 상승 → 금리 인상 → 고점 동결 → 금리 인하 → 침체형 인하
-// 판정(월간, FRED): 기준금리 6개월 +0.2%p↑ 인상 / −0.2%p↓ 인하(실업률이 12개월 저점 +0.5%p↑면 침체형) /
-// 24개월 저점 +1%p↑이면서 고점 −0.5%p 안 = 고점 동결 / CPI 3%↑ & 6개월 전보다 상승 = 물가 상승 / 나머지 = 돈 풀림·안정
-// 통계: S&P500 1971~2025, 국면별 12개월 안에 −15% 이상 하락 확률 (평균 13%). 경고·참고용, 매매 판정 미반영
+// 11-18/19 Ben: 금리·물가 사이클 국면. 돈 풀림·안정 → 물가 상승 → 금리 인상(동결 포함) → 금리 인하 → 침체형 인하
+// 판정(월간, FRED 기준금리 FEDFUNDS): 첫 인상(1개월 +0.1%p 또는 3개월 +0.2%p)부터 첫 인하 전까지는 동결도 '금리 인상' 국면.
+// 인하(같은 폭 하락)부터 마지막 인하 후 6개월까지는 '금리 인하'(실업률이 12개월 저점 +0.5%p↑면 '침체형 인하').
+// 그 밖에 CPI 3%↑이면서 6개월 전보다 상승 = 물가 상승, 나머지 = 돈 풀림·안정.
+// 통계: S&P500 1971~2025, 국면별 12개월 안에 −15% 이상 하락 확률 (평균 14%). 경고·참고용, 매매 판정 미반영
 const CYC = [
-  {k:"ease",   n:"돈 풀림·안정", p15:3,  r12:12.9, col:"#cfe5d8"},
-  {k:"infl",   n:"물가 상승",   p15:32, r12:6.5,  col:"#f0b48a"},
-  {k:"hike",   n:"금리 인상",   p15:15, r12:8.4,  col:"#f6d6b8"},
-  {k:"peak",   n:"고점 동결",   p15:10, r12:2.8,  col:"#e4e1da"},
-  {k:"cut",    n:"금리 인하",   p15:10, r12:11.5, col:"#cfdcea"},
-  {k:"recess", n:"침체형 인하", p15:28, r12:7.5,  col:"#e39a8f"},
+  {k:"ease",   n:"돈 풀림·안정", p15:0,  r12:11.1, col:"#cfe5d8"},
+  {k:"infl",   n:"물가 상승",   p15:47, r12:-2.4, col:"#f0b48a"},
+  {k:"hike",   n:"금리 인상",   p15:12, r12:9.7,  col:"#f6d6b8"},
+  {k:"cut",    n:"금리 인하",   p15:13, r12:9.6,  col:"#cfdcea"},
+  {k:"recess", n:"침체형 인하", p15:27, r12:9.2,  col:"#e39a8f"},
 ];
 const CYC_BEARS = ["1961-12","1966-02","1968-11","1973-01","1980-11","1987-08","2000-03","2007-10","2020-02","2022-01"];
 function cyclePhases(d){
   const M=d.months, ff=d.ff, cpi=d.cpi, un=d.unrate||[];
   const yoy=i=> i>=12 && cpi[i]!=null && cpi[i-12]? (cpi[i]/cpi[i-12]-1)*100 : null;
-  const unAt=i=>{ for(let j=i;j>=0&&j>i-3;j--) if(un[j]!=null) return un[j]; return null; };
-  const ffAt=i=>{ for(let j=i;j>=0&&j>i-3;j--) if(ff[j]!=null) return ff[j]; return null; };
-  return M.map((m,i)=>{
-    if(i<24) return null;
-    const f=ffAt(i), f6=ffAt(i-6); if(f==null||f6==null) return null;
-    const d6=f-f6;
-    if(d6>=0.2) return "hike";
-    if(d6<=-0.2){ const u=unAt(i); let mn=Infinity; for(let j=i-11;j<=i;j++){ const x=unAt(j); if(x!=null) mn=Math.min(mn,x); } return u!=null && u-mn>=0.5? "recess" : "cut"; }
-    let mn=Infinity, mx=-Infinity; for(let j=i-23;j<=i;j++){ const x=ffAt(j); if(x!=null){ mn=Math.min(mn,x); mx=Math.max(mx,x); } }
-    if(f-mn>=1 && mx-f<0.5) return "peak";
-    const c=yoy(i), c6=yoy(i-6);
-    if(c!=null && c>=3 && c6!=null && c>c6) return "infl";
-    return "ease";
-  });
+  const back=(a,i)=>{ for(let j=i;j>=0&&j>i-3;j--) if(a[j]!=null) return a[j]; return null; };
+  let state=null, lastCut=-99; const out=[], start=[]; let st0=null;
+  for(let i=0;i<M.length;i++){
+    const f=back(ff,i), f1=back(ff,i-1), f3=back(ff,i-3);
+    if(i<24||f==null||f1==null||f3==null){ out.push(null); start.push(null); continue; }
+    const d1=f-f1, d3=f-f3, hike=d1>=0.1||d3>=0.2, cut=d1<=-0.1||d3<=-0.2;
+    if(hike && state!=="hike"){ state="hike"; st0=i; }
+    else if(cut){ if(state!=="cutting") st0=i; state="cutting"; lastCut=i; }
+    if(state==="cutting" && i-lastCut>6){ state=null; st0=null; }
+    let p;
+    if(state==="hike") p="hike";
+    else if(state==="cutting"){ const u=back(un,i); let mn=Infinity; for(let j=i-11;j<=i;j++){ const x=back(un,j); if(x!=null) mn=Math.min(mn,x); } p= u!=null && u-mn>=0.5? "recess" : "cut"; }
+    else { const c=yoy(i), c6=yoy(i-6); p = c!=null && c>=3 && c6!=null && c>c6? "infl" : "ease"; }
+    out.push(p); start.push(state? st0 : null);
+  }
+  out.start=start;
+  return out;
 }
 function cycleRing(el, d){
   const P=cyclePhases(d), M=d.months; let li=P.length-1; while(li>0 && P[li]==null) li--;
   const cur=P[li], ci=CYC.findIndex(c=>c.k===cur); let run=0; for(let j=li;j>=0&&P[j]===cur;j--) run++;
+  const s0=P.start?.[li]; if(s0!=null && (cur==="hike"||cur==="cut"||cur==="recess")) run=li-s0+1;
+  const since = s0!=null && cur==="hike"? `${M[s0]} 첫 인상부터` : s0!=null? `${M[s0]} 첫 인하부터` : "";
   const lastIdx=a=>{ for(let i=a.length-1;i>=0;i--) if(a[i]!=null) return i; return -1; };
   const yoyA=a=>a.map((v,i)=>i<12||v==null||a[i-12]==null? null : (v/a[i-12]-1)*100);
   const cpiY=yoyA(d.cpi), m2Y=yoyA(d.m2);
@@ -2359,15 +2364,15 @@ function cycleRing(el, d){
   // 진행 방향 표시: 바깥쪽 얇은 원호 + 작은 삼각형
   const arrow=(()=>{ const a=ci>=0? (ci+0.5)/n*2*Math.PI : 0; const [x,y]=pt(R1+9,a), [bx,by]=pt(R1+18,a-0.06), [cx2,cy2]=pt(R1+18,a+0.06); return ci<0? "" : `<path d="M${x.toFixed(1)},${y.toFixed(1)} L${bx.toFixed(1)},${by.toFixed(1)} L${cx2.toFixed(1)},${cy2.toFixed(1)}Z" fill="#1c1c1a"/>`; })();
   const c=CYC[ci]||{n:"판정 대기",p15:null};
-  const center=`<text x="${cx}" y="${cy-22}" text-anchor="middle" font-size="12" fill="#55534e">지금 (${esc(M[li]||"")})</text><text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="19" font-weight="800" fill="#1c1c1a">${esc(c.n)}</text><text x="${cx}" y="${cy+24}" text-anchor="middle" font-size="12" fill="#55534e">${run}개월째</text>`;
+  const center=`<text x="${cx}" y="${cy-22}" text-anchor="middle" font-size="12" fill="#55534e">지금 (${esc(M[li]||"")})</text><text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="19" font-weight="800" fill="#1c1c1a">${esc(c.n)}</text><text x="${cx}" y="${cy+24}" text-anchor="middle" font-size="12" fill="#55534e">${run}개월째</text>${since? `<text x="${cx}" y="${cy+40}" text-anchor="middle" font-size="11" fill="#55534e">${esc(since)}</text>`:""}`;
   const svg=`<svg viewBox="-24 -24 348 348" class="cy-ring" role="img" aria-label="금리 사이클 현재 국면 ${esc(c.n)}">${arcs}${arrow}${center}</svg>`;
   const rows=CYC.map((x,i)=>`<tr class="${i===ci?"on":""}"><td class="l"><i style="background:${x.col}"></i>${esc(x.n)}</td><td class="${x.p15>=25?"r":""}">${x.p15}%</td><td>${x.r12>0?"+":""}${num(x.r12,1)}%</td></tr>`).join("");
   el.innerHTML=`<div class="cy-wrap">${svg}<div class="cy-side">
     <div class="cy-chips">${chip("유동성 M2",m2Y,"%",1)}${chip("물가 CPI",cpiY,"%",1)}${chip("기준금리",d.ff,"%",2)}${chip("10년물",d.gs10||[],"%",2)}</div>
     <table class="cy-tbl"><tr><th class="l">국면</th><th>1년 내 −15%</th><th>1년 수익</th></tr>${rows}</table>
-    <div class="muted" style="font-size:12px">S&P500 1971~2025 · 평균 13% / +9.6% · 경고용, 매매 판정 미반영</div>
+    <div class="muted" style="font-size:12px">S&P500 1971~2025 · 평균 14% / +9.4% · 경고용, 매매 판정 미반영</div>
   </div></div>
-  <details class="mexp sm"><summary>설명 보기</summary><p>돈이 풀리면 물가가 오르고, 연준이 금리를 올렸다가 멈추고, 경기가 식으면 내리는 순서를 기준금리·CPI·실업률로 나눴습니다. 기준금리 6개월 +0.2%p 이상 = 금리 인상, −0.2%p 이하 = 금리 인하(실업률이 12개월 저점보다 0.5%p 이상 오르면 침체형 인하), 2년 새 1%p 이상 오른 뒤 멈춤 = 고점 동결, CPI 3% 이상이면서 오르는 중 = 물가 상승, 나머지 = 돈 풀림·안정.</p><p>위험이 큰 국면은 물가 상승(1년 안에 −15% 하락 32%, 표본 40개월)과 침체형 인하(28%)입니다. 금리 인상 국면은 15%로 평균(13%)과 비슷합니다. 하락장 시작 10번 중 5번이 금리 인상 국면, 2번이 금리 인하(2007·2020), 1번이 물가 상승(2022)이었습니다. 8~12년 주기설은 표본이 4개뿐이라 넣지 않았습니다.</p></details>`;
+  <details class="mexp sm"><summary>설명 보기</summary><p>돈이 풀리면 물가가 오르고, 연준이 금리를 올리고(동결 포함), 경기가 식으면 내리는 순서를 기준금리·CPI·실업률로 나눴습니다. 첫 인상부터 첫 인하 전까지는 동결도 '금리 인상' 국면으로 봅니다. 첫 인하부터 마지막 인하 뒤 6개월까지는 '금리 인하', 이때 실업률이 12개월 저점보다 0.5%p 이상 오르면 '침체형 인하'입니다. 그 밖에 CPI 3% 이상이면서 오르는 중이면 '물가 상승', 나머지는 '돈 풀림·안정'입니다.</p><p>위험이 큰 국면은 물가 상승(1년 안에 −15% 하락 47%, 표본 19개월로 적음)과 침체형 인하(27%)입니다. 금리 인상 국면 자체는 12%로 평균(14%)과 비슷합니다. 하락장 시작 8번(1970년 이후) 중 5번이 금리 인상 국면, 2번이 금리 인하(2007·2020), 1번이 물가 상승(2022)이었습니다. 8~12년 주기설은 표본이 4개뿐이라 넣지 않았습니다.</p></details>`;
 }
 function liqInflChart(el, d, opt={}){
   const M=d.months, yoy=a=>a.map((v,i)=>i<12||v==null||a[i-12]==null? null : (v/a[i-12]-1)*100);
