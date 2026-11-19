@@ -593,7 +593,7 @@ function fleeAlert(M){
   if(p&&un){ const H=(q.hist||[]).slice().reverse();
     for(let k=0;k<H.length;k++){ const uu=u.slice(0,u.length-k); if(uu.length<12) break;
       const a=uu.slice(-12).reduce((x,y)=>x+y,0)/12; if(H[k].below && uu[uu.length-1]>a) months++; else break; } months=Math.max(1,months); }
-  const step=Math.min(3,months), sellTxt=["","남은 레버리지의 1/3","남은 레버리지의 절반","남은 레버리지 전량"][step]||"";
+  const step=Math.min(3,months), sellTxt=["","남은 것의 1/3","남은 것의 절반","남은 것 전량"][step]||"";
   return {on: p&&un, p, un, q, uv, u12, known: !!q && u12!=null, months, step, sellTxt};
 }
 // 11-18 Ben: 공격 → 중립 → 수비 → 도망 한 줄 사다리
@@ -1526,8 +1526,8 @@ function segGauge({t, c, st, vtxt, labels, idx, cols, d}){
     <div class="gsegl">${labels.map((l,i)=>`<i class="${i===idx?"on":""}">${esc(l)}</i>`).join("")}</div>${d? `<div class="d">${d}</div>`:""}</div>`;
 }
 function macroSummary(){
-  const lc=l=>l.mode??l.c, L=E.L, r=L.filter(l=>lc(l)==="r").length, y=L.filter(l=>lc(l)==="y").length, g=L.filter(l=>lc(l)==="g").length, m=E.mode;
-  const act = m.name==="수비"? "신규 레버리지 중단, 현금 투입은 1배 지수로만" : m.name==="중립"? "규칙대로 적립. −10% 구간 QLD 몫은 절반을 QQQM으로" : m.name==="공격"? "규칙대로 적립·레버리지 허용" : "데이터 갱신 대기";
+  const lc=l=>l.mode??l.c, L=E.L, r=L.filter(l=>lc(l)==="r").length, y=L.filter(l=>lc(l)==="y").length, g=L.filter(l=>lc(l)==="g").length, m=E.flee?.on? {name:"도망", c:"r"} : E.mode;
+  const act = m.name==="도망"? `보유 QLD·TQQQ ${E.flee.sellTxt} 매도 → SGOV (${E.flee.months}개월째/3), 신규 레버리지 중단` : m.name==="수비"? "신규 레버리지 중단, 현금 투입은 1배 지수로만" : m.name==="중립"? "규칙대로 적립. −10% 구간 QLD 몫은 절반을 QQQM으로" : m.name==="공격"? "규칙대로 적립·레버리지 허용" : "데이터 갱신 대기";
   const short={"금리 사이클":"금리","장기금리 (미 10년물)":"10년물","고용":"고용","유동성":"유동성","신용":"신용"};
   return `<div class="msum"><div class="tlamp" aria-hidden="true"><i class="${m.c==="r"?"on r":""}"></i><i class="${m.c==="y"?"on y":""}"></i><i class="${m.c==="g"?"on g":""}"></i></div>
     <div><div class="mn ${m.c}">${esc(m.name)} 모드</div><div class="mc">빨강 ${r} · 노랑 ${y} · 초록 ${g} <br>빨강 2개 3주 연속 수비 · 빨강 1개 또는 노랑 2개↑ 중립 · 도망 경보는 별도</div>
