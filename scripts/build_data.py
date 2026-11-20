@@ -388,7 +388,8 @@ def macro_block(start):
 
     for k in ("hy", "t10y2y", "dgs2", "dgs10", "fedu", "sahm", "unrate", "sofr", "iorb", "vix"):
         d, v = last(k)
-        out[k] = {"v": v, "date": d, "spark": [x[1] for x in m[k][-260:]]}
+        # 11-20 Ben: '추이 (2년)' 그래프 — 일간 지표는 2년(약 520영업일)으로. 월간(사암·실업률)은 데이터가 2년치만 있어 그대로
+        out[k] = {"v": v, "date": d, "spark": [x[1] for x in m[k][-520:]]}
     # HY 4주 변화
     if len(m["hy"]) > 21:
         out["hy"]["chg4w"] = round(m["hy"][-1][1] - m["hy"][-21][1], 2)
