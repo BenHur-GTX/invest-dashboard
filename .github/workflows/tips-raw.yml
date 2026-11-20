@@ -1,0 +1,27 @@
+name: tips-raw
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-l11khn]
+    paths: [scripts/tips_raw.py, .github/workflows/tips-raw.yml]
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -u scripts/tips_raw.py
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      - run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/tips_raw.json
+          git diff --cached --quiet || git commit -m "data: tips_raw"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
