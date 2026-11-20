@@ -2764,12 +2764,16 @@ function jumpTo(id){
   for(let p=el; p; p=p.parentElement) if(p.tagName==="DETAILS" && !p.open) p.open = true;   // 접혀 있으면 펼치기
   const navEl = document.querySelector("nav"), navH = navEl? navEl.offsetHeight : 0;
   const pos = ()=> Math.max(0, Math.round(el.getBoundingClientRect().top + scrollY - navH - 8));
-  scrollTo({top:pos()}); flashTarget(el);
-  [280, 820].forEach(ms=> setTimeout(()=>{           // 거시 점검은 차트가 늦게 그려져 위치가 밀린다 → 한 번 더 맞춤
-    if(seq!==jumpSeq) return;
-    const d = pos() - scrollY;
-    if(d>4 && d<700) scrollTo({top:scrollY+d});
-  }, ms));
+  let own = 0;
+  const align = ()=>{ scrollTo({top:pos()}); own = Math.round(scrollY); };
+  align(); flashTarget(el);
+  // 거시 점검 탭은 차트·사이클 그림이 늦게 그려져 목표가 아래로 밀린다 → 2.6초 동안 따라가며 맞춤
+  const t0 = performance.now();
+  const iv = setInterval(()=>{
+    if(seq!==jumpSeq || performance.now()-t0>2600) return clearInterval(iv);
+    if(Math.abs(scrollY-own)>120) return clearInterval(iv);        // 사용자가 직접 움직였으면 그대로 둠
+    if(Math.abs(pos()-scrollY)>3) align();
+  }, 150);
 }
 function goMetric(key){
   const m = METRICS[key]; if(!m) return;
