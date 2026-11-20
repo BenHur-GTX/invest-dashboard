@@ -711,13 +711,14 @@ function macroLights(m){
   { const e = empLight(m); out.push({t:"고용", ...e}); }
   // 유동성
   {
-    // 11-20 Ben: 빨강은 순유동성 13주 연속 감소만. SOFR−IORB는 5영업일 평균 +5bp 이상일 때 노랑 '단기 압력'까지만
+    // 11-20 Ben: 빨강은 순유동성 4주 연속 감소(주간 값이 4번 연달아 줄어듦, 2018~ 8번 중 4번 60일 내 −9%↑ 낙폭). 4주 누적 감소는 노랑
+    // SOFR−IORB는 5영업일 평균 +5bp 이상일 때 노랑 '단기 압력'까지만
     // (기존 'SOFR>IORB 1bp만 넘어도 빨강'은 6개월 21번 깜빡였고, 2018~ 백테스트상 하락 예고력·수비 개선 없음)
     const nl = m.netliq, si = m.sofr_iorb, so = m.sofr?.v, io = m.iorb?.v;
     const bp = si?.spread_bp ?? (so!=null&&io!=null? Math.round((so-io)*100) : null), press = si?.avg5!=null && si.avg5>=5;
     let c="n", st="데이터 대기", d="연준 자산 − TGA − 역레포";
     if(nl?.v!=null){
-      if(nl.weeks_down>=13){ c="r"; st="13주 연속 감소"; }
+      if(nl.weeks_down>=4){ c="r"; st=`${nl.weeks_down}주 연속 감소`; }
       else if(press){ c="y"; st="단기 압력"; }
       else if(nl.chg4w<0){ c="y"; st="4주 감소"; }
       else { c="g"; st="증가"; }
@@ -1601,8 +1602,8 @@ function macroGauges(){
     out.push(gauge({t:"장기금리 (미 10년물) 6개월 변화", c:mc, st:mc==="r"?"급등":mc==="y"?"상승":"안정", vtxt:v!=null? (v>=0?"+":"")+num(v,2)+"%p":"–", v, min:-1, max:2, zones:[[0.5,"g"],[1,"y"],[2,"r"]], ticks:[0,0.5,1], fmt:x=>(x>0?"+":"")+x+"%p", d:`판정: 6개월 +0.5%p 노랑, +1%p 빨강 · 지금 ${num(t,2)}% (화면 경고는 5%↑)`})); }
   { const l=L["고용"], v=m.sahm?.v, ic=m.icsa?.avg4??m.icsa?.v;
     out.push(gauge({t:"고용 (샴 룰)", c:l.c, st:l.st, vtxt:v!=null? num(v,2):"–", v, min:-0.2, max:0.8, zones:[[0.3,"g"],[0.5,"y"],[0.8,"r"]], ticks:[0.3,0.5], d:`실업수당 4주 평균 ${ic!=null? num(ic/1e4,1)+"만":"–"} (52주 저점 +10% 노랑, +20% 빨강) · 실업률 ${num(m.unrate?.v,1)}%`})); }
-  { const l=L["유동성"], nl=m.netliq, lab=["증가","4주 감소","단기 압력","13주 연속 감소"];
-    out.push(segGauge({t:"유동성 (순유동성)", c:l.c, st:l.st, vtxt:nl?.chg4w!=null? `4주 ${nl.chg4w>0?"+":""}${num(nl.chg4w,0)}B$`:"", labels:["증가","4주 감소","단기 압력","13주 연속↓"], idx:lab.indexOf(l.st), cols:["g","y","y","r"], d:esc(l.d)+" · 단기 압력 = SOFR−IORB 5일 평균 +5bp↑ (노랑까지만)"})); }
+  { const l=L["유동성"], nl=m.netliq, lab=["증가","4주 감소","단기 압력","연속 감소"];
+    out.push(segGauge({t:"유동성 (순유동성)", c:l.c, st:l.st, vtxt:nl?.chg4w!=null? `4주 ${nl.chg4w>0?"+":""}${num(nl.chg4w,0)}B$`:"", labels:["증가","4주 감소","단기 압력","4주 연속↓"], idx:/연속 감소$/.test(l.st)? 3 : lab.indexOf(l.st), cols:["g","y","y","r"], d:esc(l.d)+" · 빨강 = 4주 연속 감소 · 단기 압력 = SOFR−IORB 5일 평균 +5bp↑ (노랑)"})); }
   { const l=L["신용"], v=m.hy?.v;
     out.push(gauge({t:"신용 (하이일드 스프레드)", c:l.c, st:l.st, vtxt:v!=null? num(v,2)+"%":"–", v, min:2, max:8, zones:[[4,"g"],[5,"y"],[8,"r"]], ticks:[4,5,6], fmt:x=>x+"%", d:"6%↑ 위기: 신규 레버리지 중단"})); }
   return out.join("");
