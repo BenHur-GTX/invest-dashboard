@@ -215,6 +215,13 @@ dl.act{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:0} dl.act
 .lbar .lm{position:absolute;top:-6px;width:2px;height:24px;background:#9b978e;margin-left:-1px} .lbar .lm.c{background:var(--brand);width:3px}
 .lbar .lml{position:absolute;top:22px;transform:translateX(-50%);font-size:11px;color:var(--ink2);white-space:nowrap;text-align:center;line-height:1.25} .lbar .lml b{color:var(--ink);font-size:11.5px}
 .lbar .lme{position:absolute;top:-22px;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--bad)}
+.ddp{padding:10px 14px 8px} .ddp .ddh{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:4px}
+.ddr{display:grid;grid-template-columns:76px 1fr 56px;align-items:center;gap:8px;min-height:30px}
+.ddr .symbtn{font-size:13px;font-weight:600;text-align:left;padding:4px 0}
+.ddb{position:relative;height:10px;background:#ece9e2;border-radius:5px} .ddb i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.ddb s{position:absolute;top:-3px;width:1px;height:16px;background:#b9b6ae}
+.ddr .ddv{text-align:right;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.ddax{display:grid;grid-template-columns:76px 1fr 56px;gap:8px} .ddax div{position:relative;height:14px;font-size:10.5px;color:var(--ink2)} .ddax div i{position:absolute;transform:translateX(-50%);font-style:normal}
 .lnx{display:flex;gap:6px} .lnx div{flex:1;background:#f7f6f2;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--ink2)} .lnx b{display:block;font-size:18px;color:var(--ink)}
 .th3{margin:14px 2px 8px} .th3 .muted{font-size:12px;font-weight:400}
 .tic{min-width:42px;height:28px;padding:0 8px;border-radius:6px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:13px} .tic.buy{background:var(--ok)} .tic.sell{background:var(--bad)} .tic.wait,.tic.chk{background:#c9c5bc}
@@ -1456,6 +1463,19 @@ function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼�
     ${shown.map(v=>`<span class="lm${cut.includes(v)?" c":""}" style="left:${X(v)}%"></span><span class="lml" style="left:${X(v)}%"><b>${v}</b><br>${sub(v)}</span>`).join("")}</div>
     <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${Math.round(dd-lt.lvl)}%p</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${Math.round(dd-ca.dd)}%p</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
 }
+// 11-20 Ben: 다른 자산도 나스닥처럼 고점 대비 하락률 (최근 5년 고점, 같은 0~−60% 눈금). 참고용, 매매 판정 미반영
+const DD_CMP = [["QQQ","나스닥100"],["^GSPC","S&P 500"],["^KS11","코스피"],["^KQ11","코스닥"],["BTC-USD","비트코인"],["GLD","금"]];
+function ddCompareHTML(){
+  const R = DD_CMP.map(([t,n])=>{ const s=E.S[t]; const d=s? (s.dd5y ?? s.dd_ath ?? s.dd52) : null; return d==null? null : {t,n,d}; }).filter(Boolean);
+  if(R.length<2) return "";
+  const MAX=60, X=v=>Math.min(100, -v/MAX*100), col=d=> d<=-30?"var(--bad)" : d<=-10?"#b77f00" : "#4f7d63", fill=d=> d<=-30?"var(--bad)" : d<=-10?"#d99a00" : "#9bb8a8";
+  const tk=[-10,-20,-30,-40,-50];
+  return `<div class="panel ddp"><div class="ddh"><span class="muted">고점 대비 하락률 · 5년 고점</span><span class="muted">참고</span></div>
+    ${R.map(r=>`<div class="ddr"><button type="button" class="symbtn" data-chart="${esc(r.t)}" aria-label="${esc(r.n)} 차트 보기">${esc(r.n)}</button>
+      <div class="ddb" role="img" aria-label="${esc(r.n)} 고점 대비 ${num(r.d,1)}%"><i style="width:${Math.max(1.5,X(r.d))}%;background:${fill(r.d)}"></i>${tk.map(v=>`<s style="left:${X(v)}%"></s>`).join("")}</div>
+      <span class="ddv" style="color:${col(r.d)}">${num(r.d,1)}%</span></div>`).join("")}
+    <div class="ddax"><span></span><div>${[0,...tk,-60].map(v=>`<i style="left:${X(v)}%">${v}</i>`).join("")}</div><span></span></div></div>`;
+}
 function todayActionsHTML(lt, am, irp, bw){
   const A = todayActions(lt, am, irp, bw), act = A.filter(a=>a.k!=="wait"), show = act.slice(0,3);
   if(show.length<3) show.push(...A.filter(a=>a.k==="wait").slice(0, 3-show.length));
@@ -1469,7 +1489,7 @@ function todayActionsHTML(lt, am, irp, bw){
   if(x) chips.push(`<span class="tchip ${x.w.up?"g":"y"}">40주선 ${x.w.up?"위":"아래"}${x.w.cross&&x.w.weeks!=null? ` · ${x.w.cross==="golden"?"골든":"데드"} ${x.w.weeks}주`:""}</span>`);
   hs.forEach(r=>chips.push(`<span class="tchip y">${esc(r.k.split(" (")[0])} 과열</span>`));
   const auxT = E.aux?.length || 6;
-  return `${ladderHTML()}
+  return `${ladderHTML()}${ddCompareHTML()}
   <h3 class="th3">지금 살 것 <span class="muted">매수 ${act.filter(a=>a.k==="buy").length}건</span></h3>
   <div class="panel tact">${show.map(a=>`<a class="tr" href="#${a.go}"><span class="tic ${a.k}">${IC[a.k]}</span><span class="tm"><b>${esc(a.n)}</b> <span class="tx">${esc(a.x)}</span>${bar(a.bar)}</span><span class="ta">${esc(a.a)}</span></a>`).join("")}
     ${!act.length? `<div class="tnone">오늘 살 것 없음</div>`:""}${more>0? `<div class="tmore">+${more}개 더 · 상세 점검에서</div>`:""}</div>
@@ -2123,7 +2143,8 @@ async function openChart(t){
   const wser = x?.w? decodeSeries(x.w) : [];
   const ma40 = smaArr(wser.map(r=>r[1]),40);
   DLG_STATE = {ser, ma50: smaArr(ser.map(r=>r[1]),50), ma200: smaArr(ser.map(r=>r[1]),200), wser, ma40, cur:s.cur, fallback:!x,
-    rsiD: rsiArr(ser.map(r=>r[1])), rsiW: rsiArr(wser.map(r=>r[1])), gapW: wser.map((r,i)=>ma40[i]? (r[1]/ma40[i]-1)*100 : null)};
+    rsiD: rsiArr(ser.map(r=>r[1])), rsiW: rsiArr(wser.map(r=>r[1])), gapW: wser.map((r,i)=>ma40[i]? (r[1]/ma40[i]-1)*100 : null),
+    ddW: wser.map((r,i)=>{ let m=0; for(let j=Math.max(0,i-259);j<=i;j++) m=Math.max(m,wser[j][1]); return m? (r[1]/m-1)*100 : null; })};   // 11-20 Ben: 5년(260주) 고점 대비
   const draw = k => { drawPopup(k); dlg.querySelectorAll(".seg button").forEach(bt=>bt.setAttribute("aria-pressed", String(bt.dataset.k===k))); };
   dlg.querySelectorAll(".seg button").forEach(bt=>bt.onclick=()=>draw(bt.dataset.k));
   draw(wser.length>45? "3y" : "1y");
@@ -2142,7 +2163,7 @@ function subPanel(v, X, W, PL, PR, title, lo, hi, guides, col, fmtv){
     <text x="${PL}" y="11" font-size="11" fill="#55534e">${title}${last!=null? ` <tspan font-weight="700" fill="#1c1c1a">${fmtv(last)}</tspan>`:""}</text></svg>`;
 }
 function drawPopup(key){
-  const {ser, ma50, ma200, wser, ma40, cur, fallback, rsiD, rsiW, gapW} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
+  const {ser, ma50, ma200, wser, ma40, cur, fallback, rsiD, rsiW, gapW, ddW} = DLG_STATE; const box=document.getElementById("dlgchart"); if(!box) return;
   const [, label, kind, n] = DLG_RANGES.find(r=>r[0]===key) || DLG_RANGES[1];
   const wk = kind==="w";
   const base = wk? wser : ser, k0 = Math.max(0, base.length-n), S2=base.slice(k0);
@@ -2160,6 +2181,8 @@ function drawPopup(key){
   const rs=(wk? rsiW : rsiD).slice(k0), gp=wk? gapW.slice(k0) : null;
   const subs = (wk? (()=>{ const vv=gp.filter(v=>v!=null); if(!vv.length) return ""; const lo=Math.min(-12, Math.min(...vv)-2), hi=Math.max(6, Math.max(...vv)+2);
       return subPanel(gp, X, W, PL, PR, "40주선 대비 이격도", lo, hi, [[0,"#b9b6ae"],[-10,"#3f6fd1"],[-20,"#1f3f7a"]].filter(([g])=>g>=lo), "#8a1c12", v=>`${v>0?"+":""}${num(v,0)}%`); })() : "")
+    + (wk? (()=>{ const dv=ddW.slice(k0), vv=dv.filter(v=>v!=null); if(!vv.length) return ""; const lo=Math.min(-35, Math.floor((Math.min(...vv)-3)/10)*10);
+      return subPanel(dv, X, W, PL, PR, "5년 고점 대비", lo, 0, (lo<=-60? [[0,"#b9b6ae"],[-20,"#d99a00"],[-50,"#c96a5e"]] : [[0,"#b9b6ae"],[-10,"#d9b35a"],[-20,"#d99a00"],[-30,"#c96a5e"]]).filter(([g])=>g>=lo), "#b4321f", v=>`${num(v,0)}%`); })() : "")
     + subPanel(rs, X, W, PL, PR, wk? "주봉 RSI" : "일봉 RSI", 0, 100, [[70,"#e3a59d"],[30,"#9db3e3"]], "#55534e", v=>num(v,0));
   let marks="";
   if(wk){ const m=lines[0][0];   // 주봉 종가가 40주선을 넘나든 주
