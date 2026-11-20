@@ -412,9 +412,15 @@ td .inline input{width:78px}
 @media (hover:hover){.hero>div[data-metric]:hover,.stages>div[data-metric]:hover{background:#14585a}.hero>div[data-metric]:hover::after,.stages>div[data-metric]:hover::after{color:#fff}}
 .hero>div[data-metric]:active,.stages>div[data-metric]:active{background:#0a2f30}
 .hero>div[data-metric]:focus-visible,.stages>div[data-metric]:focus-visible{outline:2px solid #f4b37a;outline-offset:-2px}
-.hlflash{animation:hlflash 1.9s ease-out 1;border-radius:8px}
-@keyframes hlflash{0%{box-shadow:0 0 0 3px #f4b37a,0 0 16px rgba(244,179,122,.5)}60%{box-shadow:0 0 0 3px rgba(244,179,122,.5),0 0 10px rgba(244,179,122,.22)}100%{box-shadow:0 0 0 3px rgba(244,179,122,0)}}
+.hlflash{animation:hlflash 2.3s ease-out 1;border-radius:8px}
+@keyframes hlflash{0%{box-shadow:0 0 0 4px #f4b37a,0 0 20px rgba(244,179,122,.6)}50%{box-shadow:0 0 0 4px rgba(244,179,122,.8),0 0 14px rgba(244,179,122,.35)}100%{box-shadow:0 0 0 4px rgba(244,179,122,0)}}
 @media (prefers-reduced-motion:reduce){.hlflash{animation:none;box-shadow:0 0 0 3px rgba(244,179,122,.6)}}
+/* 11-20 Ben: 추이(2년) 그래프 — 아래 기간 눈금 + 평균선과 평균값 */
+.lcw{position:relative}
+.lcavg{position:absolute;left:6px;transform:translateY(-50%);font-size:11px;font-weight:600;color:var(--accent);background:rgba(255,255,255,.9);padding:0 3px;border-radius:3px;white-space:nowrap;pointer-events:none}
+.lcx{position:relative;height:15px;margin-top:3px;font-size:11px;color:var(--ink2)}
+.lcx i{position:absolute;top:0;transform:translateX(-50%);font-style:normal;white-space:nowrap}
+.lcx i:first-child{transform:none} .lcx i:last-child{transform:translateX(-100%)}
 </style>
 </head>
 <body>
@@ -2317,7 +2323,8 @@ function vMacro(){
   const m=E.M.macro||{};
   const LAMP_ID = {"금리 사이클":"ratecyc", "장기금리 (미 10년물)":"t10", "고용":"emp", "유동성":"liq", "신용":"cred"};   // 11-20 Ben: 상단 지표에서 바로 찾아갈 때 쓰는 id
   const cards = E.L.map(l=>`<div class="light"${LAMP_ID[l.t]? ` id="m_lamp_${LAMP_ID[l.t]}"`:""}><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
-  const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
+  // 11-20 Ben: 추이 그래프별 설정 — avg: 평균선 표시(fmt=표시 문구). 기준금리(계단식)와 순유동성(레벨 추세)은 평균 생략
+  const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5],{avg:{fmt:v=>"평균 "+num(v,2)+"%"}}],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6],{avg:{fmt:v=>"평균 "+num(v,2)+"%"}}],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0],{avg:{fmt:v=>"평균 "+num(v,2)+"%p"}}],["icsa","신규 실업수당 청구",[250000,300000],{avg:{fmt:v=>"평균 "+num(v/1e4,1)+"만"}}],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30],{avg:{fmt:v=>"평균 "+num(v,1)}}]];
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
   <h2>대피 경보</h2>${fleeHTML()}
   <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
@@ -2331,7 +2338,18 @@ function vMacro(){
   <h2 id="m_fng">공포탐욕</h2>
   <div class="panel">${fngGauge(E.fng, E.M.fng)}</div>
   <h2>추이 (2년)</h2>
-  <div class="grid2">${series.map(([k,t,th])=>{ const s=m[k]?.spark; return `<div class="panel" id="m_series_${k}"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
+  <div class="grid2">${series.map(([k,t,th,o])=>{ const s=m[k]?.spark; return `<div class="panel" id="m_series_${k}"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th,{labels:xAxisLabels(k,s.length,m[k]?.date), avg:o?.avg}) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
+}
+// 11-20 Ben: 그래프 아래 연월 눈금. 마지막 날짜·점 개수·주기로 시작일을 역산(대략)
+const MAC_STEP = {dgs10:1.4484, dgs2:1.4484, fedu:1.4484, hy:1.4484, t10y2y:1.4484, vix:1.4484, sofr:1.4484, iorb:1.4484, ccc:1.4484, icsa:7, netliq:7, sahm:30.44, unrate:30.44};
+function xAxisLabels(k, n, endDate, cnt=5){
+  if(!endDate || !(n>1)) return [];
+  const step = MAC_STEP[k] || 1;
+  const end = new Date(endDate+"T00:00:00Z").getTime();
+  if(isNaN(end)) return [];
+  const start = end - (n-1)*step*864e5;
+  return Array.from({length:cnt}, (_,i)=>{ const d = new Date(start + (end-start)*i/(cnt-1));
+    return String(d.getUTCFullYear()).slice(2)+"."+String(d.getUTCMonth()+1).padStart(2,"0"); });
 }
 // 11-18 Ben: CCC·은행 대출 기준·BDC. 경고·참고용, 매매 판정 미반영 (검증: data/credit_study.json)
 function creditWatchHTML(m){
@@ -2537,13 +2555,20 @@ function liqInflChart(el, d, opt={}){
   el.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw();});
   draw();
 }
-function lineChart(arr, th=[], h=140){
-  const W=520, P=4; const a=arr.filter(x=>x!=null); const mn=Math.min(...a, ...th), mx=Math.max(...a, ...th), rg=(mx-mn)||1;
+/* 11-20 Ben: 추이 그래프 — 기간(연월) 눈금 + 평균선. arr=값 배열, th=기존 기준선, opt={labels:[], avg:{fmt}, h} */
+function lineChart(arr, th=[], opt={}){
+  const W=520, P=4, h=opt.h||140;
+  const a=arr.filter(x=>x!=null); const mn=Math.min(...a, ...th), mx=Math.max(...a, ...th), rg=(mx-mn)||1;
   const y=v=>(h-P-(v-mn)/rg*(h-2*P)).toFixed(1);
   const pts=a.map((v,i)=>`${(i/(a.length-1)*W).toFixed(1)},${y(v)}`).join(" ");
-  return `<svg viewBox="0 0 ${W} ${h}" class="chart" style="height:${h}px" preserveAspectRatio="none" role="img" aria-label="추이 차트">
+  const avg = a.length>2? a.reduce((s,v)=>s+v,0)/a.length : null;
+  const lab = opt.labels||[];
+  return `<div class="lcw"><svg viewBox="0 0 ${W} ${h}" class="chart" style="height:${h}px" preserveAspectRatio="none" role="img" aria-label="추이 차트">
   ${th.map(t=>`<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#d6d3cb" stroke-dasharray="4 4"/><text x="${W-2}" y="${y(t)-3}" text-anchor="end" font-size="11" fill="#55534e">${num(t, t>1000?0:1)}</text>`).join("")}
-  <polyline fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts}"/></svg>`;
+  ${opt.avg&&avg!=null? `<line x1="0" x2="${W}" y1="${y(avg)}" y2="${y(avg)}" stroke="var(--accent)" stroke-dasharray="6 4" stroke-width="1.4" vector-effect="non-scaling-stroke" opacity=".7"/>`: ""}
+  <polyline fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts}"/></svg>
+  ${opt.avg&&avg!=null&&opt.avg.fmt? `<span class="lcavg" style="top:${(parseFloat(y(avg))/h*100).toFixed(1)}%">${esc(opt.avg.fmt(avg))}</span>`: ""}</div>
+  ${lab.length>1? `<div class="lcx">${lab.map((x,i)=>`<i style="left:${(i/(lab.length-1)*100).toFixed(2)}%">${esc(x)}</i>`).join("")}</div>`: ""}`;
 }
 
 function vBacktest(){
