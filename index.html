@@ -464,7 +464,7 @@ const cpct = (v,d=1) => `<span class="${cls(v)}">${pct(v,d)}</span>`;
 const EXT_SESS = {pre:"장전", post:"장후", night:"야간", closed:"주말"};
 function extFresh(){ const X=E?.M?.ext; return X && X.asof && (!E.M.generated || new Date(X.asof) > new Date(E.M.generated)) ? X : null; }
 function extOf(t, s){ const X=extFresh(), q=X?.q?.[t]; if(!q || s?.price==null || !q.base) return null;
-  if(Math.abs(q.base/s.price-1) > 0.0005 || Math.abs(q.chg) < 0.01) return null; return q; }
+  if(Math.abs(q.base/s.price-1) > 0.0005 || Math.abs(q.chg) < 0.05) return null; return q; }
 const kst = iso => new Date(iso).toLocaleString("ko-KR",{timeZone:"Asia/Seoul",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false});
 const pill = (txt, c) => `<span class="pill ${c}">${esc(txt)}</span>`;
 function spark(arr, w=96, h=26){
