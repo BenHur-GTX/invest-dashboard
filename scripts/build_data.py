@@ -142,6 +142,13 @@ def yahoo(sym, rng="10y"):
             for r in out:
                 ded[r[0]] = r
             rows = [ded[k] for k in sorted(ded)]
+            # 11-20: 장 마감 직후 Yahoo 일봉 목록에서 당일 봉이 잠깐 빠지는 경우가 있음(11-20 02:19Z 실행이 11-18 종가로 되돌아감).
+            # meta의 정규장 가격·시각이 마지막 봉보다 새로우면 그 값으로 당일 봉을 채운다.
+            m = j["meta"]; mt, mp = m.get("regularMarketTime"), m.get("regularMarketPrice")
+            if mt and mp and rows:
+                md = datetime.fromtimestamp(mt + off, tz=timezone.utc).strftime("%Y-%m-%d")
+                if md > rows[-1][0]:
+                    rows.append((md, mp, m.get("regularMarketDayHigh") or mp, m.get("regularMarketDayLow") or mp, mp, mp))
             if len(rows) > 300:
                 gaps = [(datetime.strptime(rows[i][0], "%Y-%m-%d") - datetime.strptime(rows[i-1][0], "%Y-%m-%d")).days for i in range(len(rows)-250, len(rows))]
                 if max(gaps) > 10:

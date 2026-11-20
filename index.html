@@ -174,6 +174,10 @@ tr.hot td{background:#fdf1ef} tr.hot td:first-child{box-shadow:inset 4px 0 0 var
 .rc{display:inline-block;min-width:26px;padding:1px 4px;border-radius:4px;text-align:center;font-weight:600;background:#f0eee8}
 .rc.lo{background:var(--down);color:#fff} .rc.lo2{background:#dbe6fb;color:#1d3f99} .rc.hi{background:var(--bad);color:#fff}
 .mtbl td.px{color:var(--ink2)}
+.xt{display:block;font-size:11px;font-weight:600;line-height:1.2;margin-top:1px;white-space:nowrap} .mtbl td.px .xt{font-weight:400;color:var(--ink2)}
+.futs{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:6px 0 4px;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);font-size:14px}
+.futs b{font-weight:600;color:var(--ink2);font-size:13px} .futs .muted{font-size:12px;margin-left:auto}
+.xb{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 6px;background:var(--brand-soft);color:var(--brand)}
 .sigsum h4{margin:14px 0 6px;font-size:14px;color:var(--ok)} .sumh{margin-top:18px}
 /* 11-18 Ben: 그룹 안 매수 우선순위 (기본 정렬) */
 .rk{display:inline-block;min-width:18px;height:18px;line-height:18px;margin-right:5px;border-radius:9px;text-align:center;font-size:11px;font-weight:700;background:#ebe9e3;color:var(--ink2);vertical-align:1px}
@@ -455,6 +459,13 @@ const usd = (v,d=2) => v==null||isNaN(v) ? "–" : "$"+num(v,d);
 const pct = (v, d=1, sign=true) => v==null||isNaN(v) ? "–" : (sign && v>0 ? "+" : "") + num(v,d) + "%";
 const cls = v => v==null ? "" : v>0 ? "up" : v<0 ? "dn" : "";
 const cpct = (v,d=1) => `<span class="${cls(v)}">${pct(v,d)}</span>`;
+// 11-20 Ben: 장외(장전·장후·야간) 최신가. 매매 판정은 정규장 종가 그대로, 화면 표시만.
+// market.json보다 새 데이터이고 같은 정규장 가격을 기준으로 할 때만 보여 줌 (정규장 중엔 자동으로 숨김)
+const EXT_SESS = {pre:"장전", post:"장후", night:"야간", closed:"주말"};
+function extFresh(){ const X=E?.M?.ext; return X && X.asof && (!E.M.generated || new Date(X.asof) > new Date(E.M.generated)) ? X : null; }
+function extOf(t, s){ const X=extFresh(), q=X?.q?.[t]; if(!q || s?.price==null || !q.base) return null;
+  if(Math.abs(q.base/s.price-1) > 0.0005 || Math.abs(q.chg) < 0.05) return null; return q; }
+const kst = iso => new Date(iso).toLocaleString("ko-KR",{timeZone:"Asia/Seoul",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false});
 const pill = (txt, c) => `<span class="pill ${c}">${esc(txt)}</span>`;
 function spark(arr, w=96, h=26){
   if(!arr || arr.length<2) return "";
@@ -502,6 +513,7 @@ async function load(){
   const E = window.__EMBED__;
   if(E) return {market:E.market, bt:E.backtest||null, study:E.study||null, H:applyCfg(E.holdings), enc:false, locked:false, owner:true};
   const market = await getJSON("data/market.json");
+  market.ext = await getJSON("data/ext.json").catch(()=>null);   // 11-20 Ben: 장외·선물 시세 (표시용, 판정 미반영)
   const bt = await getJSON("data/backtest.json").catch(()=>null);
   const study = await getJSON("data/overheat_study.json").catch(()=>null);
   let H=null, enc=false, locked=false;
@@ -2178,13 +2190,16 @@ function vMarket(){
   const rkWhy = rk => !rk? "" : rk.hold? `<span class="rkw">${esc(rk.hold)}</span>` : "";   // 이유는 표 숫자와 겹쳐서 번호 툴팁으로만
   // 11-18 Ben: 국내 ETF는 코드 대신 이름
   const symTxt = (t,s) => s.group==="국내"? `<b>${esc(s.name||t)}</b>` : `<b>${esc(t.replace("^",""))}</b> <span class="muted">${esc(s.name!==t? s.name:"")}</span>`;
-  const rowHTML = ([t,s,rk]) => { const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc((s.group==="국내"? s.name: t).replace("^",""))} 차트 보기">${rkTag(rk)}${symTxt(t,s)}</button>${sigTag(b)}${rkWhy(rk)}</td><td>${cpct(s.chg,1)}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}</td><td class="l">${spark(s.spark)}</td></tr>`; };
+  const rowHTML = ([t,s,rk]) => { const b=buySig(t,s); return `<tr class="${sigCls(b)}" data-chart="${esc(t)}"><td><button type="button" class="symbtn" data-chart="${esc(t)}" aria-label="${esc((s.group==="국내"? s.name: t).replace("^",""))} 차트 보기">${rkTag(rk)}${symTxt(t,s)}</button>${sigTag(b)}${rkWhy(rk)}</td><td>${cpct(s.chg,1)}${(x=>x? `<span class="xt ${cls(x.chg)}" title="장외 최신가 기준 (정규장 ${num(x.base,2)} 대비)">장외 ${pct(x.chg,1)}</span>`:"")(extOf(t,s))}</td><td>${ddCell(s.dd_ath ?? s.dd52)}</td><td>${cpct(s.vs200, s.vs200!=null && Math.abs(s.vs200)<10? 1:0)}</td><td>${rsiChip(s.rsi)}</td>${w40Cell(s.w40)}<td${s.bb_break?' class="dn" style="font-weight:700"':''}>${s.bb_pctb!=null? num(s.bb_pctb,0):"–"}</td><td class="px">${s.cur==="KRW"? num(s.price, s.price<100?2:0) : num(s.price,2)}${(x=>x? `<span class="xt">${num(x.p,2)}</span>`:"")(extOf(t,s))}</td><td class="l">${spark(s.spark)}</td></tr>`; };
   const head = (g, sortable) => `<tr><th>종목</th><th>일간</th>${sortable? th(g,"dd","고점"):"<th>고점</th>"}${sortable? th(g,"v200","200일"):"<th>200일</th>"}${sortable? th(g,"rsi","RSI"):"<th>RSI</th>"}<th>40주</th>${sortable? th(g,"bb","%B"):"<th>%B</th>"}<th>현재가</th><th class="l">6개월</th></tr>`;
   // 11-18 Ben: 맨 위 = 카테고리별 매수 신호 종목만, 아래 표와 같은 형식 (신호 없는 카테고리 생략)
   const sigGroups = order.filter(g=>groups[g]).map(g=>[g, rankGroup(g, groups[g]).filter(([t,s])=>{ const b=buySig(t,s); return b && b.lv>0; })]).filter(([,r])=>r.length);
   const summary = sigGroups.length? `<section class="sigsum"><h3 class="sumh">매수 신호 모아 보기</h3>${sigGroups.map(([g,r])=>`<h4>${g}</h4><div class="tbl"><table class="mtbl">${head(g,false)}${r.map(rowHTML).join("")}</table></div>`).join("")}</section>`
     : `<p class="muted">지금 매수 신호가 뜬 종목이 없습니다. 이번 달은 기존 적립 규칙대로 사면 됩니다.</p>`;
+  const X = extFresh(), F = X?.fut||{};
+  const futRow = X && (F.NQ||F.ES) ? `<div class="futs" aria-label="선물·장외 시세"><span class="xb">${esc(EXT_SESS[X.sess]||"장외")}</span>${[["NQ","나스닥 선물"],["ES","S&P 선물"]].filter(([k])=>F[k]).map(([k,n])=>`<span><b>${n}</b> ${num(F[k].p,0)} ${cpct(F[k].chg,2)}</span>`).join("")}<span class="muted">${kst(X.asof)} 기준</span></div>` : "";
   return `<h2>시세 (15분 지연, 종가 기준 지표)</h2>
+  ${futRow}
   ${summary}
   <h3 class="sumh">전체 시세</h3>
   <div class="lgd mlgd"><span class="lc buy">매수 후보 줄</span><span class="lc hot">과열 줄</span><span><b class="up">빨강</b> 상승 · <b class="dn">파랑</b> 하락</span><span>RSI <span class="rc lo">30↓</span> <span class="rc lo2">40↓</span> <span class="rc hi">70↑</span></span><span>40주 ▲골든 ▼데드</span><span><span class="rk r1">1</span>매수 우선순위(그룹 안, 갱신마다 다시 계산)</span><span>줄 누르면 차트 · 표는 옆으로 밀기</span></div>
@@ -2200,6 +2215,7 @@ function vMarket(){
       <li><b>섹터·국내 ETF</b> 1배 ETF와 같은 4개 신호(머니마켓·초단기채 제외). <b>레버리지</b> 스윙 A안 진입선 QLD −40%, TQQQ·SOXL −55% + RSI ≤ 30이면 스윙 진입, 진입선 10%p 위 + RSI ≤ 40이면 관찰.</li>
       <li><b>빅테크</b> 1년 고점 −30% 이하 + RSI ≤ 30이면 드문 매수 기회(스윙 계좌, 1종목씩), −20% + RSI ≤ 40이면 관찰.</li>
       <li><b>성장주 (아이온큐·로켓랩·아이렌·팔란티어·크리스퍼·ARKK·ARKG)</b> 모니터링·심리 지표용. ARKK·ARKG는 투기 성장주 전체 온도계, 팔란티어는 개인 투자자 성장주 쏠림 대표. 1년 고점 −70% + RSI ≤ 30일 때만 스윙 후보(1회 계좌 12.5%), −60% + RSI ≤ 40이면 관찰.</li>
+      <li><b>장외</b> 미국 정규장이 끝난 뒤(장후·야간 24시간 거래·장전) 최신가와 정규장 가격 대비 등락률. 일간 칸 아래 작은 글씨, 현재가 칸 아래 장외 가격. 선물 줄은 나스닥100·S&P500 선물(전일 정산가 대비). 표시만 하고 RSI·200일선·낙폭·매수 신호는 정규장 가격 그대로입니다. 정규장이 열리면 사라집니다.</li>
       <li><b>고점 대비</b> 상장 이후 최고 종가 대비 하락률(스냅샷은 1년 고점 대비).</li>
       <li><b>볼린저 %B</b> 20일 밴드 안 위치. 0 아래면 하단 이탈.</li>
       <li><b>40주선</b> 주봉 종가와 40주 이동평균의 마지막 골든(위로 돌파)/데드(아래로 이탈)와 경과 주수(마감 주 기준). 1주 이내면 굵게, (이번 주 ↑/↓)는 진행 중인 주에 반대로 넘어간 상태(금요일 종가로 확정).</li>
