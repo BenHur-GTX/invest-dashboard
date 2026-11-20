@@ -403,6 +403,18 @@ td .inline input{width:78px}
 .lfh .tot{font-size:15px} .lfh .muted{margin-left:6px;font-size:11.5px}
 .hdot2{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:#9a978f} .hdot2.g{background:#1f9d63} .hdot2.y{background:#e0a800} .hdot2.r{background:#d92d20}
 @media (max-width:760px){.lfh{grid-template-columns:1fr}}
+/* 11-20 Ben: 상단 지표를 누르면 그 지표의 상세 카드로. 뒤로 가기로 이전 탭·스크롤 위치 복원 */
+.hero>div[data-metric],.stages>div[data-metric]{cursor:pointer;position:relative;-webkit-tap-highlight-color:transparent;transition:background-color .15s ease}
+.hero>div[data-metric]{padding-right:24px}
+.hero>div[data-metric]::after,.stages>div[data-metric]::after{content:"›";position:absolute;right:8px;color:rgba(255,255,255,.34);font-weight:700;line-height:1}
+.hero>div[data-metric]::after{top:6px;font-size:16px}
+.stages>div[data-metric]{padding-right:26px} .stages>div[data-metric]::after{top:50%;font-size:16px;transform:translateY(-50%)}
+@media (hover:hover){.hero>div[data-metric]:hover,.stages>div[data-metric]:hover{background:#14585a}.hero>div[data-metric]:hover::after,.stages>div[data-metric]:hover::after{color:#fff}}
+.hero>div[data-metric]:active,.stages>div[data-metric]:active{background:#0a2f30}
+.hero>div[data-metric]:focus-visible,.stages>div[data-metric]:focus-visible{outline:2px solid #f4b37a;outline-offset:-2px}
+.hlflash{animation:hlflash 1.9s ease-out 1;border-radius:8px}
+@keyframes hlflash{0%{box-shadow:0 0 0 3px #f4b37a,0 0 16px rgba(244,179,122,.5)}60%{box-shadow:0 0 0 3px rgba(244,179,122,.5),0 0 10px rgba(244,179,122,.22)}100%{box-shadow:0 0 0 3px rgba(244,179,122,0)}}
+@media (prefers-reduced-motion:reduce){.hlflash{animation:none;box-shadow:0 0 0 3px rgba(244,179,122,.6)}}
 </style>
 </head>
 <body>
@@ -1389,14 +1401,14 @@ function stagesHTML(E){
   const Fn=["≤ 79 탐욕","≤ 54 중립","≤ 44 공포","≤ 25 극단적 공포","≤ 15 강력 매수","≤ 10 최대 비중 확대","최저 단계"];
   const V=[[v=>v<15,"안정 · 방심 주의","hot"],[v=>v<20,"보통"],[v=>v<30,"불안"],[v=>v<40,"공포 · 매수 기회","buy"],[v=>true,"패닉 · 강력 매수","buy"]];
   const Vn=["≥ 15 보통","≥ 20 불안","≥ 30 공포 · 매수 기회","≥ 40 패닉 · 강력 매수","최고 단계"];
-  const cell=(name,val,levels,nexts,d)=>{ if(val==null) return `<div><b>${name}</b> –</div>`;
+  const cell=(name,val,levels,nexts,d,metric)=>{ const at = metric? ` data-metric="${metric}" role="link" tabindex="0" aria-label="${name} 상세 보기"` : ""; if(val==null) return `<div${at}><b>${name}</b> –</div>`;
     const i=levels.findIndex(l=>l[0](val)), l=levels[i];
-    return `<div><span class="hdot ${l[2]==="buy"?"g":l[2]==="hot"?(name==="VIX"?"y":"r"):"n"}"></span><b>${name} ${num(val,d)}</b><span class="lv ${l[2]||""}">${l[1]}</span><span class="nx">다음 ${nexts[i]}</span></div>`; };
+    return `<div${at}><span class="hdot ${l[2]==="buy"?"g":l[2]==="hot"?(name==="VIX"?"y":"r"):"n"}"></span><b>${name} ${num(val,d)}</b><span class="lv ${l[2]||""}">${l[1]}</span><span class="nx">다음 ${nexts[i]}</span></div>`; };
   // 11-15 Ben: 위 칸과 겹치는 공포탐욕·VIX 줄은 빼고, 모드를 바꾸는 10년물·하이일드를 다음 경계까지 거리와 함께
   const m=E.M.macro||{}, t10=m.dgs10?.v;
-  const row=(c,name,val,lv,nx)=>`<div><span class="hdot ${c}"></span><b>${name} ${val}</b><span class="lv">${lv}</span><span class="nx">${nx}</span></div>`;
-  const t10r = t10==null? "" : row(t10>=5.5?"r":t10>=5?"y":t10>=4.5?"y":"g", "10년물", num(t10,2)+"%", t10>=5.5?"빨강":t10>=5?"노랑 (경고)":t10>=4.5?"주의":"안정", (()=>{ const L=E.L.find(l=>l.t.startsWith("장기금리")); return L?.mode==="r"? "6개월 +1%p↑ 수비 1표" : "판정: 6개월 +1%p"; })());
-  return cell("RSI",q.rsi,R,Rn,1) + t10r;
+  const row=(c,name,val,lv,nx,metric)=>`<div${metric? ` data-metric="${metric}" role="link" tabindex="0" aria-label="${name} 상세 보기"`:""}><span class="hdot ${c}"></span><b>${name} ${val}</b><span class="lv">${lv}</span><span class="nx">${nx}</span></div>`;
+  const t10r = t10==null? "" : row(t10>=5.5?"r":t10>=5?"y":t10>=4.5?"y":"g", "10년물", num(t10,2)+"%", t10>=5.5?"빨강":t10>=5?"노랑 (경고)":t10>=4.5?"주의":"안정", (()=>{ const L=E.L.find(l=>l.t.startsWith("장기금리")); return L?.mode==="r"? "6개월 +1%p↑ 수비 1표" : "판정: 6개월 +1%p"; })(), "t10");
+  return cell("RSI",q.rsi,R,Rn,1,"rsi") + t10r;
 }
 function renderHero(){
   const q=E.q, st=RULES.states[E.state];
@@ -1410,15 +1422,15 @@ function renderHero(){
   const mm=E.M.macro||{}, LL=Object.fromEntries(E.L.map(l=>[l.t,l])), Lr=LL["금리 사이클"], Lt=LL["장기금리 (미 10년물)"], Le=LL["고용"], Ll=LL["유동성"], Lc=LL["신용"], nl=mm.netliq;
   const cF=E.fng==null?"n": E.fng<=25? "r" : E.fng<=45? "y" : E.fng>=80? "r" : "g";
   $("#hero").innerHTML = `
-    <div class="mode"><div class="k">${D(E.ladder.c)}거시 단계</div><div class="v">${esc(E.ladder.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
-    <div><div class="k">${D(Lr?.c||"n")}기준금리</div><div class="v">${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}</div><div class="s">연준<br>${esc(Lr?.st||"–")}</div></div>
-    <div><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
-    <div><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
-    <div><div class="k">${D(Lc?.c||"n")}신용</div><div class="v">${mm.hy?.v!=null? num(mm.hy.v,2)+"%":"–"}</div><div class="s">하이일드<br>${esc(Lc?.st||"–")}</div></div>
-    <div class="state"><div class="k">${D(cS)}QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${st.name}</div><div class="s">${esc(st.desc)}</div></div>
-    <div><div class="k">${D(cDD)}고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">QQQ 5년 고점</div></div>
-    <div><div class="k">${D(cV)}VIX</div><div class="v">${num(E.vix,1)}</div><div class="s">${E.vix==null?"–":E.vix>=30?"공포":E.vix>=20?"불안":E.vix>=15?"보통":"방심"}</div></div>
-    <div><div class="k">${D(cF)}공포탐욕</div><div class="v">${E.fng!=null? num(E.fng,0) : `<a href="${RULES.fngLink}" style="color:#ffd8b8" target="_blank" rel="noopener">확인</a>`}</div><div class="s">${E.fng==null? "CNN" : E.fng>=80?"극단적 탐욕":E.fng>=55?"탐욕":E.fng>=45?"중립":E.fng>25?"공포":"극단적 공포"}</div></div>`;
+    <div class="mode" data-metric="stage" role="link" tabindex="0" aria-label="거시 단계 상세 보기"><div class="k">${D(E.ladder.c)}거시 단계</div><div class="v">${esc(E.ladder.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
+    <div data-metric="fed" role="link" tabindex="0" aria-label="기준금리 상세 보기"><div class="k">${D(Lr?.c||"n")}기준금리</div><div class="v">${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}</div><div class="s">연준<br>${esc(Lr?.st||"–")}</div></div>
+    <div data-metric="emp" role="link" tabindex="0" aria-label="고용 상세 보기"><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
+    <div data-metric="liq" role="link" tabindex="0" aria-label="유동성 상세 보기"><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
+    <div data-metric="cred" role="link" tabindex="0" aria-label="신용 상세 보기"><div class="k">${D(Lc?.c||"n")}신용</div><div class="v">${mm.hy?.v!=null? num(mm.hy.v,2)+"%":"–"}</div><div class="s">하이일드<br>${esc(Lc?.st||"–")}</div></div>
+    <div class="state" data-metric="qstate" role="link" tabindex="0" aria-label="QQQ 시장 상태 상세 보기"><div class="k">${D(cS)}QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${st.name}</div><div class="s">${esc(st.desc)}</div></div>
+    <div data-metric="dd" role="link" tabindex="0" aria-label="고점 대비 상세 보기"><div class="k">${D(cDD)}고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">QQQ 5년 고점</div></div>
+    <div data-metric="vix" role="link" tabindex="0" aria-label="VIX 상세 보기"><div class="k">${D(cV)}VIX</div><div class="v">${num(E.vix,1)}</div><div class="s">${E.vix==null?"–":E.vix>=30?"공포":E.vix>=20?"불안":E.vix>=15?"보통":"방심"}</div></div>
+    <div data-metric="fng" role="link" tabindex="0" aria-label="공포탐욕 상세 보기"><div class="k">${D(cF)}공포탐욕</div><div class="v">${E.fng!=null? num(E.fng,0) : `<a href="${RULES.fngLink}" style="color:#ffd8b8" target="_blank" rel="noopener">확인</a>`}</div><div class="s">${E.fng==null? "CNN" : E.fng>=80?"극단적 탐욕":E.fng>=55?"탐욕":E.fng>=45?"중립":E.fng>25?"공포":"극단적 공포"}</div></div>`;
   $("#stages").innerHTML = stagesHTML(E);
   const g = new Date(E.M.generated);
   $("#meta").innerHTML = `${E.M.snapshot? "스냅샷 · " : ""}갱신 ${g.toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} · 원/달러 ${num(E.fx,1)}`;
@@ -1458,7 +1470,7 @@ function ladderHTML(){   // 11-18 Ben: QQQ 낙폭이 다음 사다리까지 얼�
   const nLt = LT_POOL.findIndex(x=>dd>x.lvl), nC = RULES.tranches.findIndex(t=>dd>t.dd);
   const lt = nLt>=0? LT_POOL[nLt] : null, ca = nC>=0? RULES.tranches[nC] : null;
   const sub = v => dd<=v? "✓" : (lt&&v===lt.lvl)? `장투 ${nLt+1}차` : (ca&&v===ca.dd)? `현금 ${ca.n}차` : "";
-  return `<div class="panel lad"><div class="ltop"><span class="muted">QQQ 5년 고점 대비</span><span class="lnow">${pct(dd,1)}</span></div>
+  return `<div class="panel lad" id="dd_ladder"><div class="ltop"><span class="muted">QQQ 5년 고점 대비</span><span class="lnow">${pct(dd,1)}</span></div>
     <div class="lbar"><div class="lf" style="width:${X(dd)}%"></div><span class="lme" style="left:${X(dd)}%">지금</span>
     ${shown.map(v=>`<span class="lm${cut.includes(v)?" c":""}" style="left:${X(v)}%"></span><span class="lml" style="left:${X(v)}%"><b>${v}</b><br>${sub(v)}</span>`).join("")}</div>
     <div class="lnx"><div>${lt? `장투 ${nLt+1}차 ${lt.lvl}%까지<b>${Math.round(dd-lt.lvl)}%p</b>` : `장투 차수<b>모두 투입</b>`}</div><div>${ca? `현금 ${ca.n}차 ${ca.dd}%까지<b>${Math.round(dd-ca.dd)}%p</b>` : `현금 차수<b>모두 투입</b>`}</div></div></div>`;
@@ -1543,11 +1555,11 @@ function vToday(){
   ${bigCutHTML(true)}`;
 }
 // 11-15 Ben: 게이지. zones=[[끝값,색]...] (min부터 순서대로), ticks=[값...]
-function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt}){
+function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt, id}){
   const P=x=>Math.max(0,Math.min(100,(x-min)/(max-min)*100));
   let prev=min; const segs=zones.map(([e,col])=>{ const w=P(e)-P(prev); prev=e; return `<span class="${col}" style="width:${w.toFixed(2)}%"></span>`; }).join("");
   const f=fmt||(x=>x);
-  return `<div class="gzrow"><div class="hd"><b>${esc(t)}</b><span class="st ${c}">${esc(st)}</span><span class="vv">${vtxt}</span></div>
+  return `<div class="gzrow"${id? ` id="${id}"`: ""}><div class="hd"><b>${esc(t)}</b><span class="st ${c}">${esc(st)}</span><span class="vv">${vtxt}</span></div>
     <div class="gwrap"><div class="gtr">${segs}</div>${v!=null? `<span class="gmk" style="left:${P(v).toFixed(2)}%"></span>`:""}</div>
     <div class="gtk">${[min,...(ticks||[]),max].map(x=>`<i style="left:${P(x).toFixed(2)}%">${f(x)}</i>`).join("")}</div>
     ${d? `<div class="d">${d}</div>`:""}</div>`;
@@ -1582,7 +1594,7 @@ function macroGauges(){
 }
 function auxGauges(){
   const q=E.q, n=E.auxN, A=E.aux, ok=k=>A.find(a=>a.k.startsWith(k))?.ok, out=[], gc=b=>b? "g":"n";
-  out.push(gauge({t:"QQQ RSI", c:gc(ok("QQQ RSI")), st:ok("QQQ RSI")? "충족":"미충족", vtxt:q.rsi!=null? num(q.rsi,1):"–", v:q.rsi, min:0, max:100, zones:[[40,"g"],[100,"n"]], ticks:[30,40,70], d:"40 이하 충족"}));
+  out.push(gauge({id:"aux_rsi", t:"QQQ RSI", c:gc(ok("QQQ RSI")), st:ok("QQQ RSI")? "충족":"미충족", vtxt:q.rsi!=null? num(q.rsi,1):"–", v:q.rsi, min:0, max:100, zones:[[40,"g"],[100,"n"]], ticks:[30,40,70], d:"40 이하 충족"}));
   out.push(gauge({t:"VIX", c:gc(ok("VIX")), st:ok("VIX")? "충족":"미충족", vtxt:E.vix!=null? num(E.vix,1):"–", v:E.vix, min:10, max:45, zones:[[20,"n"],[45,"g"]], ticks:[20,30], d:"20 이상 충족 · 30↑ 공포 구간"}));
   out.push(gauge({t:"공포탐욕", c:gc(ok("공포탐욕")), st:E.fng!=null? (ok("공포탐욕")? "충족":"미충족") : "확인 필요", vtxt:E.fng!=null? num(E.fng,0):"–", v:E.fng, min:0, max:100, zones:[[45,"g"],[100,"n"]], ticks:[25,45,75], d:`45 이하 충족 · <a href="${RULES.fngLink}" target="_blank" rel="noopener">CNN</a>`}));
   { const tc=q.touch||{}, lab=["60일","120일","200일"], hit=["ma60","ma120","ma200"].map(k=>!!tc[k]), any=hit.some(Boolean);
@@ -1747,7 +1759,7 @@ function vCrash(){
        [4,"계속 산다. IRP 70%","적립금 대부분 QLD, TQQQ 소량","3배는 하루 −30%·고점 −80%에서만 관심","−35/−40/−50/−60%에 15/15/25/30%"],
        [5,"평소 적립 복귀. IRP 55~60%","평소 규칙. 30% 초과분 QQQM","평소","전고점 회복 시 차수 초기화"]];
     const cur=R.find(r=>r[0]===stIdx)||R[0], lab=["1배 지수 (장투·연금)","QLD (장투)","스윙","현금"];
-    return `<h2>지금 상태에서 할 일</h2>
+    return `<h2 id="crash_state">지금 상태에서 할 일</h2>
   <div class="stp">${R.map(r=>`<span class="${r[0]===stIdx?"on":""}">${r[0]}. ${RULES.states[r[0]].name}</span>`).join("")}</div>
   <div class="panel"><dl class="act">${lab.map((l,i)=>`<dt>${l}</dt><dd>${cur[i+1]}</dd>`).join("")}</dl>
   <details class="mexp"><summary><b>상태별 전체 표 보기</b></summary><div class="tbl"><table style="min-width:720px">
@@ -2303,22 +2315,23 @@ function w40HTML(){
 }
 function vMacro(){
   const m=E.M.macro||{};
-  const cards = E.L.map(l=>`<div class="light"><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
+  const LAMP_ID = {"금리 사이클":"ratecyc", "장기금리 (미 10년물)":"t10", "고용":"emp", "유동성":"liq", "신용":"cred"};   // 11-20 Ben: 상단 지표에서 바로 찾아갈 때 쓰는 id
+  const cards = E.L.map(l=>`<div class="light"${LAMP_ID[l.t]? ` id="m_lamp_${LAMP_ID[l.t]}"`:""}><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
   const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5]],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6]],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0]],["icsa","신규 실업수당 청구",[250000,300000]],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30]]];
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
   <h2>대피 경보</h2>${fleeHTML()}
-  <h2>금리 한눈에</h2>${ratesHTML(m)}
+  <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
   <h2>기준금리 vs 10년물</h2><div class="panel"><div class="muted">월평균 · FRED (FEDFUNDS·GS10)</div><div id="rfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
-  <h2>거시 신호등 · 현재 단계: ${pill(E.ladder.name,E.ladder.c)}</h2>${stageStripHTML()}
+  <h2 id="m_stage">거시 신호등 · 현재 단계: ${pill(E.ladder.name,E.ladder.c)}</h2>${stageStripHTML()}
   <div class="lights">${cards}</div>
   <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 단계를 정합니다. 빨강 2개가 3주 연속(2주 넘게)이면 수비, 수비 중엔 빨강 1개 이하가 4주 이어져야 풀립니다. 빨강 1개 또는 노랑 2개는 중립. 대피는 거시 신호등과 별개로 '대피 경보'(QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위)가 켜질 때입니다.</p><p>11-18부터 고정 숫자 대신 변화폭으로 판정합니다. 10년물은 6개월 +1%p 빨강·+0.5%p 노랑(5% 이상 표시 경고는 그대로), 실업수당은 52주 저점 대비 +20% 빨강·+10% 노랑. 고정 기준(10년물 5.5%, 실업수당 30만)은 1971년 이후 61% 기간을 수비로 판정했고, 변화폭 기준은 약 22%입니다. 수익 차이는 없었습니다. 데이터: FRED(무료).</p></details>
   <h2>저등급 신용 · 사모대출 <span class="muted">경고용</span></h2>${creditWatchHTML(m)}
-  <h2>공포탐욕</h2>
+  <h2 id="m_fng">공포탐욕</h2>
   <div class="panel">${fngGauge(E.fng, E.M.fng)}</div>
   <h2>추이 (2년)</h2>
-  <div class="grid2">${series.map(([k,t,th])=>{ const s=m[k]?.spark; return `<div class="panel"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
+  <div class="grid2">${series.map(([k,t,th])=>{ const s=m[k]?.spark; return `<div class="panel" id="m_series_${k}"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
 }
 // 11-18 Ben: CCC·은행 대출 기준·BDC. 경고·참고용, 매매 판정 미반영 (검증: data/credit_study.json)
 function creditWatchHTML(m){
@@ -2341,8 +2354,8 @@ function ratesHTML(m){
   // 눈금 5칸: <4.0 / 4.0~4.5 / 4.5~5.0 / 5.0~5.5 / ≥5.5 → 표시 범위 3.5~6.0을 0.5씩
   const bc=bigCut(m); const lastCh=(m.fedu?.changes||[]).slice(-1)[0];
   return `<div class="rates">
-    <div><div class="k">연준 기준금리 (상단)</div><div class="v">${num(f,2)}%</div><div class="s">${lastCh? `최근 변경 ${esc(lastCh.date)} ${lastCh.delta>0?"+":""}${num(lastCh.delta*100,0)}bp`:"–"}${bc? ` · <b class="r">빅컷 ${bc.days}일째</b>`:""}</div></div>
-    <div><div class="k">미 10년물 국채금리</div><div class="v ${g.c}">${num(t,2)}%</div><div class="s">${esc(m.dgs10?.date||"")} · 2년물 ${num(d2,2)}% · 10Y−2Y ${num(m.t10y2y?.v,2)}%p</div></div>
+    <div id="m_rates_fed"><div class="k">연준 기준금리 (상단)</div><div class="v">${num(f,2)}%</div><div class="s">${lastCh? `최근 변경 ${esc(lastCh.date)} ${lastCh.delta>0?"+":""}${num(lastCh.delta*100,0)}bp`:"–"}${bc? ` · <b class="r">빅컷 ${bc.days}일째</b>`:""}</div></div>
+    <div id="m_rates_t10"><div class="k">미 10년물 국채금리</div><div class="v ${g.c}">${num(t,2)}%</div><div class="s">${esc(m.dgs10?.date||"")} · 2년물 ${num(d2,2)}% · 10Y−2Y ${num(m.t10y2y?.v,2)}%p</div></div>
     <div><div class="k">10년물 등급: <b class="${g.c}">${esc(g.st)}</b></div>
       <div class="grade" role="img" aria-label="10년물 금리 등급 ${esc(g.st)}"><span></span><span></span><span></span><span></span><span></span>${posPct!=null? `<i style="left:${posPct.toFixed(1)}%"></i>`:""}</div>
       <div class="gradelbl">${["~4.0","4.0~4.5","4.5~5.0","5.0~5.5","5.5~"].map((x,i)=>i===g.i?`<b>${x}</b>`:`<span>${x}</span>`).join("")}</div>
@@ -2718,10 +2731,65 @@ function stackTables(root){
     t.classList.add("stack");
   });
 }
+/* ---------- 11-20 Ben: 상단 지표 → 상세 이동 + 뒤로 가기(탭·스크롤 위치) 복원 ---------- */
+const METRICS = {
+  stage:{view:"macro", id:"m_stage"},      // 거시 단계 → 거시 점검 · 거시 신호등(4단계·신호등)
+  fed:{view:"macro", id:"m_rates_fed"},    // 기준금리 → 거시 점검 · 금리 한눈에
+  emp:{view:"macro", id:"m_lamp_emp"},     // 고용 → 거시 점검 · 고용 신호등
+  liq:{view:"macro", id:"m_lamp_liq"},     // 유동성 → 거시 점검 · 유동성 신호등
+  cred:{view:"macro", id:"m_lamp_cred"},   // 신용 → 거시 점검 · 신용 신호등
+  qstate:{view:"crash", id:"crash_state"}, // QQQ 시장 상태 → 폭락 대응 · 지금 상태에서 할 일
+  dd:{view:"today", id:"dd_ladder"},       // 고점 대비 → 오늘 · QQQ 낙폭 사다리
+  vix:{view:"macro", id:"m_series_vix"},   // VIX → 거시 점검 · 추이
+  fng:{view:"macro", id:"m_fng"},          // 공포탐욕 → 거시 점검 · 공포탐욕 게이지
+  rsi:{view:"today", id:"aux_rsi"},        // RSI → 오늘 · 현금 투입 보조지표
+  t10:{view:"macro", id:"m_rates_t10"}     // 10년물 → 거시 점검 · 금리 한눈에
+};
+let renderedView = "plan", popPending = null, jumpSeq = 0;
+function viewOfHash(){ const h=(location.hash||"#plan").slice(1); return VIEWS.some(v=>v[0]===h)? h : "plan"; }
+// 지금 보고 있는 히스토리 엔트리에 탭과 스크롤 위치를 적어 둔다(뒤로 가기에서 그대로 복원)
+function rememberView(){
+  try{ const st = Object.assign({}, history.state||{});
+    if(st.chartdlg) return;                        // 차트 팝업 엔트리는 팝업이 직접 관리
+    st.view = renderedView; st.y = Math.round(scrollY);
+    history.replaceState(st, "");
+  }catch(e){}
+}
+function flashTarget(el){ el.classList.remove("hlflash"); void el.offsetWidth; el.classList.add("hlflash");
+  clearTimeout(el._hl); el._hl = setTimeout(()=>el.classList.remove("hlflash"), 2000); }
+function jumpTo(id){
+  const seq = ++jumpSeq;
+  const el = id? document.getElementById(id) : null;
+  if(!el){ scrollTo({top:0}); return; }
+  for(let p=el; p; p=p.parentElement) if(p.tagName==="DETAILS" && !p.open) p.open = true;   // 접혀 있으면 펼치기
+  const navEl = document.querySelector("nav"), navH = navEl? navEl.offsetHeight : 0;
+  const pos = ()=> Math.max(0, Math.round(el.getBoundingClientRect().top + scrollY - navH - 8));
+  scrollTo({top:pos()}); flashTarget(el);
+  [280, 820].forEach(ms=> setTimeout(()=>{           // 거시 점검은 차트가 늦게 그려져 위치가 밀린다 → 한 번 더 맞춤
+    if(seq!==jumpSeq) return;
+    const d = pos() - scrollY;
+    if(d>4 && d<700) scrollTo({top:scrollY+d});
+  }, ms));
+}
+function goMetric(key){
+  const m = METRICS[key]; if(!m) return;
+  rememberView();
+  const same = renderedView === m.view;
+  const url = location.pathname + location.search + "#" + m.view;
+  try{ history.pushState({metric:key, view:m.view}, "", url); }catch(e){ location.hash = "#" + m.view; }
+  if(!same){ render(); renderedView = m.view; }
+  jumpTo(m.id);
+}
+function restoreAt(st){
+  if(st && st.metric && METRICS[st.metric]){ jumpTo(METRICS[st.metric].id); return; }   // 앞으로 가기로 지표 자리 복귀
+  const y = st && st.view === renderedView && typeof st.y === "number" ? st.y : 0;
+  scrollTo({top:y});
+}
 function render(){
   const home = "plan";   // 첫 화면: 이번 달 매수(적립 계산기 통합, 11-14 Ben)
   const h = (location.hash||"#"+home).slice(1);
   const view = VIEWS.find(v=>v[0]===h) ? h : home;
+  renderedView = view;
   if(view!==h && location.hash) history.replaceState(null,"",location.pathname+location.search+"#"+view);   // 없어진 탭 주소(#settings 등) 정리
   $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<3?` class="key${i===2?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
   const fn = {today:vToday, plan:vPlan, trade:vTrade, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
@@ -2746,7 +2814,33 @@ function footer(){ return `<footer>투자 판단 보조 도구입니다. 규칙 
     DATA = await load();
     E = engine(DATA);
     renderHero(); render();
-    addEventListener("hashchange", ()=>{ render(); scrollTo({top:0}); });
+    renderedView = viewOfHash(); rememberView();
+    // 뒤로 가기: 해시가 그대로면 hashchange가 안 뜨므로 여기서 복원하고, 해시가 바뀌면 hashchange가 이어서 처리
+    addEventListener("popstate", e=>{
+      if(document.querySelector("dialog[open]")) return;   // 차트 팝업은 팝업이 직접 닫는다
+      if(viewOfHash() === renderedView) restoreAt(e.state); else popPending = e.state;
+    });
+    addEventListener("hashchange", ()=>{                    // 주소(#탭) 이동
+      const st = popPending; popPending = null;
+      render();
+      if(st) restoreAt(st); else { jumpSeq++; scrollTo({top:0}); }
+    });
+    // 상단 지표·탭 링크 클릭 (2026-11-20 Ben)
+    document.addEventListener("click", e=>{               // 탭을 옮기기 전에 지금 위치를 저장
+      const a = e.target.closest && e.target.closest('a[href^="#"]'); if(!a) return;
+      if(VIEWS.some(v=>v[0]===a.getAttribute("href").slice(1))) rememberView();
+    }, true);
+    document.addEventListener("click", e=>{
+      const el = e.target.closest && e.target.closest("[data-metric]");
+      if(!el || !METRICS[el.dataset.metric] || e.target.closest("a")) return;   // 지표 안 링크(공포탐욕 '확인')는 그대로
+      goMetric(el.dataset.metric);
+    });
+    document.addEventListener("keydown", e=>{
+      if(e.key!=="Enter" && e.key!==" ") return;
+      const el = e.target.closest && e.target.closest("[data-metric]");
+      if(!el || !METRICS[el.dataset.metric]) return;
+      e.preventDefault(); goMetric(el.dataset.metric);
+    }, true);
   }catch(err){
     $("#app").innerHTML = `<div class="alert bad">데이터를 불러오지 못했습니다: ${esc(err.message)}</div>`;
   }
