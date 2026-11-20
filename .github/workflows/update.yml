@@ -5,7 +5,12 @@ on:
     - cron: "*/15 13-20 * * 1-5"
     - cron: "15 21 * * 1-5"
     - cron: "40 6 * * 1-5"
-  workflow_dispatch:
+  workflow_dispatch:   # 11-20: 외부 스케줄러(cron-job.org)가 15분마다 호출. 강제 재계산은 force 체크 시에만
+    inputs:
+      force:
+        description: "유튜브 심리·백테스트 강제 재계산"
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -28,8 +33,8 @@ jobs:
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
-          FORCE_SENT: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
-          FORCE_BT: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
+          FORCE_SENT: ${{ inputs.force && '1' || '' }}
+          FORCE_BT: ${{ inputs.force && '1' || '' }}
         run: python -u scripts/build_data.py
       - name: Commit
         run: |
