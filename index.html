@@ -297,6 +297,26 @@ textarea:focus,input:focus{outline:none;border-color:var(--brand);box-shadow:0 0
 svg.spark{display:block}
 .tag{font-size:11.5px;color:var(--ink2);background:#efede7;border-radius:4px;padding:1px 6px;margin-left:4px;white-space:nowrap}
 .note{font-size:12.5px;color:var(--ink2);margin-top:8px}
+/* 11-21 Ben: 과매도 분할매수 수익 확률 카드 (390px에서 표 5칸, 가로 넘침 없이) */
+.oo .ob{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}
+.oo .tb.trio{background:#0b4d2c;color:#fff;box-shadow:0 0 0 2px #9fd4b4}
+.oo .row{padding:10px 0;border-top:1px solid var(--line)}
+.oo .row:first-of-type{border-top:0;padding-top:2px}
+.oo .row.now{background:#f3f8f4;box-shadow:inset 3px 0 0 var(--ok);border-radius:4px;padding-left:8px;margin-left:-8px}
+.oo .rh{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.oo .rh b{font-size:16px}
+.oo .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.oo .c{text-align:center;border-radius:8px;padding:5px 2px;background:#f7f6f2;min-width:0;overflow:hidden}
+.oo .c .h{font-size:10.5px;color:var(--ink2);line-height:1.3}
+.oo .c .w{font-size:15px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums}
+.oo .c .a{font-size:10.5px;line-height:1.3;color:var(--ink2);font-variant-numeric:tabular-nums}
+.oo .c.g3{background:#0b4d2c;color:#fff} .oo .c.g3 .h,.oo .c.g3 .a{color:#c6e6d3}
+.oo .c.g2{background:#cfe8da} .oo .c.g2 .w{color:#0f5132}
+.oo .c.g1{background:#eef3ef}
+.oo .c.g0{background:#fbe9d9} .oo .c.g0 .w{color:#8a4b00}
+.oo .c.na{background:#f3f2ee} .oo .c.na .w{color:#9b978e}
+.oo .sm{font-size:11.5px;color:var(--ink2);margin-top:5px}
+@media (max-width:420px){.oo .c .w{font-size:14px}.oo .c{padding:5px 1px}}
 .big{font-size:22px;font-weight:700}
 .chart{width:100%;height:220px}
 footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
@@ -1319,6 +1339,70 @@ function reboundHTML(E){
   <p class="muted">${ok1&&ok2? "두 항목 충족: 과거 반등 시도 중 60일 성과가 좋았던 쪽." : ok1||ok2? "1개 충족." : "미충족: 과거엔 60일 평균 −3%, 저점 재이탈 59%."} 매매 규칙·비중에는 반영하지 않습니다.</p>
   <details class="mexp sm"><summary>설명 보기</summary><p>피보 구간별 (반등 시도 64회, 이후 60거래일): 23.6% 미만 −3.4%·상승 50%·저점 재이탈 59% / 23.6~38.2% +7.2%·83%·44% / 38.2~50% +4.4%·80%·20% / 50~61.8% +2.0%·67%·33%(3회) / 61.8% 이상 1회. 23.6%를 넘기면 성과가 뚜렷이 좋아지고, 38.2%를 넘기면 재이탈 위험이 가장 낮습니다.</p><p>1999년 이후 QQQ가 −10% 넘게 빠진 뒤 처음 20일선 위로 올라선 반등 시도 64회를 검증했습니다. 피보나치 23.6% 이상 되돌린 반등은 60일 평균 +5.7%(상승 81%, 저점 재이탈 34%)였고, 그 미만은 −3.4%(상승 50%, 재이탈 59%)였습니다. 2012년 이전과 이후 모두 같은 방향입니다. 상위 종목 절반 이상이 50일선 위면 +3.9%, 아니면 0.0%였습니다.</p><p>추세선 돌파 속도(저점→20일선 7일 이내)는 +0.0% vs 늦은 반등 +5.3%, 거래대금 20일 평균 1.2배 이상은 −1.3% vs +1.6%, 장대음봉 고가 회복은 +0.0% vs +1.5%로 효과가 없거나 반대여서 뺐습니다. 반등 가속 1·2차 신호일(2001·2008·2022 가짜 포함)에는 두 항목 모두 진짜·가짜를 가르지 못해 비중에는 넣지 않았습니다.</p></details></div>`;
 }
+/* 11-21 Ben: 과매도 분할매수 수익 확률 — VIX·RSI(14) 동시 충족일 이후 N거래일 승률 (data/market.json oversold, scripts/build_data.py 계산) */
+const OO_NAME = {QQQ:"나스닥100 1배", QLD:"나스닥100 2배", TQQQ:"나스닥100 3배", SOXL:"반도체 3배"};
+const OO_FG = {"extreme fear":"극단적 공포", fear:"공포", neutral:"중립", greed:"탐욕", "extreme greed":"극단적 탐욕"};
+let OO_TIER = "base";
+function ooCur(){ return E?.M?.oversold || null; }
+function ooNowOK(s){ const v=ooCur()?.cur?.vix; return v!=null && s.rsi!=null && v>=s.vix_min && s.rsi<=s.rsi_max; }
+function ooCritText(){
+  const d=ooCur(), dp=d?.symbols?.[0]?.deep;
+  if(OO_TIER==="deep") return `VIX ≥ ${num(dp?.vix_min??35,0)} · RSI(14) ≤ ${num(dp?.rsi_max??27,0)}${dp && dp.rsi_max<27? " (현재 RSI가 더 낮아 그 수준)":""} · 신호일 종가 매수 → N거래일 뒤`;
+  return "VIX ≥ 30 · RSI(14) ≤ 30 · 신호일 종가 매수 → N거래일 뒤";
+}
+function ooBodyHTML(){
+  const d=ooCur();
+  if(!d?.symbols?.length) return `<p class="muted">데이터 대기 — 다음 갱신에 계산됩니다.</p>`;
+  const tier = OO_TIER==="deep"? "deep":"base";
+  const H = d.horizons || [["1주",5],["2주",10],["4주",20],["8주",40],["12주",60]];
+  const rows = d.symbols.map(s=>{
+    const t = s[tier]; if(!t) return "";
+    const ok = ooNowOK(t);
+    const cells = H.map(([lab,h])=>{
+      const w = t.win?.[String(h)], a = t.avg?.[String(h)], n = t.n?.[String(h)] ?? 0;
+      const c = w==null? "na" : w>=80? "g3" : w>=65? "g2" : w>=50? "g1" : "g0";
+      return `<div class="c ${c}" title="표본 ${n}일 · 평균 ${a==null?"–":pct(a,1)}"><div class="h">${lab}</div><div class="w">${w==null?"–":w+"%"}</div><div class="a">${a==null?"":pct(a,1)}</div></div>`;
+    }).join("");
+    return `<div class="row${ok?" now":""}"><div class="rh"><b>${esc(s.sym)}</b><span class="muted">${OO_NAME[s.sym]||""}</span><span class="muted">RSI ${num(s.rsi,1)}</span>${ok? `<span class="tb ok">오늘 신호</span>`:""}</div>
+    <div class="grid">${cells}</div>
+    <div class="sm">과거 ${t.signals}회 신호 · ${t.days}일 표본 · 마지막 ${esc(t.last||"–")}${tier==="deep"? ` · 기준 VIX≥${num(t.vix_min,0)}·RSI≤${num(t.rsi_max,0)}`:""}</div></div>`;
+  }).join("");
+  const hit = d.symbols.filter(s=>s[tier] && ooNowOK(s[tier]));
+  const w4 = hit.map(s=>s[tier].win?.["20"]).filter(x=>x!=null);
+  const lead = hit.length&&w4.length? `<b>${hit.length}종목 지금 조건 충족</b> — 4주 뒤 플러스 확률 ${Math.min(...w4)}~${Math.max(...w4)}%` : hit.length? `<b>${hit.length}종목 지금 조건 충족</b>` : `<span class="muted">지금은 조건 충족 종목 없음 — 아래는 같은 조건이었던 과거 기록</span>`;
+  return `<p class="lead" style="margin:0 0 4px">${lead}</p><div>${rows}</div>`;
+}
+function oversoldHTML(){
+  const d = ooCur(); if(!d) return "";
+  const vix = d.cur?.vix, fg = E.fng ?? d.cur?.fng, qRsi = d.cur?.symbols?.QQQ?.rsi ?? E.S.QQQ?.rsi;
+  const vixOk = vix!=null && vix>=30, fgOk = fg!=null && fg<=25, rsiOk = qRsi!=null && qRsi<=30, trio = vixOk && fgOk && rsiOk;
+  const fgLab = OO_FG[d.cur?.fng_rating] || "공포탐욕";
+  return `<h2>과매도 분할매수 수익 확률</h2>
+  <div class="panel oo">
+    <div class="ob">
+      <span class="tb ${vixOk?"ok":""}">VIX ${num(vix,1)} <span style="font-weight:500">(30↑ ${vixOk?"✓":"✗"})</span></span>
+      <span class="tb ${fgOk?"ok":""}">공포탐욕 ${num(fg,1)} <span style="font-weight:500">${fgLab}${fgOk?" ✓":""}</span></span>
+      <span class="tb ${rsiOk?"ok":""}">QQQ RSI ${num(qRsi,1)} <span style="font-weight:500">(30↓ ${rsiOk?"✓":"✗"})</span></span>
+      ${trio? `<span class="tb trio">3중 과매도 충족</span>` : `<span class="tb warn">3중 미충족</span>`}
+    </div>
+    <div class="seg" role="group" aria-label="과매도 기준">
+      <button type="button" data-oo="base" aria-pressed="${OO_TIER!=="deep"}">기본 30/30</button>
+      <button type="button" data-oo="deep" aria-pressed="${OO_TIER==="deep"}">심화 35/27</button>
+    </div>
+    <p class="muted" id="oo_crit" style="margin:0 0 6px">${ooCritText()}</p>
+    <div id="oo_body">${ooBodyHTML()}</div>
+    <p class="note">※ 과거 2010~현재(QQQ 1999~) VIX·RSI 동시 충족일 기준. CNN 공포탐욕지수는 최근 1년만 제공되어 실시간 조건 체크에만 반영.</p>
+    <details class="mexp sm"><summary>설명 보기</summary><p>조건을 채운 날 종가에 사서 1주(5거래일)·2주(10)·4주(20)·8주(40)·12주(60) 뒤 종가에 팔았을 때 플러스였던 비율과 평균 수익률입니다. 같은 사건이 여러 날 이어지므로 5거래일 안의 연속 신호는 한 번으로 세어 '회'로 표시하고, 일수 표본도 함께 적었습니다.</p><p>데이터는 VIX 1990~, QQQ 1999~, QLD 2006~, TQQQ·SOXL 2010~ 일봉입니다. 레버리지 종목은 기간이 짧고 SOXL은 표본이 20일 안팎이라, 심화 구간의 80~100%는 한두 사건에 좌우된 값으로 봐야 합니다. 세금·수수료·환율은 반영하지 않았습니다.</p></details>
+  </div>`;
+}
+function bindOversold(){
+  document.querySelectorAll("[data-oo]").forEach(b=>b.onclick=()=>{
+    OO_TIER = b.dataset.oo;
+    document.querySelectorAll("[data-oo]").forEach(x=>x.setAttribute("aria-pressed", String(x.dataset.oo===OO_TIER)));
+    const w=$("#oo_body"); if(w) w.innerHTML=ooBodyHTML();
+    const cr=$("#oo_crit"); if(cr) cr.textContent=ooCritText();
+  });
+}
 function vTrade(){
   const sig = swingSignals(E), sw = planSwing(E), so = swingOrders(E), lx = levExposure(E);
   const on = sig.filter(s=>s.on), near = sig.filter(s=>s.near);
@@ -1337,6 +1421,7 @@ function vTrade(){
     <td class="l"><span class="inline"><input type="number" step="0.01" min="0" placeholder="매도가" aria-label="${esc(p.t)} 매도가" data-sp="${esc(p.id)}"><input type="number" step="1" min="1" value="${num(e.rem,0).replace(/,/g,"")}" aria-label="${esc(p.t)} 매도 수량" data-sq="${esc(p.id)}"><button type="button" class="ghost" data-sell="${esc(p.id)}">매도 기록</button><button type="button" class="ghost" data-del="${esc(p.id)}" aria-label="${esc(p.t)} 삭제">삭제</button></span></td></tr>`;
   const today = todayYmd();
   return `
+  ${oversoldHTML()}
   <h2>지금 신호</h2>
   <div class="panel"><p><b>진입 ${on.length}</b> · 근접 ${near.length} · 감시 ${sig.length}종목 · 거시 ${esc(E.mode.name)}${sw?.scale<1? " (1회 금액 절반)":""}${sw?.panic? ` · <b class="dn">공황 구간(나스닥 −3%일 23일 내 4회↑)</b>`:""}</p>
   ${on.length||near.length? `<div class="tbl"><table>${head}${[...on,...near].map(row).join("")}</table></div>` : `<p class="muted">진입·근접 신호 없음. 스윙은 폭락기에만 켜집니다(2000년 이후 평균 연 12회, 평균 보유 6일).</p>`}
@@ -2883,7 +2968,7 @@ function render(){
   stackTables($("#app"));
   if(view==="plan") bindPlan();
   if(view==="market") bindMarket();
-  if(view==="trade") bindTrade();
+  if(view==="trade"){ bindTrade(); bindOversold(); }
   if(view==="macro"){ const el=$("#lfc"); (DATA.ml? Promise.resolve(DATA.ml) : getJSON("data/macro_long.json").then(d=>DATA.ml=d)).then(d=>{ const c=$("#cyc"); if(c) cycleRing(c,d); const r=$("#rfc"); if(r) rateCompareChart(r,d); liqInflChart(el,d,{yrs:10}); }).catch(e=>{ el.innerHTML=`<p class="muted">장기 거시 데이터 없음 (${esc(e.message)})</p>`; }); }
   document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openChart(b.dataset.chart); });   // 시세 표는 줄 전체를 눌러도 열림
   if(view==="rules"){
