@@ -1344,7 +1344,7 @@ const OO_NAME = {QQQ:"나스닥100 1배", QLD:"나스닥100 2배", TQQQ:"나스�
 const OO_FG = {"extreme fear":"극단적 공포", fear:"공포", neutral:"중립", greed:"탐욕", "extreme greed":"극단적 탐욕"};
 let OO_TIER = "base";
 function ooCur(){ return E?.M?.oversold || null; }
-function ooNowOK(s){ const v=ooCur()?.cur?.vix; return v!=null && s.rsi!=null && v>=s.vix_min && s.rsi<=s.rsi_max; }
+function ooNowOK(rsi, t){ const v=ooCur()?.cur?.vix; return v!=null && rsi!=null && !!t && v>=t.vix_min && rsi<=t.rsi_max; }
 function ooCritText(){
   const d=ooCur(), dp=d?.symbols?.[0]?.deep;
   if(OO_TIER==="deep") return `VIX ≥ ${num(dp?.vix_min??35,0)} · RSI(14) ≤ ${num(dp?.rsi_max??27,0)}${dp && dp.rsi_max<27? " (현재 RSI가 더 낮아 그 수준)":""} · 신호일 종가 매수 → N거래일 뒤`;
@@ -1357,7 +1357,7 @@ function ooBodyHTML(){
   const H = d.horizons || [["1주",5],["2주",10],["4주",20],["8주",40],["12주",60]];
   const rows = d.symbols.map(s=>{
     const t = s[tier]; if(!t) return "";
-    const ok = ooNowOK(t);
+    const ok = ooNowOK(s.rsi, t);
     const cells = H.map(([lab,h])=>{
       const w = t.win?.[String(h)], a = t.avg?.[String(h)], n = t.n?.[String(h)] ?? 0;
       const c = w==null? "na" : w>=80? "g3" : w>=65? "g2" : w>=50? "g1" : "g0";
@@ -1367,7 +1367,7 @@ function ooBodyHTML(){
     <div class="grid">${cells}</div>
     <div class="sm">과거 ${t.signals}회 신호 · ${t.days}일 표본 · 마지막 ${esc(t.last||"–")}${tier==="deep"? ` · 기준 VIX≥${num(t.vix_min,0)}·RSI≤${num(t.rsi_max,0)}`:""}</div></div>`;
   }).join("");
-  const hit = d.symbols.filter(s=>s[tier] && ooNowOK(s[tier]));
+  const hit = d.symbols.filter(s=>s[tier] && ooNowOK(s.rsi, s[tier]));
   const w4 = hit.map(s=>s[tier].win?.["20"]).filter(x=>x!=null);
   const lead = hit.length&&w4.length? `<b>${hit.length}종목 지금 조건 충족</b> — 4주 뒤 플러스 확률 ${Math.min(...w4)}~${Math.max(...w4)}%` : hit.length? `<b>${hit.length}종목 지금 조건 충족</b>` : `<span class="muted">지금은 조건 충족 종목 없음 — 아래는 같은 조건이었던 과거 기록</span>`;
   return `<p class="lead" style="margin:0 0 4px">${lead}</p><div>${rows}</div>`;
