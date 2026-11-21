@@ -22,6 +22,7 @@ SYMBOLS = [
     ("^KQ11", "코스닥", "지수", "KRW", "y"),   # 11-20 Ben: 고점 대비 하락률 비교
     ("KRW=X", "원/달러", "지수", "KRW", "y"),
     ("JPYKRW=X", "원/엔", "지수", "KRW", "y"),
+    ("CL=F", "WTI 유가", "지수", "USD", "y"),   # 11-21 Ben: 유가(배럴). 거시 점검 탭 판정 카드 + 시세 지수 표
     ("QQQM", "QQQM", "1배 지수", "USD", "y"),
     ("SPYM", "SPYM", "1배 지수", "USD", "y"),
     ("MGK", "MGK", "1배 지수", "USD", "y"),
@@ -171,6 +172,166 @@ def yahoo_meta(sym):
         except Exception as e:  # noqa
             err = e
     raise err
+
+
+# ---------- 시가총액 1~12위 (11-21 Ben) ----------
+# 시세 탭 '빅테크': MAGS(대표 바스켓) 아래에 실제 미국·글로벌 시가총액 1~12위를 시총 순으로 세운다.
+# Yahoo quote API(getcrumb + v7/finance/quote)로 실시간 marketCap을 받고, 실패하면 지난 저장값 순서로 폴백.
+BT_N = 12
+BT_UNIVERSE = [   # 시총 상위 후보군 (2026-11-21 확인: 12위 LLY 1.20T, 13위 ANT 1.19T, 14위 WMT 1.02T)
+    "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA", "BRK-B", "TSM", "SPCX", "ANT",
+    "LLY", "WMT", "JPM", "V", "ORCL", "XOM", "MA", "UNH", "COST", "NFLX",
+    "AMD", "JNJ", "ABBV", "ASML", "KO", "PG",   # 12위 근처까지 확인용 (0.4T 이상)
+]
+BT_NAMES = {"LLY": "일라이릴리", "WMT": "월마트", "JPM": "JP모건", "V": "비자", "ORCL": "오라클",
+            "XOM": "엑슨모빌", "MA": "마스터카드", "UNH": "유나이티드헬스", "COST": "코스트코",
+            "NFLX": "넷플릭스", "AMD": "AMD", "JNJ": "존슨앤존슨", "ABBV": "애브비", "ASML": "ASML",
+            "KO": "코카콜라", "PG": "P&G"}
+BT_BARS = {}   # 연초 종가만 필요한 종목의 1년 일봉 캐시
+
+
+def yahoo_quotes(syms, chunk=12):
+    """v7/finance/quote → {sym: {mcap, price, chg}}. crumb은 쿠키(A3)를 심은 뒤 받아야 한다."""
+    import http.cookiejar
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+
+    def g(u, tries=3):
+        last = None
+        for i in range(tries):   # crumb은 이 세션(A3 쿠키)에 묶인다 → 같은 opener로 받아야 함
+            try:
+                req = urllib.request.Request(u, headers={"User-Agent": UA, "Accept": "*/*"})
+                with op.open(req, timeout=20) as r:
+                    return r.read().decode("utf-8", "replace")
+            except Exception as e:  # noqa
+                last = e
+                time.sleep(1.5 * (i + 1))
+        raise last
+    crumb = ""
+    try:
+        try:
+            g("https://fc.yahoo.com")   # 404지만 쿠키가 심긴다 (없으면 crumb 401)
+        except Exception:  # noqa
+            pass
+        crumb = g("https://query2.finance.yahoo.com/v1/test/getcrumb").strip()
+    except Exception as e:  # noqa
+        print("crumb fail", e, flush=True)
+    out = {}
+    for i in range(0, len(syms), chunk):
+        u = "https://query2.finance.yahoo.com/v7/finance/quote?symbols=" + urllib.request.quote(",".join(syms[i:i + chunk]))
+        if crumb:
+            u += "&crumb=" + urllib.request.quote(crumb)
+        j = json.loads(g(u))
+        for q in j.get("quoteResponse", {}).get("result", []):
+            mc, p = q.get("marketCap"), q.get("regularMarketPrice")
+            if not mc or not p:
+                continue
+            out[q["symbol"]] = {"mcap": float(mc), "price": float(p), "chg": q.get("regularMarketChangePercent")}
+        time.sleep(0.3)
+    return out
+
+
+def bt_bars(sym, hist):
+    if sym in hist:
+        return hist[sym]
+    if sym not in BT_BARS:
+        try:
+            BT_BARS[sym] = yahoo(sym, "1y")
+        except Exception as e:  # noqa
+            print("bt bars fail", sym, e, flush=True)
+            BT_BARS[sym] = []
+    return BT_BARS[sym]
+
+
+def jan_adj(sym, hist, ref):
+    """올해 첫 거래일 수정주가와 최신 수정주가. 연초 상장 전이면 (None, None)."""
+    rows = bt_bars(sym, hist)
+    if not rows or not ref:
+        return None, None
+    hit = next((r for r in rows if r[0] >= ref), None)
+    if not hit:
+        return None, None
+    if abs((datetime.strptime(hit[0], "%Y-%m-%d") - datetime.strptime(ref, "%Y-%m-%d")).days) > 4:
+        return None, None   # SPCX(2026-06-12)·ANT(2026-11-19)처럼 연초에 없던 종목
+    return hit[5], rows[-1][5]
+
+
+def bigtech_rank(quotes, hist, symbols, prev_block, now):
+    """시총 1~12위 + 직전 대비·연초 대비 순위 변동 + 연초 Top12 진입·이탈."""
+    year = now.year
+    names = {s: v.get("name") for s, v in symbols.items()}
+
+    def nm(s):
+        n = names.get(s)
+        return n if n and n != s else BT_NAMES.get(s, s)
+    ref = None   # 올해 첫 거래일 (QQQ 등 확실한 종목의 일봉에서)
+    for s in ("QQQ", "AAPL", "^GSPC", "MSFT"):
+        ref = next((r[0] for r in hist.get(s, []) if r[0] >= f"{year}-01-01"), None)
+        if ref:
+            break
+    cur = sorted(((s, q["mcap"]) for s, q in quotes.items()), key=lambda x: -x[1])
+    cm = dict(cur)
+    top = cur[:BT_N]
+    idx = {s: i + 1 for i, (s, _) in enumerate(cur)}
+    # 연초 스냅샷: 파일에 있으면 그대로, 없으면 현재 시총 × (연초 종가 / 현재가)로 역산해 저장
+    path = os.path.join(DATA, "bigtech_baseline.json")
+    try:
+        allb = json.load(open(path, encoding="utf-8"))
+    except Exception:  # noqa
+        allb = {}
+    snap = allb.get(str(year))
+    # 파일이 없거나 지워지면 지난 market.json에 같이 저장한 스냅샷을 이어쓴다
+    # (update-data가 market.json만 커밋해도 기준 스냅샷이 해를 넘겨 유지되게)
+    if not (snap and snap.get("rows")):
+        pb = (prev_block or {}).get("baseline")
+        if pb and pb.get("rows") and str(pb.get("date", ""))[:4] == str(year):
+            snap = pb
+            allb[str(year)] = snap
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(allb, f, ensure_ascii=False, separators=(",", ":"))
+            except Exception:  # noqa
+                pass
+    derived = False
+    if not (snap and snap.get("rows")) and ref:
+        rows_b = []
+        for s, m in cur:
+            a0, a1 = jan_adj(s, hist, ref)
+            if not a0 or not a1:
+                continue
+            rows_b.append((m * a0 / a1, s))
+        rows_b.sort(key=lambda x: -x[0])
+        snap = {"date": ref, "src": "derived", "rows": [{"sym": s, "rank": i + 1, "mcap_t": round(m / 1e12, 2)}
+                                                           for i, (m, s) in enumerate(rows_b)]}
+        allb[str(year)] = snap
+        derived = True
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(allb, f, ensure_ascii=False, separators=(",", ":"))
+        except Exception as e:  # noqa
+            print("baseline save fail", e, flush=True)
+    base = (snap or {}).get("rows") or []
+    base_idx = {r["sym"]: r["rank"] for r in base}
+    prev_idx = {r["sym"]: r["rank"] for r in (prev_block or {}).get("rows", [])}
+    rows = []
+    for i, (s, m) in enumerate(top):
+        rank, pr, yr = i + 1, prev_idx.get(s), base_idx.get(s)
+        rows.append({"rank": rank, "sym": s, "name": nm(s), "mcap_t": round(m / 1e12, 2),
+                     "prev_rank": pr, "rank_diff": (pr - rank) if pr else None,
+                     "ytd_rank": yr, "ytd_diff": (yr - rank) if yr else None,
+                     "is_new": pr is None, "is_ytd_new": (yr is None or yr > BT_N)})
+    below = [{"rank": i + 1, "sym": s, "name": nm(s), "mcap_t": round(m / 1e12, 2)}
+             for i, (s, m) in enumerate(cur[BT_N:BT_N + 3], start=BT_N)]
+    in_top = {s for s, _ in top}
+    exited_ytd = [{"sym": r["sym"], "name": nm(r["sym"]), "ytd_rank": r["rank"], "now_rank": idx.get(r["sym"]),
+                   "mcap_t": round(cm.get(r["sym"], 0) / 1e12, 2)} for r in base
+                  if r["rank"] <= BT_N and r["sym"] not in in_top]
+    exited_prev = [{"sym": r["sym"], "name": nm(r["sym"]), "prev_rank": r["rank"], "now_rank": idx.get(r["sym"]),
+                    "mcap_t": round(cm.get(r["sym"], 0) / 1e12, 2)} for r in (prev_block or {}).get("rows", [])
+                   if r["sym"] not in in_top]
+    return {"asof": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "n": BT_N,
+            "ytd_date": (snap or {}).get("date"), "ytd_src": "derived" if derived else ((snap or {}).get("src") or "snapshot"),
+            "rows": rows, "below": below, "exited_ytd": exited_ytd, "exited_prev": exited_prev,
+            "baseline": snap}   # 올해 스냅샷을 market.json에 같이 남겨 해가 바뀜도 유지
 
 
 def naver(code, count=800):
@@ -722,8 +883,28 @@ def bt_dca(qqq_rows, qld_rows, label):
 def main():
     os.makedirs(DATA, exist_ok=True)
     now = datetime.now(timezone.utc)
+    # 11-21 Ben: 지난 저장값(market.json)을 덮어쓰기 전에 읽어 두고 직전 순위로 쓴다
+    prev_market = {}
+    try:
+        with open(os.path.join(DATA, "market.json"), encoding="utf-8") as f:
+            prev_market = json.load(f)
+    except Exception:  # noqa
+        prev_market = {}
+    # 11-21 Ben: 시총 1~12위를 먼저 받아 두고, 시세 수집 목록에 없는 종목은 빅테크로 추가한다
+    bt_quotes, bt_err = {}, None
+    try:
+        bt_quotes = yahoo_quotes(BT_UNIVERSE)
+        print("quote", len(bt_quotes), "market caps", flush=True)
+    except Exception as e:  # noqa
+        bt_err = repr(e)[:200]
+        print("quote fail", e, flush=True)
+    roster = list(SYMBOLS)
+    known = {s[0] for s in roster}
+    for sym, _q in sorted(bt_quotes.items(), key=lambda kv: -kv[1]["mcap"])[:BT_N]:
+        if sym not in known:
+            roster.append((sym, BT_NAMES.get(sym, sym), "빅테크", "USD", "y"))
     hist, symbols, errors = {}, {}, []
-    for sym, name, group, cur, src in SYMBOLS:
+    for sym, name, group, cur, src in roster:
         try:
             rng = "max" if sym in ("QQQ", "^IXIC", "QLD", "^VIX", "TQQQ", "SOXL") else "10y"
             rows = yahoo(sym, rng) if src == "y" else naver(sym)
@@ -800,6 +981,31 @@ def main():
                          "spark": [round(x[1], 1) for x in mv[-520:]]}
     except Exception as e:  # noqa
         print("move fail", e, flush=True)
+    # WTI 유가 (11-21 Ben, 거시 점검 보조). 3년(756거래일) 백분위로 높음/보통/낮음 판정 + 배럴 가격·3년 평균·범위·2년 추이
+    try:
+        bars = hist.get("CL=F") or yahoo("CL=F", "5y")
+        c = [r[4] for r in bars]
+        w = c[-756:]
+        v, d = c[-1], bars[-1][0]
+        chg = (c[-1] / c[-2] - 1) * 100 if len(c) > 1 else None
+        try:   # 일봉에 아직 없는 더 새로운 호가만 덮는다(스파크라인·백분위와 숫자를 맞추기 위해)
+            mm = yahoo_meta("CL=F")
+            mp, mpv = mm.get("regularMarketPrice"), mm.get("chartPreviousClose") or mm.get("previousClose")
+            mt = mm.get("regularMarketTime")
+            md = datetime.fromtimestamp(mt, tz=timezone.utc).strftime("%Y-%m-%d") if mt else None
+            if mp and mpv and md and md > d:
+                v, d, chg = float(mp), md, (mp / mpv - 1) * 100
+        except Exception as e:  # noqa
+            print("wti meta fail", e, flush=True)
+        p3 = sum(1 for x in w if x <= v) / len(w) * 100
+        macro["wti"] = {"v": round(v, 2), "date": d, "chg": round(chg, 2) if chg is not None else None,
+                        "avg3y": round(sum(w) / len(w), 2), "min3y": round(min(w), 2), "max3y": round(max(w), 2),
+                        "pct3y": round(p3), "status": "높음" if p3 >= 70 else "낮음" if p3 <= 30 else "보통",
+                        "avg_vs": round((v / (sum(w) / len(w)) - 1) * 100, 1),
+                        "spark": [round(x, 2) for x in c[-520:]]}
+        print("wti", macro["wti"]["v"], macro["wti"]["status"], macro["wti"]["pct3y"], flush=True)
+    except Exception as e:  # noqa
+        print("wti fail", e, flush=True)
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)
@@ -817,11 +1023,21 @@ def main():
         sent = {"errors": [f"sentiment: {e}"]}
     print("sentiment", {k: v for k, v in sent.items() if k in ("errors", "weeks_recorded")}, flush=True)
 
+    # 시총 1~12위 (11-21 Ben). quote 실패 시 지난 시장 파일의 순위로 폴백하고 화면은 기존 목록으로 되돌아간다
+    bt = None
+    try:
+        if bt_quotes:
+            bt = bigtech_rank(bt_quotes, hist, symbols, prev_market.get("bigtech"), now)
+            if bt_err:
+                bt["err"] = bt_err
+            print("bigtech", [f"{r['rank']}.{r['sym']}" for r in bt["rows"]], flush=True)
+    except Exception as e:  # noqa
+        print("bigtech fail", e, flush=True)
     market = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fx": fx_live or {"usdkrw": symbols.get("KRW=X", {}).get("price")},
         "symbols": symbols, "macro": macro, "fng": fng, "sentiment": sent, "errors": errors,
-        "oversold": over,
+        "oversold": over, "bigtech": bt,
         "snapshot": False,
     }
     with open(os.path.join(DATA, "market.json"), "w", encoding="utf-8") as f:
