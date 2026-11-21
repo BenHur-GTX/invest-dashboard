@@ -604,7 +604,10 @@ async function load(){
    ============================================================ */
 function engine(D){
   const M = D.market, S = M.symbols, H = D.H;
-  const fx = M.fx.usdkrw || S["KRW=X"]?.price || 1350;
+  // 11-21 Ben: ext.json(15분 갱신)의 원/달러를 우선. 단 ext가 market.json보다 새로울 때만 — 미국 정규장에는 ext가 쉬고 update-data가 최신이다.
+  const Xe = M.ext;
+  const fxLive = Xe?.fx && (!M.generated || !Xe.asof || new Date(Xe.asof) > new Date(M.generated)) ? Xe.fx : null;
+  const fx = fxLive || M.fx?.usdkrw || S["KRW=X"]?.price || 1350;
   const q = S.QQQ || {};
   const vix = S["^VIX"]?.price ?? M.macro?.vix?.v;
   const fng = M.fng?.score ?? null;
@@ -1835,10 +1838,11 @@ function fxBars(name, cur, avg, unit, dig){
 function fxHTML(){
   const u=E.S["KRW=X"], j=E.S["JPYKRW=X"];
   if(!u?.avg3y) return `<div class="panel"><p class="muted">환전 타이밍: 3년 평균 환율 데이터 대기(다음 갱신부터 표시).</p></div>`;
-  const dv=(u.price/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
+  const cur=E.fx || u.price;   // 11-21 Ben: 15분 갱신 환율(E.fx) 우선. 일봉 종가는 서울 고시라 하루 뒤처짐
+  const dv=(cur/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
   const act = dv<=0? "월급 날 달러 몫(장투·BITO) 100% 환전" : dv<=5? "이번 달 매수에 필요한 달러만 환전" : `필요분만 환전${jd!=null&&jd<=0? " · 남는 원화는 엔화로(1489 폭락 대비)" : ""}`;
   return `<div class="panel fxp"><h4>환전 <span class="muted" style="font-weight:400">→ ${act}</span></h4>
-    ${fxBars("원/달러", u.price, u.avg3y, "원", 1)}
+    ${fxBars("원/달러", cur, u.avg3y, "원", 1)}
     ${j?.avg3y? fxBars("원/엔 (100엔)", j.price*100, j.avg3y*100, "원", 1) : ""}
     <p class="muted fxk">등급: 3년 평균 −3% 이하 적극 환전 · 평균 이하 유리 · +5%까지 보통 · 그 위 불리</p></div>`;
 }

@@ -5,6 +5,8 @@ Yahoo chart API meta.fulldayPrice = 야간 거래까지 포함한 최신가(15�
 장외 등락률 = 최신가 / 직전 정규장 가격(regularMarketPrice) − 1.
 매매 판정(RSI·200일선·낙폭)은 정규장 종가(market.json) 그대로 쓰고, 이 파일은 화면 표시용.
 미국 정규장 시간에는 쓰지 않는다(update-data가 15분마다 정규장 시세를 갱신).
+11-21 Ben: 원/달러(KRW=X) meta.regularMarketPrice도 같이 담는다(ext.fx). 일봉 종가는 서울 장 마감
+고시라 뉴욕 마감 호가보다 하루 뒤처져서(11-21 1,334.79 vs 실제 1,346) 화면 환율이 어긋났다.
 """
 import json, os, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -16,6 +18,8 @@ from build_data import SYMBOLS, DATA, http_get  # noqa: E402
 
 ET = ZoneInfo("America/New_York")
 FUT = {"NQ": "NQ=F", "ES": "ES=F"}
+FX = "KRW=X"
+NAVER_FX = "https://api.stock.naver.com/marketindex/exchange/FX_USDKRW"   # 하나은행 고시회차 (Yahoo 실패 시 대체)
 
 
 def session(now):
@@ -43,6 +47,30 @@ def r(x, n=4):
     return None if x is None else round(x, n)
 
 
+def fx_naver():
+    """네이버 금융 하나은행 고시(closePrice, fluctuations = 전일 대비) → fx/fx_prev/fx_chg"""
+    e = json.loads(http_get(NAVER_FX, tries=2, timeout=15))["exchangeInfo"]
+    p = float(str(e.get("closePrice") or e.get("calcPrice")).replace(",", ""))
+    d = float(str(e.get("fluctuations") or 0).replace(",", ""))
+    if str((e.get("fluctuationsType") or {}).get("name", "")).upper() == "FALLING":
+        d = -d
+    prev = p - d
+    return {"fx": round(p, 2), "fx_prev": round(prev, 2) if prev else None,
+            "fx_chg": round(d / prev * 100, 2) if prev else None, "fx_src": "naver"}
+
+
+def fx_quote(m):
+    """원/달러: Yahoo meta 최신 호가 우선, 실패하면 네이버 하나은행 고시"""
+    p, pc = m.get("regularMarketPrice"), m.get("chartPreviousClose") or m.get("previousClose")
+    if p:
+        return {"fx": r(p, 2), "fx_prev": r(pc, 2) if pc else None,
+                "fx_chg": r((p / pc - 1) * 100, 2) if pc else None, "fx_src": "yahoo"}
+    try:
+        return fx_naver()
+    except Exception as e:  # noqa
+        return {"fx_src": "fail", "fx_err": repr(e)[:80]}
+
+
 def main():
     now = datetime.now(timezone.utc)
     sess = session(now)
@@ -50,7 +78,7 @@ def main():
         print("정규장 시간: 건너뜀"); return
     us = [s for s, _, _, cur, src in SYMBOLS if src == "y" and cur == "USD" and not s.startswith("^") and not s.endswith("-USD")]
     with ThreadPoolExecutor(6) as ex:
-        res = dict(ex.map(meta, us + list(FUT.values())))
+        res = dict(ex.map(meta, us + list(FUT.values()) + [FX]))
     q, errs = {}, []
     for s in us:
         m = res.get(s, {})
@@ -67,10 +95,13 @@ def main():
                       "name": m.get("shortName")}
         else:
             errs.append(s)
-    out = {"asof": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "sess": sess, "fut": fut, "q": q, "errors": errs}
+    fx = fx_quote(res.get(FX, {}))
+    if fx.get("fx_src") == "fail":
+        errs.append(FX + ":fx")
+    out = {"asof": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "sess": sess, "fut": fut, "q": q, **fx, "errors": errs}
     with open(os.path.join(DATA, "ext.json"), "w") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print("ok", sess, len(q), "symbols", len(fut), "futures", "errors:", errs)
+    print("ok", sess, len(q), "symbols", len(fut), "futures", "fx", fx.get("fx"), fx.get("fx_chg"), fx.get("fx_src"), "errors:", errs)
 
 
 if __name__ == "__main__":
