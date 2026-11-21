@@ -55,6 +55,13 @@ nav a.key{color:#f8d3ae;font-weight:700}
 nav a.key:hover,nav a.key[aria-current="page"]{color:#fff}
 nav a.key-last{margin-right:10px;position:relative}
 nav a.key-last::after{content:"";position:absolute;right:-6px;top:12px;bottom:12px;width:1px;background:rgba(255,255,255,.28)}
+/* 11-21 Ben: 시세·거시 점검은 앞의 매수·전략 탭과 다른 색(청록 캡슐)으로 묶어 표시 */
+nav .navgrp{display:flex;align-items:stretch;align-self:center;margin:0 6px;padding:2px;border-radius:9px;background:rgba(122,214,201,.14);box-shadow:inset 0 0 0 1px rgba(122,214,201,.22)}
+nav .navgrp a{color:#a9ded6;padding:2px 10px 1px;border-radius:6px}
+nav .navgrp a:hover{color:#e9fffb;background:rgba(122,214,201,.14)}
+nav .navgrp a[aria-current="page"]{color:#0c3a37;font-weight:700;background:#7fdfcd;border-bottom-color:transparent}
+nav .navgrp a[aria-current="page"]:hover{color:#0c3a37;background:#8fe8d7}
+nav .navgrp a:focus-visible{outline-offset:1px}
 main{padding-top:18px}
 h2{font-size:17px;margin:26px 0 10px;letter-spacing:-.2px}
 h2:first-child{margin-top:4px}
@@ -1408,6 +1415,20 @@ function bindTrade(){
    렌더
    ============================================================ */
 const VIEWS = [["plan","이번 달 매수"],["today","오늘"],["trade","트레이딩"],["market","시세"],["macro","거시 점검"],["people","인간지표"],["crash","폭락 대응"],["scenario","시나리오"],["heat","과열·현금화"],["accounts","계좌·수익률"],["rules","규칙"]];
+const NAV_GROUP = new Set(["market","macro"]);   // 11-21 Ben: 시세·거시 점검은 별도 색 그룹(청록 캡슐)
+// 탭 바 HTML. 그룹 탭은 이웃끼리 한 캡슐로 감싸 한 덩어리로 보이게 한다
+function navHTML(view){
+  const out=[]; let grp=[];
+  const flush=()=>{ if(grp.length){ out.push(`<span class="navgrp">${grp.join("")}</span>`); grp=[]; } };
+  VIEWS.forEach(([k,t],i)=>{
+    const cur = k===view? ` aria-current="page"` : "";
+    if(NAV_GROUP.has(k)){ grp.push(`<a href="#${k}"${cur}>${t}</a>`); return; }
+    flush();
+    out.push(`<a href="#${k}"${i<3? ` class="key${i===2?" key-last":""}"`:""}${cur}>${t}</a>`);
+  });
+  flush();
+  return out.join("");
+}
 let E = null, DATA = null;
 
 /* 오늘 탭 지표 단계 (Ben 2026-11-08): 지금 단계 + 다음 단계 한 줄 */
@@ -2847,7 +2868,7 @@ function render(){
   const view = VIEWS.find(v=>v[0]===h) ? h : home;
   renderedView = view;
   if(view!==h && location.hash) history.replaceState(null,"",location.pathname+location.search+"#"+view);   // 없어진 탭 주소(#settings 등) 정리
-  $("#nav").innerHTML = VIEWS.map(([k,t],i)=>`<a href="#${k}"${i<3?` class="key${i===2?" key-last":""}"`:""} ${k===view?'aria-current="page"':""}>${t}</a>`).join("");
+  $("#nav").innerHTML = navHTML(view);
   const fn = {today:vToday, plan:vPlan, trade:vTrade, crash:vCrash, scenario:vScenario, heat:vHeat, people:vPeople, accounts:vAccounts, market:vMarket, macro:vMacro, backtest:vBacktest, rules:vRules}[view];
   try{ $("#app").innerHTML = fn() + footer(); }catch(err){ $("#app").innerHTML = `<div class="alert bad">화면 계산 오류: ${esc(err.message)}</div>`; console.error(err); }
   stackTables($("#app"));
@@ -2863,6 +2884,56 @@ function render(){
   }
 }
 function footer(){ return `<footer>투자 판단 보조 도구입니다. 규칙 수치는 Band 전략 분석 초안이며 백테스트로 조정합니다. 시세는 Yahoo Finance·네이버(15분 이상 지연), 거시지표는 FRED.</footer>`; }
+
+/* 11-21 Ben: 본문을 좌우로 터치 스와이프하면 탭 순서대로 이동
+   - 왼쪽으로 밀면 다음 탭, 오른쪽으로 밀면 이전 탭
+   - 가로 스크롤 표·차트 팝업·탭 바 안에서는 동작하지 않음 (오작동 방지) */
+const SWIPE = {minDx:56, maxDy:45, ratio:1.5, maxMs:800, slop:18};
+function swipeBlocked(el){
+  if(!el || !el.closest) return true;
+  if(el.closest("nav, dialog, input, textarea, select, [contenteditable]")) return true;   // 탭 바·팝업·입력칸은 제외
+  for(let p=el; p && p!==document.body; p=p.parentElement){                         // 실제로 가로 스크롤되는 조상(표·단계 막대)은 제외
+    const s = getComputedStyle(p);
+    if((s.overflowX==="auto"||s.overflowX==="scroll") && p.scrollWidth-p.clientWidth>4) return true;
+  }
+  return false;
+}
+function swipeTab(step){
+  const cur = VIEWS.findIndex(v=>v[0]===renderedView);
+  const i = Math.max(0, Math.min(VIEWS.length-1, cur+step));   // 첫/끝 탭에서는 더 넘어가지 않음
+  if(i===cur || cur<0) return false;
+  rememberView();
+  location.hash = "#"+VIEWS[i][0];
+  return true;
+}
+let sw = null;
+document.addEventListener("touchstart", e=>{
+  sw = null;
+  if(e.touches.length!==1) return;
+  if(document.querySelector("dialog[open]")) return;           // 차트 팝업이 열려 있으면 무시
+  const t = e.touches[0];
+  if(swipeBlocked(e.target)) return;
+  sw = {x:t.clientX, y:t.clientY, t:performance.now(), lock:null};
+}, {passive:true});
+document.addEventListener("touchmove", e=>{
+  if(!sw) return;
+  if(e.touches.length!==1){ sw=null; return; }
+  if(sw.lock) return;
+  const t=e.touches[0], dx=t.clientX-sw.x, dy=t.clientY-sw.y;
+  if(Math.abs(dy)>SWIPE.slop && Math.abs(dy)>Math.abs(dx)) sw.lock="v";        // 세로 스크롤로 판정
+  else if(Math.abs(dx)>SWIPE.slop && Math.abs(dx)>Math.abs(dy)*1.2) sw.lock="h";
+}, {passive:true});
+document.addEventListener("touchend", e=>{
+  const s = sw; sw = null;
+  if(!s || s.lock==="v") return;
+  const t = e.changedTouches && e.changedTouches[0]; if(!t) return;
+  const dx = t.clientX-s.x, dy = t.clientY-s.y, ms = performance.now()-s.t;
+  if(ms>SWIPE.maxMs) return;                                                    // 길게 누르고 문지른 경우 제외
+  if(Math.abs(dx)<SWIPE.minDx || Math.abs(dx)<Math.abs(dy)*SWIPE.ratio) return;  // 충분히 가로로 민 경우만
+  if(Math.abs(dy)>SWIPE.maxDy) return;
+  swipeTab(dx<0? 1 : -1);
+}, {passive:true});
+document.addEventListener("touchcancel", ()=>{ sw=null; }, {passive:true});
 
 (async()=>{
   try{
