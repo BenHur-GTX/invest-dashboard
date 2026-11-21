@@ -5,7 +5,7 @@ GitHub Actions에서 실행한다 (표준 라이브러리만 사용).
 데이터: Yahoo Finance chart API(15분 지연), Naver 차트(국내 ETF), FRED fredgraph.csv(키 불필요),
 CNN 공포탐욕(비공식, 실패해도 무시).
 """
-import csv, io, json, math, os, sys, time, urllib.request, urllib.error
+import bisect, csv, io, json, math, os, sys, time, urllib.request, urllib.error
 from datetime import datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -437,7 +437,39 @@ def macro_block(start):
                          "walcl": m["walcl"][-1][1] / 1000, "tga": tga[nl[-1][0]] / 1000, "rrp": rrp[rrp_dates[-1]]}
     except Exception as e:  # noqa
         print("netliq fail", e, file=sys.stderr)
+    try:
+        out["sofr_iorb"] = sofr_iorb(m["sofr"], m["iorb"])
+    except Exception as e:  # noqa
+        print("sofr_iorb fail", e, file=sys.stderr)
     return out, m
+
+
+def sofr_iorb(sofr, iorb):
+    """11-20 Ben: SOFR−IORB 스프레드(bp). SOFR은 영업일, IORB는 달력일이라 SOFR 날짜마다 그날(없으면 직전) IORB를 맞춤.
+    판정(index.html): 5영업일 평균 +5bp 이상이면 노랑 '단기 압력'. 빨강에는 쓰지 않음(2018~ 백테스트상 하락 예고력 없음)."""
+    if not sofr or not iorb:
+        return None
+    io = sorted(iorb)
+    io_d = [d for d, _ in io]
+    rows = []
+    for d, v in sofr:
+        i = bisect.bisect_right(io_d, d) - 1
+        if i >= 0:
+            rows.append((d, round((v - io[i][1]) * 100)))
+    if not rows:
+        return None
+    bp = [x[1] for x in rows]
+
+    def run(th):
+        n = 0
+        for x in reversed(bp):
+            if x < th:
+                break
+            n += 1
+        return n
+    return {"spread_bp": bp[-1], "date": rows[-1][0], "avg5": round(sum(bp[-5:]) / min(5, len(bp)), 1),
+            "days_over": run(1), "days_over5": run(5), "max20": max(bp[-20:]),
+            "hist": [[d, x] for d, x in rows[-260:]]}
 
 
 # ---------- 백테스트 ----------
