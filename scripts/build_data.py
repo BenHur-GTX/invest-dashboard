@@ -536,6 +536,71 @@ def downsample(dates, a, b, n=160):
     return [[dates[i], round(a[i], 4), round(b[i], 4)] for i in idx]
 
 
+# ---------- 과매도 분할매수 수익 확률 (11-21 Ben) ----------
+# "VIX ≥ 30 + RSI ≤ 30이면 분할매수" 했을 때 N거래일 뒤 플러스 확률·평균 수익률.
+# CNN 공포탐욕은 최근 1년만 제공돼 백테스트 조건에 넣지 않고, 현재 3중 조건 표시에만 쓴다.
+OVER_H = (("1주", 5), ("2주", 10), ("4주", 20), ("8주", 40), ("12주", 60))
+OVER_SYMS = ("SOXL", "TQQQ", "QQQ", "QLD")
+
+
+def over_tier(rows, vix_by_date, vix_min, rsi_max):
+    """조건 충족일(VIX ≥ vix_min & RSI(14) ≤ rsi_max)마다 종가 매수 → h거래일 뒤 종가 수익률."""
+    c = [r[4] for r in rows]
+    dates = [r[0] for r in rows]
+    rs = rsi_series(c)
+    idx = [i for i in range(14, len(rows))
+           if dates[i] in vix_by_date and vix_by_date[dates[i]] >= vix_min and rs[i] is not None and rs[i] <= rsi_max]
+    win, avg, n = {}, {}, {}
+    for lab, h in OVER_H:
+        rets = [c[i + h] / c[i] - 1 for i in idx if i + h < len(c)]
+        n[str(h)] = len(rets)
+        win[str(h)] = round(sum(1 for x in rets if x > 0) / len(rets) * 100) if rets else None
+        avg[str(h)] = round(sum(rets) / len(rets) * 100, 1) if rets else None
+    sig, last = 0, -999   # 5거래일 쿨다운: 연속된 같은 사건을 한 번으로 센다
+    for i in idx:
+        if i - last >= 5:
+            sig += 1
+            last = i
+    return {"vix_min": vix_min, "rsi_max": rsi_max, "days": len(idx), "signals": sig,
+            "last": dates[idx[-1]] if idx else None, "win": win, "avg": avg, "n": n,
+            "hist_years": round((len(rows) - 1) / 252)}
+
+
+def oversold_odds(hist, fng):
+    vix = hist.get("^VIX") or []
+    vix_by_date = {r[0]: r[4] for r in vix}
+    cur_vix = vix[-1][4] if vix else None
+    # 심화 기준: 평시 VIX ≥ 35 & RSI ≤ 27, 현재가 더 극단적이면 그 수준에 맞춘다
+    deep_vix = max(35.0, float(math.floor(cur_vix))) if cur_vix is not None else 35.0
+    out = {
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "cur": {"vix": r2(cur_vix, 1), "vix_date": vix[-1][0] if vix else None,
+                "fng": (fng or {}).get("score"), "fng_rating": (fng or {}).get("rating"), "fng_date": (fng or {}).get("date"),
+                "symbols": {}},
+        "horizons": [[lab, h] for lab, h in OVER_H],
+        "symbols": [],
+    }
+    rows_out = []
+    for sym in OVER_SYMS:
+        rows = hist.get(sym)
+        if not rows or len(rows) < 40:
+            continue
+        c = [r[4] for r in rows]
+        rs = rsi_series(c)
+        cur_rsi = rs[-1]
+        deep_rsi = min(27.0, float(math.ceil(cur_rsi))) if cur_rsi is not None else 27.0
+        base = over_tier(rows, vix_by_date, 30.0, 30.0)
+        deep = over_tier(rows, vix_by_date, deep_vix, deep_rsi)
+        out["cur"]["symbols"][sym] = {"rsi": r2(cur_rsi, 1), "price": r2(c[-1], 4), "date": rows[-1][0]}
+        rows_out.append({"sym": sym, "rsi": r2(cur_rsi, 1), "price": r2(c[-1], 4), "since": rows[0][0],
+                         "base": base, "deep": deep})
+    # 4주(20거래일) 승률 높은 순, 같으면 12주 승률 순
+    rows_out.sort(key=lambda x: (-(x["base"]["win"].get("20") if x["base"]["win"].get("20") is not None else -1),
+                                 -(x["base"]["win"].get("60") if x["base"]["win"].get("60") is not None else -1)))
+    out["symbols"] = rows_out
+    return out
+
+
 def bt_dca(qqq_rows, qld_rows, label):
     """월 적립 비교 (QLD 1층 규칙 단순화):
     A 무지성: 매월 첫 거래일 QLD 1단위 매수
@@ -590,7 +655,7 @@ def main():
     hist, symbols, errors = {}, {}, []
     for sym, name, group, cur, src in SYMBOLS:
         try:
-            rng = "max" if sym in ("QQQ", "^IXIC", "QLD", "^VIX", "TQQQ") else "10y"
+            rng = "max" if sym in ("QQQ", "^IXIC", "QLD", "^VIX", "TQQQ", "SOXL") else "10y"
             rows = yahoo(sym, rng) if src == "y" else naver(sym)
             hist[sym] = rows
             symbols[sym] = summarize(sym, name, group, cur, rows)
@@ -650,6 +715,12 @@ def main():
     fng = cnn_fng()
     print("fng", fng, flush=True)
     try:
+        over = oversold_odds(hist, fng)
+        print("oversold", [(x["sym"], x["base"]["win"].get("20")) for x in over["symbols"]], flush=True)
+    except Exception as e:  # noqa
+        over = None
+        print("oversold fail", e, flush=True)
+    try:
         import sentiment as SENT
         sent = SENT.collect(DATA, fred, now)
     except Exception as e:  # noqa
@@ -660,6 +731,7 @@ def main():
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fx": {"usdkrw": symbols.get("KRW=X", {}).get("price")},
         "symbols": symbols, "macro": macro, "fng": fng, "sentiment": sent, "errors": errors,
+        "oversold": over,
         "snapshot": False,
     }
     with open(os.path.join(DATA, "market.json"), "w", encoding="utf-8") as f:
