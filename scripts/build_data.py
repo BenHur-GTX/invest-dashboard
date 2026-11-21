@@ -161,6 +161,18 @@ def yahoo(sym, rng="10y"):
     raise err
 
 
+def yahoo_meta(sym):
+    """11-21 Ben: chart API meta (최신 호가 regularMarketPrice·직전 종가 chartPreviousClose)"""
+    q = urllib.request.quote(sym)
+    for host in ("query1", "query2"):
+        try:
+            j = json.loads(http_get(f"https://{host}.finance.yahoo.com/v8/finance/chart/{q}?range=1d&interval=15m"))["chart"]["result"][0]
+            return j.get("meta") or {}
+        except Exception as e:  # noqa
+            err = e
+    raise err
+
+
 def naver(code, count=800):
     txt = http_get(f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=day&count={count}&requestType=0")
     out = []
@@ -723,6 +735,25 @@ def main():
         time.sleep(0.4)
 
     vix_by_date = {r[0]: r[4] for r in hist.get("^VIX", [])}
+    # 11-21 Ben: 원/달러(KRW=X) 일봉 종가는 서울 장 마감 고시라 뉴욕 마감 호가보다 하루 뒤처짐(11-21 1,334.79 vs 실제 1,346).
+    # 일봉은 지표 계산용으로 두고, 화면에 쓰는 fx·시세 표의 원/달러 현재가만 meta 최신 호가로 덮는다.
+    fx_live = {}
+    try:
+        m = yahoo_meta("KRW=X")
+        p, pc = m.get("regularMarketPrice"), m.get("chartPreviousClose") or m.get("previousClose")
+        if p:
+            fx_live = {"usdkrw": round(p, 2), "prev": round(pc, 2) if pc else None,
+                       "chg": round((p / pc - 1) * 100, 2) if pc else None,
+                       "src": "yahoo", "at": m.get("regularMarketTime")}
+            if "KRW=X" in symbols:
+                symbols["KRW=X"]["price"] = fx_live["usdkrw"]
+                symbols["KRW=X"]["live"] = True
+                if pc:
+                    symbols["KRW=X"]["prev"] = fx_live["prev"]
+                    symbols["KRW=X"]["chg"] = fx_live["chg"]
+            print("fx live", fx_live["usdkrw"], fx_live["chg"], flush=True)
+    except Exception as e:  # noqa
+        print("fx meta fail", e, flush=True)
     if "QQQ" in hist:
         st = qqq_state_series(hist["QQQ"], vix_by_date)
         q = symbols["QQQ"]
@@ -788,7 +819,7 @@ def main():
 
     market = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "fx": {"usdkrw": symbols.get("KRW=X", {}).get("price")},
+        "fx": fx_live or {"usdkrw": symbols.get("KRW=X", {}).get("price")},
         "symbols": symbols, "macro": macro, "fng": fng, "sentiment": sent, "errors": errors,
         "oversold": over,
         "snapshot": False,
