@@ -1597,11 +1597,11 @@ function vToday(){
   ${todayActionsHTML(lt, am, irp, bw)}
   <details class="mexp sm"><summary>상세 점검 ${todo.length}줄 보기</summary><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></details>
   ${bigCutHTML(true)}
+  <h2>거시 신호등</h2>
+  <div class="panel">${macroSummary()}<div class="gz">${macroGauges()}</div></div>
   ${alerts? `<h2>경보</h2>
   <div class="alerts">${alerts}</div>`:""}
   ${humanSummary()}
-  <h2>거시 신호등</h2>
-  <div class="panel">${macroSummary()}<div class="gz">${macroGauges()}</div></div>
   <h2>현금 투입 보조지표</h2>
   <div class="panel">${auxGauges()}</div>
   ${jrBox}`;
