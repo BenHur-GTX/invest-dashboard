@@ -606,8 +606,11 @@ function engine(D){
   // 경보
   const alerts = [];
   const ix = S["^IXIC"];
-  if(ix?.chg!=null && ix.chg<=-3) alerts.push({c:"bad", t:`<b>나스닥 ${pct(ix.chg)}</b> — -3% 룰 발생. 장투는 매도하지 않음. 스윙 레버리지 신규 비중 절반, 현금은 보조지표 확인 후 분할.`});
-  if(ix?.minus3_23d>=1) alerts.push({c: ix.minus3_23d>=4?"bad":"", t:`최근 23거래일 나스닥 -3% 하락일 <b>${ix.minus3_23d}회</b>${ix.minus3_23d>=4?" — 공황 구간(4회↑): 스윙 신규 레버리지 중단":""}${ix.minus3_dates?.length? " ("+ix.minus3_dates.join(", ")+")":""}${ix.proxy_note? " · "+esc(ix.proxy_note):""}`});
+  // 11-21 Ben: 경보 카드에 원조 조던 룰의 대기·조기 복귀 기준을 한 줄로 (적용 원칙은 그대로)
+  const jrDown = ix?.chg!=null && ix.chg<=-3;
+  const jrNote = `<div class="muted" style="margin-top:3px;font-size:12.5px">원조 조던 룰: −3% 마감 뒤 23거래일 대기(23일 내 4회면 42거래일 대기), 8일 연속 상승 또는 VIX ≤15면 조기 재진입.</div>`;
+  if(jrDown) alerts.push({c:"bad", t:`<b>나스닥 ${pct(ix.chg)}</b> — -3% 룰 발생. 장투는 매도하지 않음. 스윙 레버리지 신규 비중 절반, 현금은 보조지표 확인 후 분할.${jrNote}`});
+  if(ix?.minus3_23d>=1) alerts.push({c: ix.minus3_23d>=4?"bad":"", t:`최근 23거래일 나스닥 -3% 하락일 <b>${ix.minus3_23d}회</b>${ix.minus3_23d>=4?" — 공황 구간(4회↑): 스윙 신규 레버리지 중단":""}${ix.minus3_dates?.length? " ("+ix.minus3_dates.join(", ")+")":""}${ix.proxy_note? " · "+esc(ix.proxy_note):""}${jrDown?"":jrNote}`});
   const sx = S.SOXL;
   if(sx?.chg!=null && sx.chg<=-10) alerts.push({c:"bad", t:`<b>SOXL ${pct(sx.chg)}</b> 급락 — 스윙 단기 매수 조건(-10%) 충족. 현금의 3~5%만.`});
   if(sx?.dd52!=null && sx.dd52<=-70) alerts.push({c:"", t:`SOXL 1년 고점 대비 <b>${pct(sx.dd52,0)}</b>. 3배 반도체는 -90% 사례가 있어 1회 투입 상한을 지킬 것.`});
