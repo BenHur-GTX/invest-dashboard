@@ -284,6 +284,8 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .obx{display:flex;justify-content:space-between;font-size:11px;color:var(--ink2);margin:0 2px}
 .oilst{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 0;font-size:12px;color:var(--ink2)}
 .oilst b{display:block;font-size:15px;color:var(--ink)}
+.tipbe{font-size:12.5px;color:var(--ink2);margin:9px 0 0}
+.tipbe b{color:var(--ink)}
 @media (max-width:560px){.oilhd{grid-template-columns:1fr 1fr}.oilhd .v{font-size:22px}}
 .btline{font-size:13px;line-height:1.6;margin:2px 0 8px}
 .btb{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:0 4px;margin-left:3px;white-space:nowrap;line-height:15px}
@@ -2582,6 +2584,7 @@ function vMacro(){
   <h2>대피 경보</h2>${fleeHTML()}
   <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
   <h2 id="m_oil">유가 (WTI) <span class="muted">보조 지표</span></h2>${oilHTML(m)}
+  <h2 id="m_tips10">실질 금리 (10년 TIPS) <span class="muted">보조 지표</span></h2>${tipsHTML(m)}
   <h2>기준금리 vs 10년물</h2><div class="panel"><div class="muted">월평균 · FRED (FEDFUNDS·GS10)</div><div id="rfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
@@ -2596,13 +2599,14 @@ function vMacro(){
   <div class="grid2">${series.map(([k,t,th,o])=>{ const s=m[k]?.spark; return `<div class="panel" id="m_series_${k}"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th,{labels:xAxisLabels(k,s.length,m[k]?.date), avg:o?.avg}) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
 }
 // 11-20 Ben: 그래프 아래 연월 눈금. 마지막 날짜·점 개수·주기로 시작일을 역산(대략)
-const MAC_STEP = {dgs10:1.4484, dgs2:1.4484, fedu:1.4484, hy:1.4484, t10y2y:1.4484, vix:1.4484, move:1.4484, sofr:1.4484, iorb:1.4484, ccc:1.4484, wti:1.4484, icsa:7, netliq:7, sahm:30.44, unrate:30.44};
-function xAxisLabels(k, n, endDate, cnt=5){
+const MAC_STEP = {dgs10:1.4484, dgs2:1.4484, fedu:1.4484, hy:1.4484, t10y2y:1.4484, vix:1.4484, move:1.4484, sofr:1.4484, iorb:1.4484, ccc:1.4484, wti:1.4484, tips10:1.4484, icsa:7, netliq:7, sahm:30.44, unrate:30.44};
+function xAxisLabels(k, n, endDate, cnt=5, startDate){
   if(!endDate || !(n>1)) return [];
   const step = MAC_STEP[k] || 1;
   const end = new Date(endDate+"T00:00:00Z").getTime();
   if(isNaN(end)) return [];
-  const start = end - (n-1)*step*864e5;
+  const s0 = startDate? new Date(startDate+"T00:00:00Z").getTime() : NaN;
+  const start = isNaN(s0)? end - (n-1)*step*864e5 : s0;
   return Array.from({length:cnt}, (_,i)=>{ const d = new Date(start + (end-start)*i/(cnt-1));
     return String(d.getUTCFullYear()).slice(2)+"."+String(d.getUTCMonth()+1).padStart(2,"0"); });
 }
@@ -2664,6 +2668,31 @@ function oilHTML(m){
     ${sp.length>1? `<div style="margin-top:10px">${lineChart(sp,[],{avg:{}, labels:xAxisLabels("wti", sp.length, w.date), h:120})}</div><p class="muted" style="font-size:11.5px;margin:2px 0 0">점선 = 최근 2년 평균 $${num(sp.reduce((a,b)=>a+b,0)/sp.length,2)}</p>`:""}
     <p class="note">고유가(3년 상위 30%, 즉 백분위 70% 이상)는 인플레·금리 재압박 요인, 저유가(백분위 30% 이하)는 경기 둔화·물가 안정 신호입니다. 지금 배럴당 가격은 3년 최저 $${num(w.min3y,1)} ~ 최고 $${num(w.max3y,1)} 사이, 3년 평균($${num(w.avg3y,1)})보다 ${pct(w.avg_vs,0,false)} 높습니다.</p>
     <details class="mexp sm"><summary>설명 보기</summary><p>3년 백분위 = 최근 756거래일 종가 중 지금 가격 이하인 날의 비율입니다. 서부텍사스산 원유(WTI) 선물(CL=F) 기준이라 지역 스프레드·정제마진은 빠져 있습니다.</p><p>판정은 참고용이고, '오늘' 탭 거시 신호등 5개(금리·고용·유동성·신용)나 적립·스윙 규칙에는 넣지 않았습니다. 고유가는 물가·금리를 다시 밀어올리는 압력, 저유가는 수요 둔화 신호로 읽되 실제 매수 판단은 지금 쓰는 지표를 그대로 따릅니다.</p></details>
+  </div>`;
+}
+
+// 11-21 Ben: 10년 실질금리(TIPS, FRED DFII10). 명목 10년물에서 기대인플레를 뺀 값.
+// 3년 백분위로 높음(70%↑)·보통·낮음(30%↓). 오를수록 이자 없는 금 보유 비용↑ — 매매 신호가 아니라 금 보유 유효성 점검용
+function tipsHTML(m){
+  const t = m.tips10;
+  if(!t || t.v==null) return `<div class="lights"><div class="light"><div class="t">10년 실질금리 (TIPS)</div><div class="st n"><span class="dot n"></span>데이터 대기</div><div class="d">DFII10 · FRED</div></div></div>`;
+  const st = t.status || "보통", c = st==="높음"? "r" : st==="낮음"? "g" : "n";
+  const p = Math.max(0, Math.min(100, t.pct3y ?? 0));
+  const sp = (t.spark||[]).filter(v=>v!=null);
+  const nom = m.dgs10?.v, be = (nom!=null && t.v!=null)? nom - t.v : null;
+  const db = t.diff_bp;
+  return `<div class="panel oilp">
+    <div class="oilhd">
+      <div><div class="k">10년 실질금리 (TIPS, DFII10)</div><div class="v">${num(t.v,2)}%</div><div class="s">${esc(t.date||"")} · 전일 대비 ${db==null? "–" : (db>0?"+":"")+num(db,0)+"bp"}</div></div>
+      <div><div class="k">지금 높은가? (3년 위치)</div><div class="v ${c}">${esc(st)}</div><div class="s">3년 백분위 ${num(p,0)}% · 상위 ${num(100-p,0)}%</div></div>
+    </div>
+    ${nom!=null? `<p class="tipbe">명목 10년물 ${num(nom,2)}% − 실질 ${num(t.v,2)}% = 기대인플레 ${num(be,2)}%p</p>`:""}
+    <div class="obr" role="img" aria-label="실질금리 3년 백분위 ${num(p,0)}%"><s style="left:30%"></s><s style="left:70%"></s><b style="left:${p.toFixed(0)}%"></b></div>
+    <div class="obx"><span>낮음 ~30%</span><span>보통</span><span>높음 70%~</span></div>
+    <div class="oilst"><div>3년 평균<b>${num(t.avg3y,2)}%</b></div><div>3년 최저<b>${num(t.min3y,2)}%</b></div><div>3년 최고<b>${num(t.max3y,2)}%</b></div></div>
+    ${sp.length>1? `<div style="margin-top:10px">${lineChart(sp,[],{avg:{}, labels:xAxisLabels("tips10", sp.length, t.date, 5, t.spark_dates?.[0]), h:120})}</div><p class="muted" style="font-size:11.5px;margin:2px 0 0">점선 = 최근 2년 평균 ${num(sp.reduce((a,b)=>a+b,0)/sp.length,2)}%</p>`:""}
+    <p class="note">명목 10년물 경보선과 달리, 인플레를 뺀 실질 금리입니다. 오를수록 이자가 없는 금(KRX 금현물)의 보유 비용이 커지고, 내려갈수록 부담이 줄어듭니다. 매매 신호가 아니라 금 보유 유효성을 점검하는 참고 지표입니다.</p>
+    <details class="mexp sm"><summary>설명 보기</summary><p>FRED DFII10(미국 10년 물가연동국채 TIPS 실질금리, 일간)입니다. 기대인플레는 명목 10년물(DGS10)에서 실질금리를 뺀 값(브레이크이븐)이라, 두 지표의 기준일이 하루씩 다를 수 있습니다.</p><p>3년 백분위 = 최근 756거래일 값 중 지금 값 이하인 날의 비율입니다. 판정은 참고용이고 '오늘' 탭 거시 신호등 5개(금리·고용·유동성·신용)나 적립·스윙 규칙에는 넣지 않았습니다.</p></details>
   </div>`;
 }
 
