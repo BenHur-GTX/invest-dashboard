@@ -1006,6 +1006,25 @@ def main():
         print("wti", macro["wti"]["v"], macro["wti"]["status"], macro["wti"]["pct3y"], flush=True)
     except Exception as e:  # noqa
         print("wti fail", e, flush=True)
+    # 10년 실질금리 TIPS (11-21 Ben, 거시 점검 보조). 명목 10년물 − 기대인플레. 3년(756거래일) 백분위로 높음/보통/낮음
+    try:
+        tp = fred("DFII10", "2003-01-01")
+        if len(tp) > 1:
+            v, d = tp[-1][1], tp[-1][0]
+            pv = tp[-2][1]
+            w = [x[1] for x in tp[-756:]]
+            p3 = sum(1 for x in w if x <= v) / len(w) * 100
+            sp = tp[-520:]
+            macro["tips10"] = {"v": round(v, 2), "date": d, "prev": round(pv, 2),
+                              "diff_bp": round((v - pv) * 100),
+                              "avg3y": round(sum(w) / len(w), 2), "min3y": round(min(w), 2), "max3y": round(max(w), 2),
+                              "pct3y": round(p3), "status": "높음" if p3 >= 70 else "낮음" if p3 <= 30 else "보통",
+                              "spark": [round(x[1], 2) for x in sp], "spark_dates": [sp[0][0], sp[-1][0]]}
+            print("tips10", macro["tips10"]["v"], macro["tips10"]["status"], macro["tips10"]["pct3y"], len(tp), flush=True)
+        else:
+            print("tips10 no rows", flush=True)
+    except Exception as e:  # noqa
+        print("tips10 fail", e, flush=True)
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)
