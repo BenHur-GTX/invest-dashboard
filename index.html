@@ -31,6 +31,9 @@ header .wrap{padding-top:14px;padding-bottom:0}
 .hero .v{font-size:20px;font-weight:700;margin-top:2px}
 .hero .s{font-size:12px;color:#d7e6e6}
 .hero .state{grid-column:span 2}
+.hero .alarm{background:#8f1d17;box-shadow:inset 0 0 0 2px #ff5a4e}
+.hero .alarm .v{color:#fff}
+.hero .alarm .tag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;background:#ff5a4e;color:#fff;font-size:11px;font-weight:700;vertical-align:2px}
 .hero .state .v,.hero .mode .v{font-size:22px}
 .stages{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14)}
 .stages>div{background:var(--brand);padding:8px 14px;font-size:12.5px;color:#d7e6e6;line-height:1.45}
@@ -602,6 +605,9 @@ function engine(D){
   const sx = S.SOXL;
   if(sx?.chg!=null && sx.chg<=-10) alerts.push({c:"bad", t:`<b>SOXL ${pct(sx.chg)}</b> 급락 — 스윙 단기 매수 조건(-10%) 충족. 현금의 3~5%만.`});
   if(sx?.dd52!=null && sx.dd52<=-70) alerts.push({c:"", t:`SOXL 1년 고점 대비 <b>${pct(sx.dd52,0)}</b>. 3배 반도체는 -90% 사례가 있어 1회 투입 상한을 지킬 것.`});
+  // 11-21 Ben: 순유동성 4주 연속 감소는 확실히 보이게 (판정은 1표 그대로). 2003~ 60일 내 −10%↓ 확률 40~43% (평소 14~18%)
+  const nlw = mac.netliq?.weeks_down;
+  if(nlw>=4) alerts.unshift({c:"bad", t:`<b>순유동성 ${nlw}주 연속 감소</b> · 4주 ${num(mac.netliq.chg4w,0)}B$ · 60일 내 −10% 낙폭 확률 약 40% (평소 15%)`});
   if(vix!=null && vix>=30) alerts.push({c:"bad", t:`VIX <b>${num(vix,1)}</b> ≥ 30 — 공포 구간.`});
   if(hy!=null && hy>=6) alerts.push({c:"bad", t:`하이일드 스프레드 <b>${num(hy,2)}%</b> ≥ 6% — 신규 레버리지 중단 (7~8% + VIX 30~50에서 재개).`});
   const ks = S["^KS11"];
@@ -1441,7 +1447,7 @@ function renderHero(){
     <div class="mode" data-metric="stage" role="link" tabindex="0" aria-label="거시 단계 상세 보기"><div class="k">${D(E.ladder.c)}거시 단계</div><div class="v">${esc(E.ladder.name)}</div><div class="s">빨강 ${E.L.filter(l=>(l.mode??l.c)==="r").length} · 노랑 ${E.L.filter(l=>(l.mode??l.c)==="y").length}</div></div>
     <div data-metric="fed" role="link" tabindex="0" aria-label="기준금리 상세 보기"><div class="k">${D(Lr?.c||"n")}기준금리</div><div class="v">${mm.fedu?.v!=null? num(mm.fedu.v,2)+"%":"–"}</div><div class="s">연준<br>${esc(Lr?.st||"–")}</div></div>
     <div data-metric="emp" role="link" tabindex="0" aria-label="고용 상세 보기"><div class="k">${D(Le?.c||"n")}고용</div><div class="v">${esc(Le?.st||"–")}</div><div class="s">실업률 ${num(mm.unrate?.v,1)}%<br>샴 ${num(mm.sahm?.v,2)}</div></div>
-    <div data-metric="liq" role="link" tabindex="0" aria-label="유동성 상세 보기"><div class="k">${D(Ll?.c||"n")}유동성</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
+    <div data-metric="liq" role="link" tabindex="0" aria-label="유동성 상세 보기"${nl?.weeks_down>=4? ' class="alarm"':""}><div class="k">${D(Ll?.c||"n")}유동성${nl?.weeks_down>=4? '<span class="tag">경고</span>':""}</div><div class="v">${esc(Ll?.st||"–")}</div><div class="s">${nl? "4주 "+(nl.chg4w>0?"+":"")+num(nl.chg4w,0)+"B$"+(nl.weeks_down? " · "+nl.weeks_down+"주 감소":"") : "–"}</div></div>
     <div data-metric="cred" role="link" tabindex="0" aria-label="신용 상세 보기"><div class="k">${D(Lc?.c||"n")}신용</div><div class="v">${mm.hy?.v!=null? num(mm.hy.v,2)+"%":"–"}</div><div class="s">하이일드<br>${esc(Lc?.st||"–")}</div></div>
     <div class="state" data-metric="qstate" role="link" tabindex="0" aria-label="QQQ 시장 상태 상세 보기"><div class="k">${D(cS)}QQQ 시장 상태</div><div class="v" style="color:${stateColor}">${st.name}</div><div class="s">${esc(st.desc)}</div></div>
     <div data-metric="dd" role="link" tabindex="0" aria-label="고점 대비 상세 보기"><div class="k">${D(cDD)}고점 대비</div><div class="v">${pct(E.dd,1)}</div><div class="s">QQQ 5년 고점</div></div>
