@@ -2361,7 +2361,7 @@ function vMacro(){
   const LAMP_ID = {"금리 사이클":"ratecyc", "장기금리 (미 10년물)":"t10", "고용":"emp", "유동성":"liq", "신용":"cred"};   // 11-20 Ben: 상단 지표에서 바로 찾아갈 때 쓰는 id
   const cards = E.L.map(l=>`<div class="light"${LAMP_ID[l.t]? ` id="m_lamp_${LAMP_ID[l.t]}"`:""}><div class="t">${esc(l.t)}</div><div class="st ${l.c}"><span class="dot ${l.c}"></span>${esc(l.st)}</div><div class="d">${esc(l.d)}</div></div>`).join("");
   // 11-20 Ben: 추이 그래프별 설정 — avg: 평균선 표시(fmt=표시 문구). 기준금리(계단식)와 순유동성(레벨 추세)은 평균 생략
-  const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5],{avg:{fmt:v=>"평균 "+num(v,2)+"%"}}],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6],{avg:{fmt:v=>"평균 "+num(v,2)+"%"}}],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0],{avg:{fmt:v=>"평균 "+num(v,2)+"%p"}}],["icsa","신규 실업수당 청구",[250000,300000],{avg:{fmt:v=>"평균 "+num(v/1e4,1)+"만"}}],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30],{avg:{fmt:v=>"평균 "+num(v,1)}}]];
+  const series = [["dgs10","미 10년물 국채금리 (%)",[4.5,5,5.5],{avg:{fmt:v=>"평균 "+num(v,2)+"%"}}],["fedu","연준 기준금리 상단 (%)",[]],["hy","하이일드 스프레드 (%)",[4,5,6],{avg:{fmt:v=>"평균 "+num(v,2)+"%"}}],["t10y2y","장단기 금리차 10Y−2Y (%p)",[0],{avg:{fmt:v=>"평균 "+num(v,2)+"%p"}}],["icsa","신규 실업수당 청구",[250000,300000],{avg:{fmt:v=>"평균 "+num(v/1e4,1)+"만"}}],["netliq","순유동성 (십억$)",[]],["vix","VIX",[20,30],{avg:{fmt:v=>"평균 "+num(v,1)}}],["move","MOVE (채권 변동성)",[80,120],{avg:{fmt:v=>"평균 "+num(v,1)}}]];
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
   <h2>대피 경보</h2>${fleeHTML()}
   <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
@@ -2372,13 +2372,14 @@ function vMacro(){
   <div class="lights">${cards}</div>
   <details class="mexp sm"><summary>설명 보기</summary><p>거시 지표는 매수 시점이 아니라 단계를 정합니다. 빨강 2개가 3주 연속(2주 넘게)이면 수비, 수비 중엔 빨강 1개 이하가 4주 이어져야 풀립니다. 빨강 1개 또는 노랑 2개는 중립. 대피는 거시 신호등과 별개로 '대피 경보'(QQQ 월말 10개월선 아래 + 실업률 12개월 평균 위)가 켜질 때입니다.</p><p>11-18부터 고정 숫자 대신 변화폭으로 판정합니다. 10년물은 6개월 +1%p 빨강·+0.5%p 노랑(5% 이상 표시 경고는 그대로), 실업수당은 52주 저점 대비 +20% 빨강·+10% 노랑. 고정 기준(10년물 5.5%, 실업수당 30만)은 1971년 이후 61% 기간을 수비로 판정했고, 변화폭 기준은 약 22%입니다. 수익 차이는 없었습니다. 데이터: FRED(무료).</p></details>
   <h2>저등급 신용 · 사모대출 <span class="muted">경고용</span></h2>${creditWatchHTML(m)}
+  <h2>채권 변동성 (MOVE) <span class="muted">참고용</span></h2>${moveHTML(m)}
   <h2 id="m_fng">공포탐욕</h2>
   <div class="panel">${fngGauge(E.fng, E.M.fng)}</div>
   <h2>추이 (2년)</h2>
   <div class="grid2">${series.map(([k,t,th,o])=>{ const s=m[k]?.spark; return `<div class="panel" id="m_series_${k}"><h3 style="margin-top:0">${t} <span class="muted">${m[k]?.v!=null? num(m[k].v, k==="icsa"?0:2):""}</span></h3>${s&&s.length>1? lineChart(s,th,{labels:xAxisLabels(k,s.length,m[k]?.date), avg:o?.avg}) : '<p class="muted">데이터 대기</p>'}</div>`; }).join("")}</div>`;
 }
 // 11-20 Ben: 그래프 아래 연월 눈금. 마지막 날짜·점 개수·주기로 시작일을 역산(대략)
-const MAC_STEP = {dgs10:1.4484, dgs2:1.4484, fedu:1.4484, hy:1.4484, t10y2y:1.4484, vix:1.4484, sofr:1.4484, iorb:1.4484, ccc:1.4484, icsa:7, netliq:7, sahm:30.44, unrate:30.44};
+const MAC_STEP = {dgs10:1.4484, dgs2:1.4484, fedu:1.4484, hy:1.4484, t10y2y:1.4484, vix:1.4484, move:1.4484, sofr:1.4484, iorb:1.4484, ccc:1.4484, icsa:7, netliq:7, sahm:30.44, unrate:30.44};
 function xAxisLabels(k, n, endDate, cnt=5){
   if(!endDate || !(n>1)) return [];
   const step = MAC_STEP[k] || 1;
@@ -2387,6 +2388,16 @@ function xAxisLabels(k, n, endDate, cnt=5){
   const start = end - (n-1)*step*864e5;
   return Array.from({length:cnt}, (_,i)=>{ const d = new Date(start + (end-start)*i/(cnt-1));
     return String(d.getUTCFullYear()).slice(2)+"."+String(d.getUTCMonth()+1).padStart(2,"0"); });
+}
+// 11-21 Ben: 채권 변동성 MOVE. 참고용, 매매 판정 미반영 (검증: backtest/MOVE_SKEW_기간프리미엄_검증_20261121.md)
+// 80/120 고정 기준은 2015년 이후 예고력 없음 → 색은 'MOVE 3년 상위 10% + VIX 25 미만'(채권만 불안)일 때만 노랑
+function moveHTML(m){
+  const mv=m.move, vx=m.vix?.v;
+  if(!mv) return `<div class="lights"><div class="light"><div class="t">MOVE</div><div class="st n"><span class="dot n"></span>데이터 대기</div></div></div>`;
+  const hi=mv.pct3y>=90, calm=vx!=null&&vx<25;
+  const b = hi&&calm? ["채권만 불안","y"] : hi? ["높음 (VIX도 높음)","n"] : ["평소","g"];
+  return `<div class="lights"><div class="light"><div class="t">MOVE (채권 변동성)</div><div class="st ${b[1]}"><span class="dot ${b[1]}"></span>${esc(b[0])}</div><div class="d">${num(mv.v,1)} · 3년 중 상위 ${100-mv.pct3y}% · VIX ${num(vx,1)}<br><span class="muted">3년 상위 10% + VIX 25 미만 = 노랑</span></div></div></div>
+  <details class="mexp sm"><summary>설명 보기</summary><p>매매 판정에 넣지 않습니다. MOVE 120↑은 2003~14년엔 60일 안 −10% 확률이 평소의 2.7배였지만 2015년 이후엔 1.3배(우연 수준)이고, VIX와 상관 0.6이라 대부분 겹칩니다. 'MOVE는 높은데 VIX는 조용한' 때만 2015년 이후에도 1.5배(9번)로 남아 노랑으로 표시합니다. SKEW·기간 프리미엄은 검증에서 기각했습니다.</p></details>`;
 }
 // 11-18 Ben: CCC·은행 대출 기준·BDC. 경고·참고용, 매매 판정 미반영 (검증: data/credit_study.json)
 function creditWatchHTML(m){

@@ -638,6 +638,14 @@ def main():
         macro["bizd"] = {"v": round(b[-1], 2), "dd1y": round((b[-1] / max(b[-252:]) - 1) * 100, 1)}
     except Exception as e:  # noqa
         print("bizd fail", e, flush=True)
+    # 채권 변동성 MOVE (11-21 Ben, 참고용·판정 미반영). 3년 백분위 90%↑ + VIX 25 미만 = '채권만 불안' 배지 (검증: backtest/MOVE_SKEW_기간프리미엄_검증_20261121.md)
+    try:
+        mv = [(r[0], r[4]) for r in yahoo("^MOVE", "5y")]
+        w = [x[1] for x in mv[-756:]]
+        macro["move"] = {"v": round(mv[-1][1], 1), "date": mv[-1][0], "pct3y": round(sum(x <= w[-1] for x in w) / len(w) * 100),
+                         "spark": [round(x[1], 1) for x in mv[-520:]]}
+    except Exception as e:  # noqa
+        print("move fail", e, flush=True)
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)
