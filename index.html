@@ -606,11 +606,9 @@ function engine(D){
   // 경보
   const alerts = [];
   const ix = S["^IXIC"];
-  // 11-21 Ben: 경보 카드에 원조 조던 룰의 대기·조기 복귀 기준을 한 줄로 (적용 원칙은 그대로)
-  const jrDown = ix?.chg!=null && ix.chg<=-3;
-  const jrNote = `<div class="muted" style="margin-top:3px;font-size:12.5px;line-height:1.45"><b>원조 조던 룰</b> −3% 마감 뒤 23거래일 대기(23일 내 4회면 42거래일), 8일 연속 상승·VIX ≤15면 조기 복귀.<br><b>말뚝박기</b>(업그레이드) 전량 현금 대기 대신 고점 대비 −5%마다 10%씩 분할 매수(제로금리 −2.5%마다), 2구간 상승(V자) 시 재진입.</div>`;
-  if(jrDown) alerts.push({c:"bad", t:`<b>나스닥 ${pct(ix.chg)}</b> — -3% 룰 발생. 장투는 매도하지 않음. 스윙 레버리지 신규 비중 절반, 현금은 보조지표 확인 후 분할.${jrNote}`});
-  if(ix?.minus3_23d>=1) alerts.push({c: ix.minus3_23d>=4?"bad":"", t:`최근 23거래일 나스닥 -3% 하락일 <b>${ix.minus3_23d}회</b>${ix.minus3_23d>=4?" — 공황 구간(4회↑): 스윙 신규 레버리지 중단":""}${ix.minus3_dates?.length? " ("+ix.minus3_dates.join(", ")+")":""}${ix.proxy_note? " · "+esc(ix.proxy_note):""}${jrDown?"":jrNote}`});
+  // 11-21 Ben: 경보 카드는 간결하게. 조던 룰·말뚝박기 설명은 오늘 탭 맨 아래 설명 카드로 분리
+  if(ix?.chg!=null && ix.chg<=-3) alerts.push({c:"bad", t:`<b>나스닥 ${pct(ix.chg)}</b> — -3% 룰 발생. 장투는 매도하지 않음. 스윙 레버리지 신규 비중 절반, 현금은 보조지표 확인 후 분할.`});
+  if(ix?.minus3_23d>=1) alerts.push({c: ix.minus3_23d>=4?"bad":"", t:`최근 23거래일 나스닥 -3% 하락일 <b>${ix.minus3_23d}회</b>${ix.minus3_23d>=4?" — 공황 구간(4회↑): 스윙 신규 레버리지 중단":""}${ix.minus3_dates?.length? " ("+ix.minus3_dates.join(", ")+")":""}${ix.proxy_note? " · "+esc(ix.proxy_note):""}`});
   const sx = S.SOXL;
   if(sx?.chg!=null && sx.chg<=-10) alerts.push({c:"bad", t:`<b>SOXL ${pct(sx.chg)}</b> 급락 — 스윙 단기 매수 조건(-10%) 충족. 현금의 3~5%만.`});
   if(sx?.dd52!=null && sx.dd52<=-70) alerts.push({c:"", t:`SOXL 1년 고점 대비 <b>${pct(sx.dd52,0)}</b>. 3배 반도체는 -90% 사례가 있어 1회 투입 상한을 지킬 것.`});
@@ -1585,19 +1583,28 @@ function vToday(){
   if(irp){ todo.push(irp.kodexOn ? `IRP KODEX 200 슬리브 가동 중 (코스피 고점 대비 ${pct(irp.ksDD,0)}, RSI ${num(irp.ks.rsi,1)}). ${irp.todayBuy? `<b>오늘 음봉 매수일</b>: ${won(irp.tick)}` : "다음 -1.5% 음봉일에 매수."}` : "IRP KODEX 200: 가동 조건 미충족."); }
 
   const alerts = E.alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join("");
+  // 11-21 Ben: 오늘 할 일을 맨 위로. 상황·경보 설명 블록(경보·인간지표·거시 신호등·보조지표)은 탭 맨 아래로 내리고,
+  // 맨 끝에 조던 룰·말뚝박기 적용 원칙을 따로 둡니다(경보 카드 안에는 넣지 않음).
+  const jx = E.S["^IXIC"];
+  const jrBox = (jx?.chg!=null && jx.chg<=-3) || (jx?.minus3_23d>=1)
+    ? `<h2>조던 룰 · 말뚝박기</h2>
+  <div class="panel"><p style="margin-top:0"><b>원조 조던 룰</b> −3% 마감 뒤 23거래일 대기(23일 내 4회면 42거래일), 8일 연속 상승·VIX ≤15면 조기 복귀.<br><b>말뚝박기</b>(업그레이드) 전량 현금 대기 대신 고점 대비 −5%마다 10%씩 분할 매수(제로금리 −2.5%마다), 2구간 상승(V자) 시 재진입.</p></div>`
+    : "";
   return `
   ${E.M.snapshot? `<div class="alert info">${esc(E.M.snapshot_note)}</div>`:""}
   ${!DATA.owner? `<div class="alert info">보유 내역 없이 시장 판단과 추천 금액만 보여줍니다. 월 저축액과 계좌 비율은 <a href="#plan">이번 달 매수</a> 탭 맨 위에서 바꾸세요.${DATA.locked? " 보유 내역 키가 있으면 규칙 탭 맨 아래에서 등록하세요.":""}</div>`:""}
+  <h2>오늘 할 일</h2>
+  ${todayActionsHTML(lt, am, irp, bw)}
+  <details class="mexp sm"><summary>상세 점검 ${todo.length}줄 보기</summary><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></details>
+  ${bigCutHTML(true)}
+  ${alerts? `<h2>경보</h2>
+  <div class="alerts">${alerts}</div>`:""}
+  ${humanSummary()}
   <h2>거시 신호등</h2>
   <div class="panel">${macroSummary()}<div class="gz">${macroGauges()}</div></div>
   <h2>현금 투입 보조지표</h2>
   <div class="panel">${auxGauges()}</div>
-  <div class="alerts">${alerts}</div>
-  ${humanSummary()}
-  <h2>오늘 할 일</h2>
-  ${todayActionsHTML(lt, am, irp, bw)}
-  <details class="mexp sm"><summary>상세 점검 ${todo.length}줄 보기</summary><ol class="steps">${todo.map(t=>`<li>${t}</li>`).join("")}</ol></details>
-  ${bigCutHTML(true)}`;
+  ${jrBox}`;
 }
 // 11-15 Ben: 게이지. zones=[[끝값,색]...] (min부터 순서대로), ticks=[값...]
 function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt, id}){
