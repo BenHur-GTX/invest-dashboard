@@ -317,6 +317,22 @@ svg.spark{display:block}
 .oo .c.na{background:#f3f2ee} .oo .c.na .w{color:#9b978e}
 .oo .sm{font-size:11.5px;color:var(--ink2);margin-top:5px}
 @media (max-width:420px){.oo .c .w{font-size:14px}.oo .c{padding:5px 1px}}
+/* 11-21 Ben: 과매도 카드 — 현 상황 맞춤(위) + 추매 사다리 그래프(아래) */
+.oo .oo-crit{font-size:12.5px;color:var(--ink2);margin:0 0 8px}
+.oo-sec{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.oo-sec h3{margin:0 0 3px;font-size:15px}
+.oo-sub{font-size:12.5px;margin:0 0 6px}
+.oo-lg{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:11px;color:var(--ink2);margin:2px 0 2px}
+.oo-lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.oo-lg i.b4{background:#0b4d2c} .oo-lg i.b12{background:#cfe8da}
+.oo svg{display:block;width:100%;height:auto}
+.oo-wt{display:flex;gap:3px;margin:10px 0 5px}
+.oo-wt .w{height:24px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;border-radius:4px;background:#eef3ef;color:#2b6a49;min-width:0;overflow:hidden}
+.oo-wt .w.done{background:#cfe8da}
+.oo-wt .w.on{background:#0b4d2c;color:#fff;box-shadow:0 0 0 2px #b54708}
+.oo-wp{height:8px;background:#ebe9e3;border-radius:99px;overflow:hidden}
+.oo-wp i{display:block;height:100%;background:#0b4d2c;border-radius:99px}
+.oo-wl{font-size:12.5px;margin:6px 0 0}
 .big{font-size:22px;font-weight:700}
 .chart{width:100%;height:220px}
 footer{color:var(--ink2);font-size:12px;margin-top:28px;line-height:1.7}
@@ -1339,38 +1355,101 @@ function reboundHTML(E){
   <p class="muted">${ok1&&ok2? "두 항목 충족: 과거 반등 시도 중 60일 성과가 좋았던 쪽." : ok1||ok2? "1개 충족." : "미충족: 과거엔 60일 평균 −3%, 저점 재이탈 59%."} 매매 규칙·비중에는 반영하지 않습니다.</p>
   <details class="mexp sm"><summary>설명 보기</summary><p>피보 구간별 (반등 시도 64회, 이후 60거래일): 23.6% 미만 −3.4%·상승 50%·저점 재이탈 59% / 23.6~38.2% +7.2%·83%·44% / 38.2~50% +4.4%·80%·20% / 50~61.8% +2.0%·67%·33%(3회) / 61.8% 이상 1회. 23.6%를 넘기면 성과가 뚜렷이 좋아지고, 38.2%를 넘기면 재이탈 위험이 가장 낮습니다.</p><p>1999년 이후 QQQ가 −10% 넘게 빠진 뒤 처음 20일선 위로 올라선 반등 시도 64회를 검증했습니다. 피보나치 23.6% 이상 되돌린 반등은 60일 평균 +5.7%(상승 81%, 저점 재이탈 34%)였고, 그 미만은 −3.4%(상승 50%, 재이탈 59%)였습니다. 2012년 이전과 이후 모두 같은 방향입니다. 상위 종목 절반 이상이 50일선 위면 +3.9%, 아니면 0.0%였습니다.</p><p>추세선 돌파 속도(저점→20일선 7일 이내)는 +0.0% vs 늦은 반등 +5.3%, 거래대금 20일 평균 1.2배 이상은 −1.3% vs +1.6%, 장대음봉 고가 회복은 +0.0% vs +1.5%로 효과가 없거나 반대여서 뺐습니다. 반등 가속 1·2차 신호일(2001·2008·2022 가짜 포함)에는 두 항목 모두 진짜·가짜를 가르지 못해 비중에는 넣지 않았습니다.</p></details></div>`;
 }
-/* 11-21 Ben: 과매도 분할매수 수익 확률 — VIX·RSI(14) 동시 충족일 이후 N거래일 승률 (data/market.json oversold, scripts/build_data.py 계산) */
+/* 11-21 Ben: 과매도 — ①현 상황 맞춤 수익 확률 + ②상황 악화별 추매 분할매수 사다리 (data/market.json oversold, scripts/build_data.py 계산) */
 const OO_NAME = {QQQ:"나스닥100 1배", QLD:"나스닥100 2배", TQQQ:"나스닥100 3배", SOXL:"반도체 3배"};
 const OO_FG = {"extreme fear":"극단적 공포", fear:"공포", neutral:"중립", greed:"탐욕", "extreme greed":"극단적 탐욕"};
-let OO_TIER = "base";
+let OO_SYM = "TQQQ";
 function ooCur(){ return E?.M?.oversold || null; }
-function ooNowOK(rsi, t){ const v=ooCur()?.cur?.vix; return v!=null && rsi!=null && !!t && v>=t.vix_min && rsi<=t.rsi_max; }
+function ooH(){ return ooCur()?.horizons || [["1주",5],["2주",10],["4주",20],["8주",40],["12주",60]]; }
 function ooCritText(){
-  const d=ooCur(), dp=d?.symbols?.[0]?.deep;
-  if(OO_TIER==="deep") return `VIX ≥ ${num(dp?.vix_min??35,0)} · RSI(14) ≤ ${num(dp?.rsi_max??27,0)}${dp && dp.rsi_max<27? " (현재 RSI가 더 낮아 그 수준)":""} · 신호일 종가 매수 → N거래일 뒤`;
-  return "VIX ≥ 30 · RSI(14) ≤ 30 · 신호일 종가 매수 → N거래일 뒤";
+  const c = ooCur()?.current; if(!c) return "";
+  const syn = `VIX ≥ ${num(c.vix_min,0)} · RSI(14) ≤ ${num(c.rsi_max,0)} · 신호일 종가 매수 → N거래일 뒤`;
+  return c.mode==="now"? `현재 수준 기준 — ${syn}` : `평시 대기 기준 — ${syn}`;
 }
-function ooBodyHTML(){
+function ooWc(w){ return w==null? "na" : w>=80? "g3" : w>=65? "g2" : w>=50? "g1" : "g0"; }
+function ooNowHTML(){
   const d=ooCur();
-  if(!d?.symbols?.length) return `<p class="muted">데이터 대기 — 다음 갱신에 계산됩니다.</p>`;
-  const tier = OO_TIER==="deep"? "deep":"base";
-  const H = d.horizons || [["1주",5],["2주",10],["4주",20],["8주",40],["12주",60]];
-  const rows = d.symbols.map(s=>{
-    const t = s[tier]; if(!t) return "";
-    const ok = ooNowOK(s.rsi, t);
+  if(!d?.current?.symbols?.length) return `<p class="muted">데이터 대기 — 다음 갱신에 계산됩니다.</p>`;
+  const H = ooH();
+  const rows = d.current.symbols.map(s=>{
     const cells = H.map(([lab,h])=>{
-      const w = t.win?.[String(h)], a = t.avg?.[String(h)], n = t.n?.[String(h)] ?? 0;
-      const c = w==null? "na" : w>=80? "g3" : w>=65? "g2" : w>=50? "g1" : "g0";
-      return `<div class="c ${c}" title="표본 ${n}일 · 평균 ${a==null?"–":pct(a,1)}"><div class="h">${lab}</div><div class="w">${w==null?"–":w+"%"}</div><div class="a">${a==null?"":pct(a,1)}</div></div>`;
+      const w = s.win?.[String(h)], a = s.avg?.[String(h)], n = s.n?.[String(h)] ?? 0;
+      return `<div class="c ${ooWc(w)}" title="표본 ${n}일 · 평균 ${a==null?"–":pct(a,1)}"><div class="h">${lab}</div><div class="w">${w==null?"–":w+"%"}</div><div class="a">${a==null?"":pct(a,1)}</div></div>`;
     }).join("");
-    return `<div class="row${ok?" now":""}"><div class="rh"><b>${esc(s.sym)}</b><span class="muted">${OO_NAME[s.sym]||""}</span><span class="muted">RSI ${num(s.rsi,1)}</span>${ok? `<span class="tb ok">오늘 신호</span>`:""}</div>
+    return `<div class="row${s.fills?" now":""}"><div class="rh"><b>${esc(s.sym)}</b><span class="muted">${OO_NAME[s.sym]||""}</span><span class="muted">RSI ${num(s.rsi,1)}</span>${s.fills? `<span class="tb ok">지금 충족</span>`:""}</div>
     <div class="grid">${cells}</div>
-    <div class="sm">과거 ${t.signals}회 신호 · ${t.days}일 표본 · 마지막 ${esc(t.last||"–")}${tier==="deep"? ` · 기준 VIX≥${num(t.vix_min,0)}·RSI≤${num(t.rsi_max,0)}`:""}</div></div>`;
+    <div class="sm">과거 ${s.signals}회 신호 · ${s.days}일 표본 · 마지막 ${esc(s.last||"–")} · 기준 VIX≥${num(s.vix_min,0)}·RSI≤${num(s.rsi_max,0)}${s.loosened? " (표본이 적어 넓힘)":""}</div></div>`;
   }).join("");
-  const hit = d.symbols.filter(s=>s[tier] && ooNowOK(s.rsi, s[tier]));
-  const w4 = hit.map(s=>s[tier].win?.["20"]).filter(x=>x!=null);
-  const lead = hit.length&&w4.length? `<b>${hit.length}종목 지금 조건 충족</b> — 4주 뒤 플러스 확률 ${Math.min(...w4)}~${Math.max(...w4)}%` : hit.length? `<b>${hit.length}종목 지금 조건 충족</b>` : `<span class="muted">지금은 조건 충족 종목 없음 — 아래는 같은 조건이었던 과거 기록</span>`;
+  const hit = d.current.symbols.filter(s=>s.fills);
+  const w4 = hit.map(s=>s.win?.["20"]).filter(x=>x!=null);
+  const lead = hit.length? `<b>${hit.length}종목 지금 조건 충족</b>${w4.length? ` — 4주 뒤 플러스 확률 ${Math.min(...w4)}~${Math.max(...w4)}%`:""}` : `<span class="muted">지금은 조건 충족 종목 없음 — 아래는 같은 조건이었던 과거 기록</span>`;
   return `<p class="lead" style="margin:0 0 4px">${lead}</p><div>${rows}</div>`;
+}
+/* 사다리 그래프: X축 4단계, 4주(진한 막대)·12주(연한 막대) 승률 + 막대 아래 4주 평균 수익률. 390px에서 넘침 없게 viewBox 320 고정 */
+function ooChart(steps, sym, mi){
+  const W=320, H=202, X0=22, X1=W-6, TOP=30, BASE=146, BW=26, GAP=5;
+  const colW=(X1-X0)/steps.length, h100=BASE-TOP, cx0=i=>X0+colW*(i+0.5), yv=v=>BASE-v/100*h100;
+  let g="";
+  steps.forEach((st,i)=>{
+    if(i!==mi) return;
+    const cx=cx0(i);
+    g+=`<rect x="${(cx-colW/2+1).toFixed(1)}" y="19" width="${(colW-2).toFixed(1)}" height="${BASE-18}" rx="6" fill="#eef6f0" stroke="#cfe3d6" stroke-width=".8"/>`;
+    const edge = cx<46? "start" : cx>W-46? "end" : "middle";
+    g+=`<text x="${(cx<46? 4 : cx>W-46? W-4 : cx).toFixed(1)}" y="11" text-anchor="${edge}" font-size="8.5" font-weight="700" fill="#b54708">📍 지금 여기</text>`;
+  });
+  [[0,"0"],[50,"50"],[100,"100"]].forEach(([v,lab])=>{
+    g+=`<line x1="${X0-3}" y1="${yv(v).toFixed(1)}" x2="${X1}" y2="${yv(v).toFixed(1)}" stroke="${v===0? "#d8d5cd" : "#ebe9e3"}" stroke-width=".8"/>`;
+    g+=`<text x="${X0-5}" y="${(yv(v)+2.4).toFixed(1)}" text-anchor="end" font-size="6.5" fill="#9b978e">${lab}</text>`;
+  });
+  g+=`<text x="${X0-5}" y="${TOP-9}" text-anchor="end" font-size="6.5" fill="#9b978e">%</text>`;
+  steps.forEach((st,i)=>{
+    const t=st.symbols?.[sym]||{}, cx=cx0(i);
+    const w4=t.win?.["20"], w12=t.win?.["60"], a4=t.avg?.["20"];
+    const x4=cx-BW-GAP/2, x12=cx+GAP/2;
+    if(w4==null && w12==null){
+      g+=`<rect x="${x4.toFixed(1)}" y="${TOP}" width="${BW*2+GAP}" height="${h100}" rx="3" fill="none" stroke="#e3e1db" stroke-dasharray="3 3"/>`;
+      g+=`<text x="${cx.toFixed(1)}" y="${(TOP+h100/2).toFixed(1)}" text-anchor="middle" font-size="7" fill="#9b978e">표본 없음</text>`;
+    } else {
+      const h4 = w4==null? 0 : Math.max(1, w4/100*h100), h12 = w12==null? 0 : Math.max(1, w12/100*h100);
+      if(w12!=null){
+        g+=`<rect x="${x12.toFixed(1)}" y="${(BASE-h12).toFixed(1)}" width="${BW}" height="${h12.toFixed(1)}" rx="2" fill="#cfe8da"/>`;
+        g+=`<text x="${(x12+BW/2).toFixed(1)}" y="${(BASE-h12-3).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#2b6a49">${w12}%</text>`;
+      }
+      if(w4!=null){
+        g+=`<rect x="${x4.toFixed(1)}" y="${(BASE-h4).toFixed(1)}" width="${BW}" height="${h4.toFixed(1)}" rx="2" fill="#0b4d2c"/>`;
+        g+=`<text x="${(x4+BW/2).toFixed(1)}" y="${(BASE-h4-3).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#0b4d2c">${w4}%</text>`;
+      }
+    }
+    const on = !!t.active;
+    g+=`<text x="${cx.toFixed(1)}" y="${BASE+16}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${on? "#b54708" : "#1c1c1a"}">${esc(st.label)}</text>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${BASE+26}" text-anchor="middle" font-size="6.8" fill="#55534e">VIX${num(st.vix_min,0)}·RSI${num(st.rsi_max,0)}</text>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${BASE+35}" text-anchor="middle" font-size="6.8" fill="#9b978e">${t.days??0}일·${t.signals??0}회</text>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${BASE+47}" text-anchor="middle" font-size="7.8" font-weight="600" fill="${a4==null? "#9b978e" : a4>0? "#1f7a4d" : "#b42318"}">4주 ${a4==null? "–" : pct(a4,1)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="단계별 4주·12주 승률과 4주 평균 수익률">${g}</svg>`;
+}
+function ooLadHTML(){
+  const d = ooCur(), L = d?.ladder?.steps || [];
+  if(!L.length) return "";
+  const syms = ["SOXL","TQQQ","QQQ","QLD"].filter(s=>L[0].symbols?.[s]);
+  const sym = syms.includes(OO_SYM)? OO_SYM : (syms[0]||"TQQQ");
+  const qQ = d.cur?.symbols?.QQQ?.rsi, qVix = d.cur?.vix;
+  const mOn = st => st.vix_on && (qQ==null || qQ <= st.rsi_max);   // 시장 단계: VIX + QQQ RSI
+  let mi = -1, si = -1;
+  L.forEach((st,i)=>{ if(mOn(st)) mi = i; if(st.symbols?.[sym]?.active) si = i; });
+  const cum = mi>=0? L[mi].cum : 0;
+  const chips = syms.map(s=>`<button type="button" data-ld="${s}" aria-pressed="${s===sym}">${s}</button>`).join("");
+  const wt = L.map((st,i)=>`<div class="w${i===mi? " on" : i<mi? " done" : ""}" style="flex:${st.weight}">${st.weight}%</div>`).join("");
+  const pos = mi>=0
+    ? `지금 <b>${mi+1}단계 ${esc(L[mi].label)}</b> 충족 — VIX ${num(qVix,1)}${qQ!=null? ` · QQQ RSI ${num(qQ,1)}` : ""} · 누적 <b>${cum}%</b> 투입, 남은 추매 여력 <b>${100-cum}%</b>`
+    : `지금은 1단계(VIX ${num(L[0].vix_min,0)}·RSI ${num(L[0].rsi_max,0)})도 미충족 — <b>대기</b>, 여력 <b>100%</b> 그대로`;
+  const own = si===mi? "" : `<span class="muted"> · ${sym}은 RSI ${num(d.cur?.symbols?.[sym]?.rsi,1)}로 ${si>=0? (si+1)+"단계("+esc(L[si].label)+")까지" : "아직 1단계 전"}</span>`;
+  return `<div class="seg" role="group" aria-label="사다리 종목">${chips}</div>
+  <div class="oo-lg"><span><i class="b4"></i>4주 승률</span><span><i class="b12"></i>12주 승률</span><span class="muted">막대 위 숫자 = 승률(%)</span></div>
+  ${ooChart(L, sym, mi)}
+  <div class="oo-wt" aria-label="단계별 분할 비중">${wt}</div>
+  <div class="oo-wp" role="img" aria-label="누적 투입 ${cum}%"><i style="width:${cum}%"></i></div>
+  <p class="oo-wl">${pos}${own}</p>`;
 }
 function oversoldHTML(){
   const d = ooCur(); if(!d) return "";
@@ -1385,22 +1464,22 @@ function oversoldHTML(){
       <span class="tb ${rsiOk?"ok":""}">QQQ RSI ${num(qRsi,1)} <span style="font-weight:500">(30↓ ${rsiOk?"✓":"✗"})</span></span>
       ${trio? `<span class="tb trio">3중 과매도 충족</span>` : `<span class="tb warn">3중 미충족</span>`}
     </div>
-    <div class="seg" role="group" aria-label="과매도 기준">
-      <button type="button" data-oo="base" aria-pressed="${OO_TIER!=="deep"}">기본 30/30</button>
-      <button type="button" data-oo="deep" aria-pressed="${OO_TIER==="deep"}">심화 35/27</button>
+    <p class="oo-crit">${ooCritText()}</p>
+    <div id="oo_body">${ooNowHTML()}</div>
+    <div class="oo-sec">
+      <h3>상황이 더 나빠지면 — 추매 분할매수 사다리</h3>
+      <p class="oo-sub muted">공포가 깊어질수록 한 단계씩 더 사는 계획입니다. 단계가 내려갈수록 과거 4주 승률이 올라가는지 보세요.</p>
+      <div id="oo_lad">${ooLadHTML()}</div>
     </div>
-    <p class="muted" id="oo_crit" style="margin:0 0 6px">${ooCritText()}</p>
-    <div id="oo_body">${ooBodyHTML()}</div>
     <p class="note">※ 과거 2010~현재(QQQ 1999~) VIX·RSI 동시 충족일 기준. CNN 공포탐욕지수는 최근 1년만 제공되어 실시간 조건 체크에만 반영.</p>
-    <details class="mexp sm"><summary>설명 보기</summary><p>조건을 채운 날 종가에 사서 1주(5거래일)·2주(10)·4주(20)·8주(40)·12주(60) 뒤 종가에 팔았을 때 플러스였던 비율과 평균 수익률입니다. 같은 사건이 여러 날 이어지므로 5거래일 안의 연속 신호는 한 번으로 세어 '회'로 표시하고, 일수 표본도 함께 적었습니다.</p><p>데이터는 VIX 1990~, QQQ 1999~, QLD 2006~, TQQQ·SOXL 2010~ 일봉입니다. 레버리지 종목은 기간이 짧고 SOXL은 표본이 20일 안팎이라, 심화 구간의 80~100%는 한두 사건에 좌우된 값으로 봐야 합니다. 세금·수수료·환율은 반영하지 않았습니다.</p></details>
+    <details class="mexp sm"><summary>설명 보기</summary><p>위쪽은 <b>지금과 같은 강도</b>의 과매도였던 과거 날들로 계산한 확률입니다. 지금 과매도 국면이면 현재 VIX·RSI 수준에 기준을 자동으로 맞추고(예: VIX 35.9·RSI 26.6 → VIX ≥ 35 · RSI ≤ 29), 평시면 기본 대기 기준(VIX ≥ 30 · RSI ≤ 30)을 씁니다. 종목별 표본이 신호 3회 미만이면 그 종목만 30/30까지 넓히고 '표본이 적어 넓힘'으로 표시합니다.</p><p>아래 사다리는 공포가 깊어질 때마다 사는 4단계입니다 — 진입(VIX30·RSI30) 20% → 심화(35·28) 30% → 1차 추매(40·25) 30% → 극단 패닉(45·30) 20%. 4단계는 RSI를 30으로 열어 두어 2008·2020처럼 VIX만 45를 넘은 바닥도 잡습니다. 조건을 채운 날 종가에 사서 4주(20거래일)·12주(60거래일) 뒤 종가에 팔았을 때 플러스였던 비율과 평균 수익률이며, 같은 사건이 이어지므로 5거래일 안의 연속 신호는 한 번으로 셉니다.</p><p>데이터는 VIX 1990~, QQQ 1999~, QLD 2006~, TQQQ·SOXL 2010~ 일봉입니다. 3·4단계는 표본이 3~10회뿐이라 100% 같은 값은 한두 사건에 좌우된 것으로 봐야 합니다. 세금·수수료·환율은 반영하지 않았습니다.</p></details>
   </div>`;
 }
 function bindOversold(){
-  document.querySelectorAll("[data-oo]").forEach(b=>b.onclick=()=>{
-    OO_TIER = b.dataset.oo;
-    document.querySelectorAll("[data-oo]").forEach(x=>x.setAttribute("aria-pressed", String(x.dataset.oo===OO_TIER)));
-    const w=$("#oo_body"); if(w) w.innerHTML=ooBodyHTML();
-    const cr=$("#oo_crit"); if(cr) cr.textContent=ooCritText();
+  document.querySelectorAll("[data-ld]").forEach(b=>b.onclick=()=>{
+    OO_SYM = b.dataset.ld;
+    const w=$("#oo_lad"); if(w) w.innerHTML=ooLadHTML();
+    bindOversold();
   });
 }
 function vTrade(){

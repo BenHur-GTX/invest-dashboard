@@ -541,6 +541,14 @@ def downsample(dates, a, b, n=160):
 # CNN 공포탐욕은 최근 1년만 제공돼 백테스트 조건에 넣지 않고, 현재 3중 조건 표시에만 쓴다.
 OVER_H = (("1주", 5), ("2주", 10), ("4주", 20), ("8주", 40), ("12주", 60))
 OVER_SYMS = ("SOXL", "TQQQ", "QQQ", "QLD")
+# 11-21 Ben: 공포가 깊어질수록 한 단계씩 더 사는 추매 사다리. weight = 그 단계에 넣는 분할 비중(%)
+OVER_LADDER = (
+    {"key": "s1", "label": "진입", "vix_min": 30.0, "rsi_max": 30.0, "weight": 20},
+    {"key": "s2", "label": "심화", "vix_min": 35.0, "rsi_max": 28.0, "weight": 30},
+    {"key": "s3", "label": "1차 추매", "vix_min": 40.0, "rsi_max": 25.0, "weight": 30},
+    # 4단계는 RSI를 30으로 열어 둔다: 2008·2020처럼 VIX만 45를 넘고 RSI가 25 밑으로 안 내려간 바닥을 잡기 위해
+    {"key": "s4", "label": "극단 패닉", "vix_min": 45.0, "rsi_max": 30.0, "weight": 20},
+)
 
 
 def over_tier(rows, vix_by_date, vix_min, rsi_max):
@@ -566,38 +574,88 @@ def over_tier(rows, vix_by_date, vix_min, rsi_max):
             "hist_years": round((len(rows) - 1) / 252)}
 
 
+def over_ok(t, cur_vix, cur_rsi):
+    """지금 이 단계 조건을 실제로 충족하는가."""
+    return (cur_vix is not None and cur_rsi is not None
+            and cur_vix >= t["vix_min"] and cur_rsi <= t["rsi_max"])
+
+
+def over_thin(t):
+    """표본이 얇은가 — 신호 3회 미만이거나 4주 표본 3일 미만."""
+    return t["signals"] < 3 or (t["n"].get("20") or 0) < 3
+
+
+def over_current_criteria(cur_vix, cur_rsi):
+    """① 현 상황 맞춤 기준 — 지금 과매도 국면이면 지금 강도에 맞춘 컷, 평시면 30/30 대기 컷."""
+    q = cur_rsi.get("QQQ")
+    if cur_vix is not None and cur_vix >= 30 and q is not None and q <= 30:
+        mx = max([v for v in cur_rsi.values() if v is not None] or [30.0])
+        return {"mode": "now", "vix_min": max(30.0, float(math.floor(cur_vix))),
+                "rsi_max": min(30.0, float(math.ceil(mx)))}
+    return {"mode": "wait", "vix_min": 30.0, "rsi_max": 30.0}
+
+
+def over_cands(vix_min, rsi_max):
+    """현재 기준에서 표본이 모자랄 때 차례로 넓혀 가는 후보 (마지막은 기본 30/30)."""
+    cands = []
+    for v, r in ((vix_min, rsi_max), (vix_min, min(30.0, rsi_max + 2)), (vix_min, 30.0),
+                 (max(30.0, vix_min - 5), 30.0), (30.0, 30.0)):
+        if (v, r) not in cands:
+            cands.append((v, r))
+    return cands
+
+
 def oversold_odds(hist, fng):
+    """현 상황 맞춤 수익 확률(current) + 상황 악화별 추매 사다리(ladder)."""
     vix = hist.get("^VIX") or []
     vix_by_date = {r[0]: r[4] for r in vix}
     cur_vix = vix[-1][4] if vix else None
-    # 심화 기준: 평시 VIX ≥ 35 & RSI ≤ 27, 현재가 더 극단적이면 그 수준에 맞춘다
-    deep_vix = max(35.0, float(math.floor(cur_vix))) if cur_vix is not None else 35.0
+    rows_by, cur_rsi = {}, {}
+    for sym in OVER_SYMS:
+        rows = hist.get(sym)
+        if not rows or len(rows) < 40:
+            continue
+        rows_by[sym] = rows
+        cur_rsi[sym] = rsi_series([r[4] for r in rows])[-1]
+    crit = over_current_criteria(cur_vix, cur_rsi)
     out = {
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "cur": {"vix": r2(cur_vix, 1), "vix_date": vix[-1][0] if vix else None,
                 "fng": (fng or {}).get("score"), "fng_rating": (fng or {}).get("rating"), "fng_date": (fng or {}).get("date"),
                 "symbols": {}},
         "horizons": [[lab, h] for lab, h in OVER_H],
-        "symbols": [],
+        "current": {**crit, "symbols": []},
+        "ladder": {"steps": []},
     }
     rows_out = []
-    for sym in OVER_SYMS:
-        rows = hist.get(sym)
-        if not rows or len(rows) < 40:
-            continue
+    for sym, rows in rows_by.items():
         c = [r[4] for r in rows]
-        rs = rsi_series(c)
-        cur_rsi = rs[-1]
-        deep_rsi = min(27.0, float(math.ceil(cur_rsi))) if cur_rsi is not None else 27.0
-        base = over_tier(rows, vix_by_date, 30.0, 30.0)
-        deep = over_tier(rows, vix_by_date, deep_vix, deep_rsi)
-        out["cur"]["symbols"][sym] = {"rsi": r2(cur_rsi, 1), "price": r2(c[-1], 4), "date": rows[-1][0]}
-        rows_out.append({"sym": sym, "rsi": r2(cur_rsi, 1), "price": r2(c[-1], 4), "since": rows[0][0],
-                         "base": base, "deep": deep})
+        out["cur"]["symbols"][sym] = {"rsi": r2(cur_rsi[sym], 1), "price": r2(c[-1], 4), "date": rows[-1][0]}
+        # 종목별로 표본 3회 이상이 되는 가장 엄격한 컷을 쓴다(모자라면 30/30까지 넓힘)
+        t = None
+        for v, r in over_cands(crit["vix_min"], crit["rsi_max"]):
+            t = over_tier(rows, vix_by_date, v, r)
+            t["loosened"] = (v, r) != (crit["vix_min"], crit["rsi_max"])
+            if not over_thin(t):
+                break
+        t.update({"sym": sym, "rsi": r2(cur_rsi[sym], 1), "price": r2(c[-1], 4), "since": rows[0][0],
+                  "fills": bool(over_ok(t, cur_vix, cur_rsi[sym]))})
+        rows_out.append(t)
     # 4주(20거래일) 승률 높은 순, 같으면 12주 승률 순
-    rows_out.sort(key=lambda x: (-(x["base"]["win"].get("20") if x["base"]["win"].get("20") is not None else -1),
-                                 -(x["base"]["win"].get("60") if x["base"]["win"].get("60") is not None else -1)))
-    out["symbols"] = rows_out
+    rows_out.sort(key=lambda x: (-(x["win"].get("20") if x["win"].get("20") is not None else -1),
+                                 -(x["win"].get("60") if x["win"].get("60") is not None else -1)))
+    out["current"]["symbols"] = rows_out
+    cum = 0
+    for st in OVER_LADDER:
+        cum += st["weight"]
+        syms = {}
+        for sym, rows in rows_by.items():
+            t = over_tier(rows, vix_by_date, st["vix_min"], st["rsi_max"])
+            t["active"] = bool(over_ok(st, cur_vix, cur_rsi.get(sym)))
+            syms[sym] = t
+        out["ladder"]["steps"].append({**st, "cum": cum,
+                                        "vix_on": cur_vix is not None and cur_vix >= st["vix_min"],
+                                        "symbols": syms})
     return out
 
 
@@ -716,7 +774,8 @@ def main():
     print("fng", fng, flush=True)
     try:
         over = oversold_odds(hist, fng)
-        print("oversold", [(x["sym"], x["base"]["win"].get("20")) for x in over["symbols"]], flush=True)
+        print("oversold", over["current"]["mode"], f"{over['current']['vix_min']:g}/{over['current']['rsi_max']:g}",
+              [(x["sym"], x["win"].get("20"), x["signals"]) for x in over["current"]["symbols"]], flush=True)
     except Exception as e:  # noqa
         over = None
         print("oversold fail", e, flush=True)
