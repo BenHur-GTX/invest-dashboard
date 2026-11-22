@@ -304,7 +304,7 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .wg>summary:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
 .wg>summary .muted{font-weight:400;font-size:12px}
 .wg>summary .wgt{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap}
-.wg>summary .wgt i{display:inline-block;font-style:normal;transition:transform .15s ease}
+.wg>summary .wgt i{display:inline-block;font-style:normal;margin-left:3px;transition:transform .15s ease}
 .wg[open]>summary .wgt i{transform:rotate(90deg)}
 .wgb{border-top:1px solid var(--line);padding:10px 14px 12px}
 .wgb .wlead{font-size:12.5px;color:var(--ink2);margin:0 0 10px;line-height:1.5}
@@ -313,8 +313,8 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .wl .n{font-size:12px;font-weight:700;color:var(--ink2);line-height:1.7}
 .wl .q{font-weight:700;color:var(--ink)}
 .wl .a{display:block;color:var(--ink2);margin-top:1px}
-.wl .a b.lv{font-weight:700;color:var(--ink)}
-.wl .a .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-right:4px;vertical-align:1px}
+.wl .a b{color:var(--ink)}
+.wl .a .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-right:2px;vertical-align:1px}
 .wl>div.l1 .tag{background:#e6f2eb;color:#1d5c3a}
 .wl>div.l2 .tag{background:#fdf0e6;color:#8a4a12}
 .wl>div.l3 .tag{background:#ebe9e3;color:var(--ink2)}
@@ -2678,11 +2678,11 @@ function waveGuideHTML(){
   return `<details class="panel wg" id="m_waveguide">
     <summary><span>하락 뉴스 3층 판별 기준</span><span class="muted">(참고)</span><span class="wgt">기준 보기 <i>▸</i></span></summary>
     <div class="wgb">
-      <p class="wlead">같은 급락 뉴스라도 층이 다릅니다. 두 문항으로 층을 먼저 가른 뒤 대응합니다.</p>
+      <p class="wlead">급락 뉴스는 두 문항으로 층을 가릅니다.</p>
       <div class="wl">
-        <div class="l1"><span class="n">1</span><div><span class="q">이 변화가 10년 뒤에도 유효한가?</span><span class="a">예 → <span class="tag">너울</span><b class="lv">방향 유지</b> · 인구·패권·부채·AI. 하락장에서도 방향은 바뀌지 않습니다.</span></div></div>
-        <div class="l2"><span class="n">2</span><div><span class="q">주기를 갖고 반복되는 사이클인가?</span><span class="a">예 → <span class="tag">파도</span><b class="lv">사다리 분할매수 대응</b> · 금리·유가·경기·유동성. 빠져나갔다 다시 밀려옵니다.</span></div></div>
-        <div class="l3"><span class="n">3</span><div><span class="q">둘 다 아니라면?</span><span class="a">→ <span class="tag">물보라 (노이즈)</span><b class="lv">닦아낼 소음</b> · 단발 헤드라인·수급.</span></div></div>
+        <div class="l1"><span class="n">1</span><div><span class="q">이 변화가 10년 뒤에도 유효한가?</span><span class="a">예 → <span class="tag">너울</span> 인구·패권·부채·AI — <b>방향 유지</b></span></div></div>
+        <div class="l2"><span class="n">2</span><div><span class="q">주기를 갖고 반복되는 사이클인가?</span><span class="a">예 → <span class="tag">파도</span> 금리·유가·경기·유동성 — <b>사다리 분할매수 대응</b></span></div></div>
+        <div class="l3"><span class="n">3</span><div><span class="q">둘 다 아니라면?</span><span class="a">→ <span class="tag">물보라 (노이즈)</span> 단발 헤드라인·수급 — <b>닦아낼 소음</b></span></div></div>
       </div>
       <p class="note">※ 매수·수비 규칙 미반영 (급락 시 심리·맥락 참고용)</p>
     </div>
