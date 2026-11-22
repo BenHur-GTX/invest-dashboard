@@ -1770,6 +1770,8 @@ function vToday(){
   const alerts = E.alerts.map(a=>`<div class="alert ${a.c}">${a.t}</div>`).join("");
   // 11-21 Ben: 오늘 할 일을 맨 위로. 상황·경보 설명 블록(경보·인간지표·거시 신호등·보조지표)은 탭 맨 아래로 내리고,
   // 맨 끝에 조던 룰·말뚝박기 적용 원칙을 따로 둡니다(경보 카드 안에는 넣지 않음).
+  // 11-22 Ben: 경보·인간지표 요약은 보조지표·조던 룰보다도 아래, 탭 맨 끝으로 이동(오늘 할 일·거시 신호등 다음에
+  // 바로 오던 것을 맨 끝으로).
   const jx = E.S["^IXIC"];
   const jrBox = (jx?.chg!=null && jx.chg<=-3) || (jx?.minus3_23d>=1)
     ? `<h2>조던 룰 · 말뚝박기</h2>
@@ -1784,12 +1786,12 @@ function vToday(){
   ${bigCutHTML(true)}
   <h2>거시 신호등</h2>
   <div class="panel">${macroSummary()}<div class="gz">${macroGauges()}</div></div>
-  ${alerts? `<h2>경보</h2>
-  <div class="alerts">${alerts}</div>`:""}
-  ${humanSummary()}
   <h2>현금 투입 보조지표</h2>
   <div class="panel">${auxGauges()}</div>
-  ${jrBox}`;
+  ${jrBox}
+  ${alerts? `<h2>경보</h2>
+  <div class="alerts">${alerts}</div>`:""}
+  ${humanSummary()}`;
 }
 // 11-15 Ben: 게이지. zones=[[끝값,색]...] (min부터 순서대로), ticks=[값...]
 function gauge({t, c, st, vtxt, v, min, max, zones, ticks, d, fmt, id}){
