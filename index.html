@@ -287,6 +287,22 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .tipbe{font-size:12.5px;color:var(--ink2);margin:9px 0 0}
 .tipbe b{color:var(--ink)}
 @media (max-width:560px){.oilhd{grid-template-columns:1fr 1fr}.oilhd .v{font-size:22px}}
+/* 11-22 Ben: 중앙은행 금 매입 카드 — 연도별 막대 + 월별 막대·누적 선 */
+.cbg .cbh{font-size:12px;font-weight:700;color:var(--ink);margin:16px 0 6px}
+.cbg .cbh .muted{font-weight:400}
+.cbaP{display:flex;gap:5px;height:78px;align-items:flex-end;max-width:560px}
+.cbaP .cby{flex:1;position:relative;height:78px;display:flex;align-items:flex-end}
+.cbaP .cby i{display:block;width:100%;border-radius:2px 2px 0 0;background:#c79a3b}
+.cbaP .cby i.dn{background:var(--bad)}
+.cbaP .cby span{position:absolute;left:-2px;right:-2px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);white-space:nowrap}
+.cbaX{display:flex;gap:5px;margin-top:3px;max-width:560px}
+.cbaX>div{flex:1;text-align:center;font-size:10.5px;color:var(--ink2);white-space:nowrap}
+.cbaX b{display:block;font-size:9px;line-height:1.1;color:var(--accent)}
+.cbc{position:relative;margin-top:2px}
+.cbc .cbcl{position:absolute;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--brand);white-space:nowrap}
+.cbxT{position:relative;height:14px;margin-top:2px;font-size:10.5px;color:var(--ink2)}
+.cbxT i{position:absolute;top:0;transform:translateX(-50%);font-style:normal;white-space:nowrap}
+.cbxT i:first-child{transform:none} .cbxT i:last-child{transform:translateX(-100%)}
 .btline{font-size:13px;line-height:1.6;margin:2px 0 8px}
 .btb{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:0 4px;margin-left:3px;white-space:nowrap;line-height:15px}
 .btb.up{background:#e6f2eb;color:#1d5c3a} .btb.dn{background:#f6ece5;color:#8a4b2a} .btb.flat{background:#f0efea;color:#6b6963} .btb.new{background:var(--accent-soft);color:var(--accent)}
@@ -2588,6 +2604,7 @@ function vMacro(){
   <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
   <h2 id="m_oil">유가 (WTI) <span class="muted">보조 지표</span></h2>${oilHTML(m)}
   <h2 id="m_tips10">실질 금리 (10년 TIPS) <span class="muted">보조 지표</span></h2>${tipsHTML(m)}
+  <h2 id="m_cbgold">중앙은행 금 매입 <span class="muted">(주요 27개국)</span></h2>${cbGoldHTML(m)}
   <h2>기준금리 vs 10년물</h2><div class="panel"><div class="muted">월평균 · FRED (FEDFUNDS·GS10)</div><div id="rfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>금리 · 통화량 · 물가</h2><div class="panel"><div class="muted">전년 대비 %, 월간 · FRED·한국은행</div><div id="lfc"><p class="muted">불러오는 중…</p></div></div>
   <h2>QQQ 주봉 40주선 (경보)</h2>${w40HTML()}
@@ -2697,6 +2714,76 @@ function tipsHTML(m){
     <p class="note">명목 10년물 경보선과 달리, 인플레를 뺀 실질 금리입니다. 오를수록 이자가 없는 금(KRX 금현물)의 보유 비용이 커지고, 내려갈수록 부담이 줄어듭니다. 매매 신호가 아니라 금 보유 유효성을 점검하는 참고 지표입니다.</p>
     <details class="mexp sm"><summary>설명 보기</summary><p>FRED DFII10(미국 10년 물가연동국채 TIPS 실질금리, 일간)입니다. 기대인플레는 명목 10년물(DGS10)에서 실질금리를 뺀 값(브레이크이븐)이라, 두 지표의 기준일이 하루씩 다를 수 있습니다.</p><p>3년 백분위 = 최근 756거래일 값 중 지금 값 이하인 날의 비율입니다. 판정은 참고용이고 '오늘' 탭 거시 신호등 5개(금리·고용·유동성·신용)나 적립·스윙 규칙에는 넣지 않았습니다.</p></details>
   </div>`;
+}
+
+// 11-22 Ben: 중앙은행 금 매입(주요 27개국, thegoldbarometer/IMF 공시). 월별 순증감 + 3년 누적 + 연도별 증감.
+// 월별 순증감은 국가별 교집합(pairwise)으로 계산 — 최신월 보고 국가가 줄면 단순 합계 차이는 수천 톤 왜곡된다
+function cbGoldHTML(m){
+  const c = m.cb_gold;
+  if(!c || !(c.series||[]).length) return `<div class="lights"><div class="light"><div class="t">중앙은행 금 매입</div><div class="st n"><span class="dot n"></span>데이터 대기</div><div class="d">thegoldbarometer · IMF 공시</div></div></div>`;
+  const lm = c.latest_month, net = c.latest_net_t, pos = net>=0;
+  const tb = c.top_buyers_latest||[], ts = c.top_sellers_latest||[], pre = c.preliminary;
+  const movTxt = tb.map(x=>`${x.name} +${num(x.t,1)}t`).concat(ts.map(x=>`${x.name} ${num(x.t,1)}t`)).join(" · ");
+  const pn = c.prev_net_t;
+  const full = (c.annual||[]).filter(a=>!a.ytd);
+  const avgY = full.length? full.reduce((s,a)=>s+a.net,0)/full.length : 0;
+  const last12 = (c.series||[]).slice(-12).reduce((s,x)=>s+x.net,0);
+  return `<div class="panel oilp cbg">
+    <div class="oilhd">
+      <div><div class="k">${esc(lm)} 월 순변동 · ${c.latest_n}개국</div><div class="v ${pos?"g":"r"}">${pos?"+":""}${num(net,1)}t</div>
+        <div class="s">${pill(pos?"순매수":"순매도", pos?"g":"r")}${pn!=null? ` 전월 ${pn>=0?"+":""}${num(pn,1)}t`:""}</div></div>
+      <div><div class="k">올해 누적 (${lm.slice(0,4)} YTD)</div><div class="v">${c.ytd_t>=0?"+":""}${num(c.ytd_t,0)}t</div>
+        <div class="s">3년 누적 ${c.cum_3y_t>=0?"+":""}${num(c.cum_3y_t,0)}t</div></div>
+    </div>
+    <div class="oilst"><div>연평균 (21~25)<b>+${num(avgY,0)}t</b></div><div>최근 12개월<b>${last12>=0?"+":""}${num(last12,0)}t</b></div><div>${c.total_n}개국 보유<b>${num(c.total_tonnes,0)}t</b></div></div>
+    ${cbAnnualHTML(c)}
+    ${cbMonthlyHTML(c)}
+    <p class="note">${esc(lm)} 주요 변동: ${esc(movTxt)}</p>
+    ${pre? `<p class="muted" style="font-size:11.5px;margin:2px 0 0">${esc(pre.m)} 선보고 ${pre.n}개국 ${pre.net>=0?"+":""}${num(pre.net,1)}t — 잠정치라 누적에 넣지 않았습니다</p>`:""}
+    ${c.stale? `<p class="muted" style="font-size:11.5px;margin:2px 0 0">이번 수집 실패 — 마지막 성공값(${esc((c.updated||"").replace("T"," ").slice(0,16))}Z)</p>`:""}
+    <details class="mexp sm"><summary>설명 보기</summary><p>IMF·각국 중앙은행 공시를 모은 thegoldbarometer 집계(주요 27개국, 한국 미포함)입니다. 공시가 1~2개월 늦어 맨 끝 달은 보고 국가가 적습니다.</p><p>그래서 월별 증감은 두 달 모두 보고한 국가끼리만 비교해 합산합니다(교집합 방식). 단순히 월 합계끼리 빼면 보고 국가가 24개국에서 8개국으로 줄어드는 달에 수천 톤 마이너스로 왜곡됩니다. 보고 국가가 15개국 이상인 달만 확정으로 쓰고, 그보다 적은 최신월은 선보고로만 따로 적었습니다.</p><p>금값의 두 축 중 '중앙은행 순매입' 쪽 참고 지표입니다. 매매 규칙이나 '오늘' 탭 거시 신호등 5개 판정에는 넣지 않았습니다.</p></details>
+  </div>`;
+}
+// 연도별 순매입 막대 — 매년 늘리는지 줄이는지, 증감 속도 비교
+function cbAnnualHTML(c){
+  const an = c.annual||[];
+  if(an.length<2) return "";
+  const H = 84, TOP = 16, mx = Math.max(0, ...an.map(a=>a.net)), mn = Math.min(0, ...an.map(a=>a.net));
+  const span = (mx-mn)||1, span2 = H-TOP, base = -mn/span*span2;   // 0선 높이(아래에서부터), 위는 라벨 자리
+  return `<div class="cbh">연도별 순매입 <span class="muted">매년 증감 속도 · 톤</span></div>
+  <div class="cbaP" style="height:${H}px">${an.map(a=>{ const h = Math.max(2, Math.abs(a.net)/span*span2); const neg = a.net<0;
+    const b = neg? base - h : base;
+    return `<div class="cby" style="height:${H}px"><i class="${neg?"dn":""}" style="height:${h.toFixed(1)}px;position:absolute;left:0;right:0;bottom:${b.toFixed(1)}px"></i><span style="bottom:${(b+h+2).toFixed(1)}px">${neg?"−":"+"}${num(Math.abs(a.net),0)}t</span></div>`; }).join("")}</div>
+  <div class="cbaX">${an.map(a=>`<div>${esc(a.y)}${a.ytd?"<b>YTD</b>":""}</div>`).join("")}</div>`;
+}
+// 월별 순증감 막대 + 3년 누적 선 (이중 스케일). 글자는 SVG 밖 HTML로 둬서 모바일에서 찌그러지지 않게
+function cbMonthlyHTML(c){
+  const s = c.series||[];
+  if(s.length<6) return "";
+  const W=360, H=132, GUT=44, PW=W-GUT, n=s.length, step=PW/n;   // 오른쪽 여백 = 누적 눈금 글자
+  const nets=s.map(x=>x.net), cums=s.map(x=>x.cum);
+  const mx=Math.max(0,...nets), mn=Math.min(0,...nets), span=(mx-mn)||1;
+  const yN=v=>(H-2-(v-mn)/span*(H-4));
+  const cmn=Math.min(...cums), cmx=Math.max(...cums), cspan=(cmx-cmn)||1;
+  const yC=v=>(H-10-(v-cmn)/cspan*(H-20));
+  const bw=Math.max(3.2, step*0.56);
+  const bars=s.map((x,i)=>{ const cx=i*step+step/2, a=yN(Math.max(x.net,0)), b=yN(Math.min(x.net,0));
+    return `<rect x="${(cx-bw/2).toFixed(2)}" y="${Math.min(a,b).toFixed(1)}" width="${bw.toFixed(2)}" height="${Math.max(1,Math.abs(b-a)).toFixed(1)}" fill="${x.net>=0?"#c79a3b":"#b42318"}" rx="1"/>`; }).join("");
+  const line=s.map((x,i)=>`${(i*step+step/2).toFixed(1)},${yC(x.cum).toFixed(1)}`).join(" ");
+  const ticks=[0,1,2,3,4,5].map(i=>{ const idx=Math.round(i*(n-1)/5), mm=s[idx].m;
+    return {p:((idx*step+step/2)/W*100), t:mm.slice(2,4)+"."+mm.slice(5,7)}; });
+  const gp=(PW/W*100).toFixed(1);
+  return `<div class="cbh">월별 증감 <span class="muted">막대</span> + 3년 누적 <span class="muted">선</span></div>
+  <div class="cbc">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:${H}px;display:block" role="img" aria-label="중앙은행 금 매입 월별 증감과 3년 누적 추이">
+      <line x1="0" x2="${PW}" y1="${yN(0).toFixed(1)}" y2="${yN(0).toFixed(1)}" stroke="#d6d3cb" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      ${bars}
+      <polyline fill="none" stroke="var(--brand)" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${line}"/></svg>
+    <span class="cbcl" style="left:${gp}%;top:${(yC(cums[n-1])/H*100).toFixed(1)}%">${cums[n-1]>=0?"+":""}${num(cums[n-1],0)}t</span>
+    <span class="cbcl" style="left:${gp}%;top:${(yC(cums[0])/H*100).toFixed(1)}%">${cums[0]>=0?"+":""}${num(cums[0],0)}t</span>
+  </div>
+  <div class="cbxT">${ticks.map(t=>`<i style="left:${t.p.toFixed(2)}%">${esc(t.t)}</i>`).join("")}</div>
+  <p class="muted" style="font-size:11px;margin:2px 0 0">막대 = 월별 순증감(톤, 0선) · 선 = 3년 누적 순매입(톤, 오른쪽 눈금 ${esc(s[0].m)} +${num(cums[0],0)}t → ${esc(s[n-1].m)} ${cums[n-1]>=0?"+":""}${num(cums[n-1],0)}t)</p>`;
 }
 
 // 11-18/19 Ben: 금리·물가 사이클 국면. 돈 풀림·안정 → 물가 상승 → 금리 인상(동결 포함) → 금리 인하 → 침체형 인하

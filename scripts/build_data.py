@@ -888,6 +888,110 @@ def bt_dca(qqq_rows, qld_rows, label):
     }
 
 
+# ---------- 중앙은행 금 매입 (11-22 Ben) ----------
+# thegoldbarometer 공시 집계(주요 27개국 월별 금 보유량, IMF·각국 공시 기반, 1~2개월 시차, 한국 미포함).
+# 월별 순증감은 국가별 교집합(pairwise)으로 낸다. 단순 월 합계의 차이는 최신월 보고 국가가 줄어드는 구간에서
+# 수천 톤 마이너스로 왜곡된다(예: 2026-09 24개국 → 2026-10 8개국).
+CB_GOLD_URL = "https://thegoldbarometer.com/data/gold-reserves-by-country.csv"
+CB_GOLD_MIN_PAIRS = 15   # 두 달 연속 보고한 국가가 이만큼은 되는 달만 '확정 월'로 쓴다
+CB_GOLD_MONTHS = 36      # 월별 시계열 길이(3년)
+CB_GOLD_YEARS = 6        # 연도별 증감 표시 연수(최신 연도 포함)
+CB_GOLD_KO = {
+    "USA": "미국", "DEU": "독일", "ITA": "이탈리아", "FRA": "프랑스", "RUS": "러시아", "CHN": "중국",
+    "CHE": "스위스", "JPN": "일본", "NLD": "네덜란드", "IND": "인도", "TUR": "튀르키예", "SAU": "사우디",
+    "GBR": "영국", "PRT": "포르투갈", "KAZ": "카자흐스탄", "ESP": "스페인", "AUT": "오스트리아",
+    "BEL": "벨기에", "POL": "폴란드", "THA": "태국", "SGP": "싱가포르", "SWE": "스웨덴",
+    "ZAF": "남아프리카공화국", "MEX": "멕시코", "PHL": "필리핀", "AUS": "호주", "IDN": "인도네시아",
+}
+
+
+def _prev_month(m):
+    y, mm = int(m[:4]), int(m[5:7])
+    mm -= 1
+    if mm == 0:
+        y, mm = y - 1, 12
+    return "%04d-%02d" % (y, mm)
+
+
+def cb_gold():
+    """macro.cb_gold — 월별 순증감·누적·연도별 증감. 실패하면 예외를 올리고 호출부가 지난 값을 유지한다."""
+    txt = http_get(CB_GOLD_URL, timeout=30, headers={"Accept": "text/csv,*/*"})
+    by = {}
+    for r in csv.DictReader(io.StringIO(txt)):
+        iso = (r.get("iso3") or "").strip()
+        m = (r.get("month") or "").strip()
+        if not iso or len(m) != 7:
+            continue
+        try:
+            by.setdefault(iso, {})[m] = float(r.get("tonnes"))
+        except (TypeError, ValueError):
+            continue
+    if not by:
+        raise ValueError("no rows")
+    months = sorted({m for d in by.values() for m in d})
+    net, npairs = {}, {}
+    for m in months:
+        p = _prev_month(m)
+        common = [c for c in by if m in by[c] and p in by[c]]
+        if not common:
+            continue
+        net[m] = sum(by[c][m] - by[c][p] for c in common)
+        npairs[m] = len(common)
+    conf = [m for m in sorted(net) if npairs[m] >= CB_GOLD_MIN_PAIRS]
+    if not conf:
+        raise ValueError("no confirmed month")
+    latest = conf[-1]
+    window = conf[-CB_GOLD_MONTHS:]
+    cum, series = 0.0, []
+    for m in window:
+        cum += net[m]
+        series.append({"m": m, "net": round(net[m], 1), "cum": round(cum, 1)})
+
+    # 최신 확정월 기준 국가별 변동폭(순매입 상위 / 순매도 상위)
+    p = _prev_month(latest)
+    deltas = [(c, by[c][latest] - by[c][p]) for c in by if latest in by[c] and p in by[c]]
+    buyers = [{"iso": c, "name": CB_GOLD_KO.get(c, c), "t": round(d, 1)}
+              for c, d in sorted([x for x in deltas if x[1] >= 0.05], key=lambda x: -x[1])[:3]]
+    sellers = [{"iso": c, "name": CB_GOLD_KO.get(c, c), "t": round(d, 1)}
+               for c, d in sorted([x for x in deltas if x[1] <= -0.05], key=lambda x: x[1])[:2]]
+
+    # 연도별 순증감(확정 월의 pairwise 순증감 합). 최신 연도는 확정 월까지만 = YTD
+    annual = []
+    for y in range(int(latest[:4]) - (CB_GOLD_YEARS - 1), int(latest[:4]) + 1):
+        ms = [m for m in conf if m.startswith("%04d-" % y)]
+        if not ms:
+            continue
+        item = {"y": str(y), "net": round(sum(net[m] for m in ms), 1), "n": len(ms)}
+        if y == int(latest[:4]) and latest[5:7] != "12":
+            item["ytd"] = True
+        annual.append(item)
+
+    # 최신월 다음의 선보고(확정 기준 미달) 월 — 메인 시계열에 섞지 않는다
+    pre = None
+    tail = [m for m in sorted(net) if m > latest]
+    if tail:
+        pre = {"m": tail[-1], "n": npairs[tail[-1]], "net": round(net[tail[-1]], 1)}
+
+    return {
+        "latest_month": latest,
+        "latest_net_t": round(net[latest], 1),
+        "latest_n": npairs[latest],
+        "prev_net_t": round(net[conf[-2]], 1) if len(conf) > 1 else None,
+        "total_tonnes": round(sum(by[c][latest] for c in by if latest in by[c]), 1),
+        "total_n": sum(1 for c in by if latest in by[c]),
+        "cum_3y_t": round(series[-1]["cum"], 1),
+        "ytd_t": round(sum(net[m] for m in conf if m.startswith(latest[:4])), 1),
+        "top_buyers_latest": buyers,
+        "top_sellers_latest": sellers,
+        "series": series,
+        "annual": annual,
+        "preliminary": pre,
+        "countries": len(by),
+        "source": CB_GOLD_URL,
+        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+
+
 def main():
     os.makedirs(DATA, exist_ok=True)
     now = datetime.now(timezone.utc)
@@ -1033,6 +1137,20 @@ def main():
             print("tips10 no rows", flush=True)
     except Exception as e:  # noqa
         print("tips10 fail", e, flush=True)
+    # 중앙은행 금 매입 (11-22 Ben, 거시 점검 보조). 외부 사이트가 잠시 막혀도 전체 빌드는 계속되게 지난 값을 유지한다
+    try:
+        macro["cb_gold"] = cb_gold()
+        print("cb_gold", macro["cb_gold"]["latest_month"], macro["cb_gold"]["latest_net_t"],
+              macro["cb_gold"]["cum_3y_t"], flush=True)
+    except Exception as e:  # noqa
+        old = (prev_market.get("macro") or {}).get("cb_gold")
+        if old:
+            old["stale"] = True
+            macro["cb_gold"] = old
+            print("cb_gold fail(지난 값 유지)", e, flush=True)
+        else:
+            macro["cb_gold"] = None
+            print("cb_gold fail", e, flush=True)
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)
