@@ -287,6 +287,16 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .tipbe{font-size:12.5px;color:var(--ink2);margin:9px 0 0}
 .tipbe b{color:var(--ink)}
 @media (max-width:560px){.oilhd{grid-template-columns:1fr 1fr}.oilhd .v{font-size:22px}}
+/* 11-22 Ben: 본격 반등 조건 참고 체크 — 미 10년물·WTI 두 개만 세는 얇은 카드. 신호등·수비/매수 규칙 미반영 */
+.rbc{padding:11px 14px}
+.rbc .rbhd{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;flex-wrap:wrap}
+.rbc .rbhd .muted{font-weight:400;font-size:12px}
+.rbc .rbhd .pill{margin-left:auto;font-weight:600}
+.rbc .rbl{display:grid;gap:4px;margin-top:8px;font-size:13px;max-width:560px}
+.rbc .rbl>div{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.rbc .rbl .mk{width:13px;font-weight:700;flex:0 0 13px}
+.rbc .rbl .cur{margin-left:auto;color:var(--ink2);font-size:12.5px;white-space:nowrap}
+.rbc .note{font-size:12px;margin:8px 0 0;max-width:560px}
 /* 11-22 Ben: 중앙은행 금 매입 카드 — 연도별 막대 + 월별 막대·누적 선 */
 .cbg .cbh{font-size:12px;font-weight:700;color:var(--ink);margin:16px 0 6px}
 .cbg .cbh .muted{font-weight:400}
@@ -2624,7 +2634,7 @@ function vMacro(){
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
   <h2>대피 경보</h2>${fleeHTML()}
   <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
-  <h2 id="m_oil">유가 (WTI) <span class="muted">보조 지표</span></h2>${oilHTML(m)}
+  <h2 id="m_oil">유가 (WTI) <span class="muted">보조 지표</span></h2>${oilHTML(m)}${reboundCheckHTML(m)}
   <h2 id="m_tips10">실질 금리 (10년 TIPS) <span class="muted">보조 지표</span></h2>${tipsHTML(m)}
   <h2 id="m_cbgold">중앙은행 금 매입 <span class="muted">(주요 27개국)</span></h2>${cbGoldHTML(m)}
   <h2>기준금리 vs 10년물</h2><div class="panel"><div class="muted">월평균 · FRED (FEDFUNDS·GS10)</div><div id="rfc"><p class="muted">불러오는 중…</p></div></div>
@@ -2710,6 +2720,23 @@ function oilHTML(m){
     ${sp.length>1? `<div style="margin-top:10px">${lineChart(sp,[],{avg:{}, labels:xAxisLabels("wti", sp.length, w.date), h:120})}</div><p class="muted" style="font-size:11.5px;margin:2px 0 0">점선 = 최근 2년 평균 $${num(sp.reduce((a,b)=>a+b,0)/sp.length,2)}</p>`:""}
     <p class="note">고유가(3년 상위 30%, 즉 백분위 70% 이상)는 인플레·금리 재압박 요인, 저유가(백분위 30% 이하)는 경기 둔화·물가 안정 신호입니다. 지금 배럴당 가격은 3년 최저 $${num(w.min3y,1)} ~ 최고 $${num(w.max3y,1)} 사이, 3년 평균($${num(w.avg3y,1)})보다 ${pct(w.avg_vs,0,false)} 높습니다.</p>
     <details class="mexp sm"><summary>설명 보기</summary><p>3년 백분위 = 최근 756거래일 종가 중 지금 가격 이하인 날의 비율입니다. 서부텍사스산 원유(WTI) 선물(CL=F) 기준이라 지역 스프레드·정제마진은 빠져 있습니다.</p><p>판정은 참고용이고, '오늘' 탭 거시 신호등 5개(금리·고용·유동성·신용)나 적립·스윙 규칙에는 넣지 않았습니다. 고유가는 물가·금리를 다시 밀어올리는 압력, 저유가는 수요 둔화 신호로 읽되 실제 매수 판단은 지금 쓰는 지표를 그대로 따릅니다.</p></details>
+  </div>`;
+}
+
+// 11-22 Ben: 본격 반등 조건 참고 체크 — 미 10년물 < 4.5% + WTI < $70 두 개만 센다. 거시 신호등 5개·수비/매수 규칙에는 넣지 않음
+function reboundCheckHTML(m){
+  const t = m.dgs10?.v, w = m.wti?.v;
+  const items = [
+    {k:"미 10년물 &lt; 4.5%", ok: t==null? null : t<4.5, cur: t==null? "데이터 대기" : `현재 ${num(t,2)}%`},
+    {k:"WTI 유가 &lt; $70", ok: w==null? null : w<70, cur: w==null? "데이터 대기" : `현재 $${num(w,2)}`}
+  ];
+  const known = items.filter(i=>i.ok!=null).length, met = items.filter(i=>i.ok===true).length;
+  const b = !known? ["데이터 대기","n"] : met===2? ["2/2 충족","g"] : met===1? ["1/2 충족","y"] : ["0/2 미충족","n"];
+  const lbl = known===1? (met? "1/1 충족 · 1개 대기" : "0/1 충족 · 1개 대기") : b[0];
+  return `<div class="panel rbc">
+    <div class="rbhd"><span>본격 반등 조건</span><span class="muted">(참고)</span><span class="pill ${b[1]}">${esc(lbl)}</span></div>
+    <div class="rbl">${items.map(i=>`<div><span class="mk ${i.ok===true?"g":"n"}">${i.ok===true?"✓":i.ok===false?"–":"·"}</span><span>${i.k}</span><span class="cur">${esc(i.cur)}${i.ok==null? "" : i.ok? " · 충족" : " · 미충족"}</span></div>`).join("")}</div>
+    <p class="note">금리·유가가 동시에 내려와야 반등 압력이 커집니다 (기존 수비·매수 규칙 미반영)</p>
   </div>`;
 }
 
