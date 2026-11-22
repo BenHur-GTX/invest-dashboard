@@ -436,6 +436,11 @@ td .inline input{width:78px}
 .mdots{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-size:12px;color:var(--ink2)} .mdots span{display:inline-flex;align-items:center;gap:4px}
 .gsum{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:14px} .gsum .gseg{flex:1;margin:0}
 .fxk{font-size:12px;margin:2px 0 0}
+/* 11-22 Ben: 금리×환율 매수 찬스 한 줄 해석 */
+.fxiv{margin:11px 0 5px;padding-top:9px;border-top:1px solid var(--line)}
+.fxih{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.fxih b{font-size:12.5px}
+.fxid{font-size:12.5px;line-height:1.45;color:var(--ink2)}
 .nlist{margin-top:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .nrow{display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
 .nrow:last-child{border-bottom:0}
@@ -1877,9 +1882,26 @@ function fxHTML(){
   const cur=E.fx || u.price;   // 11-21 Ben: 15분 갱신 환율(E.fx) 우선. 일봉 종가는 서울 고시라 하루 뒤처짐
   const dv=(cur/u.avg3y-1)*100, jd=j?.avg3y? (j.price/j.avg3y-1)*100 : null;
   const act = dv<=0? "월급 날 달러 몫(장투·BITO) 100% 환전" : dv<=5? "이번 달 매수에 필요한 달러만 환전" : `필요분만 환전${jd!=null&&jd<=0? " · 남는 원화는 엔화로(1489 폭락 대비)" : ""}`;
+  // 11-22 Ben: 금리×환율 매수 찬스 한 줄 해석 — 3년 평균 위치(위/아래) × 미 10년물 수준(4.5%) × 6개월 방향(±0.2%p)
+  const dg=E.M?.macro?.dgs10, rt=dg?.v, rsp=dg?.spark||[], rt6=rsp.length>126? rsp[rsp.length-127] : null;
+  const rd6=(rt!=null&&rt6!=null)? rt-rt6 : null;
+  const hi=rt!=null&&rt>=4.5, tr=rd6==null? "보합" : rd6>=0.2? "상승기" : rd6<=-0.2? "하락기" : "보합";
+  let fxi="";
+  if(rt!=null){
+    const rv=num(rt,2)+"%", col=dv<=0? "g" : fxGrade(dv).c;
+    let bd, tx;
+    if(dv<=0&&hi&&tr!=="하락기"){ bd="달러 매수 찬스"; tx=`미 10년물 ${rv}(${tr})로 환율 상승 압력이 큰데 3년 평균 아래 — 미리 바꿔두기 유리`; }
+    else if(dv<=0&&hi){ bd="분할 매수 유리"; tx=`미 10년물 ${rv}로 높지만 하락기 진입 — 3년 평균 아래에서 차분히 분할 환전`; }
+    else if(dv<=0&&tr==="상승기"){ bd="달러 매수 유리"; tx=`금리 반등(${rv}, 상승기) + 3년 평균 아래 — 환율 오르기 전 선환전 유리`; }
+    else if(dv<=0){ bd="분할 환전 적기"; tx=`금리 ${rv}(${tr}) 안정 + 3년 평균 아래 — 월급날 무난히 분할 환전`; }
+    else if(hi||tr==="상승기"){ bd="필요분만 환전"; tx=`미 10년물 ${rv}(${tr})·환율 3년 평균 위 — 변동성 경계, 이번 달 필요분만`; }
+    else { bd="고환율 관망"; tx=`환율 3년 평균 위 · 금리 ${rv}(${tr}) 완화 — 필요분만 환전 후 조정 대기`; }
+    fxi=`<div class="fxiv"><div class="fxih"><b>금리×환율</b><span class="fxg k-${col}">${esc(bd)}</span></div><div class="fxid">${esc(tx)}</div></div>`;
+  }
   return `<div class="panel fxp"><h4>환전 <span class="muted" style="font-weight:400">→ ${act}</span></h4>
     ${fxBars("원/달러", cur, u.avg3y, "원", 1)}
     ${j?.avg3y? fxBars("원/엔 (100엔)", j.price*100, j.avg3y*100, "원", 1) : ""}
+    ${fxi}
     <p class="muted fxk">등급: 3년 평균 −3% 이하 적극 환전 · 평균 이하 유리 · +5%까지 보통 · 그 위 불리</p></div>`;
 }
 function vPlan(){ return calcHeaderHTML() + `<div id="plan_body">${planBody()}</div>`; }   // 11-14 Ben: 적립 계산기 + 이번 달 매수 통합, 첫 화면
