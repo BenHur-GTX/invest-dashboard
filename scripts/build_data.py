@@ -1046,6 +1046,32 @@ def cb_gold():
     }
 
 
+# ---------- 밸류에이션 (11-23 Ben) ----------
+# 거시 점검 탭 '바닥 밸류에이션 (참고)' — S&P 500 12개월 선행 PER.
+# historyofmarket.com 공개 JSON(데이터 CC BY 4.0). 주간 'forward'(벤더 컨센서스)는 2026-08-05(20.12배) 이후 갱신이
+# 멈춰 있어서, 매일 갱신되는 'forwardOwn'(FY1/FY2 컨센서스·ETF 보유내역 가중, 2026-07-28~)을 현재값으로 쓴다.
+# 둘은 2026-08-05 기준 20.12 vs 19.99로 3% 이내다. 값이 없으면 주간 시리즈로 폴백한다.
+VALUATION_URL = "https://historyofmarket.com/api/sp500/forward-pe.json"
+SP500_FWD_TH = 15.0   # 참고 기준: 15배 이하 (index.html valuationHTML과 같은 값)
+
+
+def sp500_forward_pe():
+    """S&P 500 12개월 선행 PER. 실패하면 예외를 올리고 호출부가 지난 값을 유지한다."""
+    j = json.loads(http_get(VALUATION_URL, timeout=30, headers={"Accept": "application/json"}))
+    daily = [x for x in (j.get("forwardOwn") or []) if x.get("value") is not None]
+    weekly = [x for x in (j.get("forward") or []) if x.get("value") is not None]
+    series, basis = (daily, "daily") if daily else (weekly, "weekly")
+    if not series:
+        raise ValueError("no forward PE series")
+    cur = series[-1]
+    tr = (j.get("current") or {}).get("trailing")
+    return {"v": round(float(cur["value"]), 2), "date": cur.get("date"), "basis": basis,
+            "trailing": round(float(tr), 2) if tr is not None else None,
+            "th": SP500_FWD_TH, "pts": len(series),
+            "source": "historyofmarket.com (CC BY 4.0)", "url": VALUATION_URL,
+            "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+
 def main():
     os.makedirs(DATA, exist_ok=True)
     now = datetime.now(timezone.utc)
@@ -1206,6 +1232,22 @@ def main():
         else:
             macro["cb_gold"] = None
             print("cb_gold fail", e, flush=True)
+    # 11-23 Ben: '바닥 밸류에이션 (참고)' — S&P 500 선행 PER. 외부 사이트가 막혀도 전체 빌드는 계속(지난 값 유지 → 없으면 null)
+    # 코스피 PBR: KRX 정보데이터시스템이 2025-12 개편 뒤 회원 로그인 필수라 무료·무인증 수집 경로가 없다.
+    # 네이버·다음 지수 페이지에도 PBR 값이 없어, 소스를 확보하기 전까지는 null로 두고 화면에서도 그리지 않는다.
+    try:
+        pe = sp500_forward_pe()
+        macro["valuation"] = {"sp500_forward_pe": pe, "kospi_pbr": None}
+        print("valuation sp500 fwd", pe["v"], pe["date"], pe["basis"], flush=True)
+    except Exception as e:  # noqa
+        old = (prev_market.get("macro") or {}).get("valuation")
+        if old and (old.get("sp500_forward_pe") or {}).get("v") is not None:
+            old["sp500_forward_pe"]["stale"] = True
+            macro["valuation"] = old
+            print("valuation fail(지난 값 유지)", e, flush=True)
+        else:
+            macro["valuation"] = None
+            print("valuation fail", e, flush=True)
     print("macro done", flush=True)
     fng = cnn_fng()
     print("fng", fng, flush=True)

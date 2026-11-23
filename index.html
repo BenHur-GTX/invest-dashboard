@@ -297,6 +297,11 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .rbc .rbl .mk{width:13px;font-weight:700;flex:0 0 13px}
 .rbc .rbl .cur{margin-left:auto;color:var(--ink2);font-size:12.5px;white-space:nowrap}
 .rbc .note{font-size:12px;margin:8px 0 0;max-width:560px}
+/* 11-23 Ben: 바닥 밸류에이션 — 반등 조건 카드 하단 구분선 아래(참고). 거시 신호등·수비/매수 규칙 미반영 */
+.rbc .valsec{margin-top:11px;padding-top:9px;border-top:1px solid var(--line)}
+.rbc .valhd{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;flex-wrap:wrap}
+.rbc .valhd .muted{font-weight:400;font-size:12px}
+.rbc .valhd .vs{margin-left:auto;font-size:11.5px;color:var(--ink2);font-weight:400}
 /* 11-23 Ben: 유사 폭락장 · 현재 위치 — QQQ 고점 대비 -15% 이하일 때만 나오는 참고 카드 */
 .csp{padding:12px 14px}
 .csp .cshd{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;flex-wrap:wrap}
@@ -2803,6 +2808,23 @@ function reboundCheckHTML(m){
     <div class="rbhd"><span>본격 반등 조건</span><span class="muted">(참고)</span><span class="pill ${b[1]}">${esc(lbl)}</span></div>
     <div class="rbl">${items.map(i=>`<div><span class="mk ${i.ok===true?"g":"n"}">${i.ok===true?"✓":i.ok===false?"–":"·"}</span><span>${i.k}</span><span class="cur">${esc(i.cur)}${i.ok==null? "" : i.ok? " · 충족" : " · 미충족"}</span></div>`).join("")}</div>
     <p class="note">금리·유가가 동시에 내려와야 반등 압력이 커집니다 (기존 수비·매수 규칙 미반영)</p>
+    ${valuationHTML(m)}
+  </div>`;
+}
+
+// 11-23 Ben: 바닥 밸류에이션 (참고) — 반등 조건 카드 하단 구분선 아래. S&P 500 12개월 선행 PER 15배↓ 기준.
+// 값이 없으면 이 블록 전체를 그리지 않는다(빈 카드·추정치 없음). 판정·수비/매수 규칙에는 넣지 않는다.
+function valuationHTML(m){
+  const v = (m.valuation||{}).sp500_forward_pe;
+  if(!v || v.v==null) return "";
+  const th = v.th!=null? v.th : 15, ok = v.v<=th;
+  const dt = (v.date||"").replace(/^20/,"").replace(/-/g,".");
+  return `<div class="valsec">
+    <div class="valhd"><span>바닥 밸류에이션</span><span class="muted">(참고)</span><span class="vs">${esc(dt)} 기준${v.stale? " · 직전 값":""}</span></div>
+    <div class="rbl">
+      <div><span class="mk ${ok?"g":"n"}">${ok?"✓":"–"}</span><span>S&amp;P 500 선행 PER <span class="muted">기준 ${num(th,0)}배↓</span></span><span class="cur">현재 ${num(v.v,1)}배 · ${ok? "충족":"미충족"}</span></div>
+    </div>
+    <p class="note">선행 PER은 향후 12개월 컨센서스 이익 기준입니다. ${num(th,0)}배 이하는 조정장 바닥권에서 자주 나온 수준으로, 그 아래로 내려왔는지만 봅니다 (참고용 · 기존 수비·매수 규칙 미반영). 출처: historyofmarket.com</p>
   </div>`;
 }
 
