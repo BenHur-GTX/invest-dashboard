@@ -20,6 +20,13 @@
 "news_fear_ratio": 85.5,
 "news_fear": 59,
 "news_greed": 10
+},
+"2026-W48": {
+"yt_score": 31.8,
+"yt_comments": 751,
+"news_fear_ratio": 88.4,
+"news_fear": 76,
+"news_greed": 10
 }
 },
 "cache": {
