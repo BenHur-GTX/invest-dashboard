@@ -2866,13 +2866,15 @@ function csLine(cur,h,k){
       : `그때는 신용이 조용했는데 지금은 ${f(a)}%p 벌어졌습니다.`;
   }
   if(k==="curve") return `장단기차가 그때 ${f(h.curve)}%p, 지금 ${f(cur.curve)}%p입니다.`;
-  if(k==="cred") return `신용 스프레드(Baa−10Y)가 그때 ${f(h.cred)}%, 지금 ${f(cur.cred)}%입니다.`;
-  if(k==="vix") return `구간 최고 VIX가 그때 ${f(h.vix,1)}, 지금 ${f(cur.vix,1)}입니다.`;
+  if(k==="cred") return Math.abs(cur.cred-h.cred)<0.3? `신용 스프레드(Baa−10Y)도 그때 ${f(h.cred)}%, 지금 ${f(cur.cred)}%로 비슷합니다.`
+    : `신용 스프레드(Baa−10Y)가 그때 ${f(h.cred)}%, 지금 ${f(cur.cred)}%입니다.`;
+  if(k==="vix") return Math.abs(cur.vix-h.vix)<6? `구간 최고 VIX도 그때 ${f(h.vix,1)}, 지금 ${f(cur.vix,1)}로 비슷합니다.`
+    : `구간 최고 VIX가 그때 ${f(h.vix,1)}, 지금 ${f(cur.vix,1)}입니다.`;
   if(k==="lvl") return Math.abs(cur.us10y-h.us10y)<0.5? `10년물 수준이 거의 같습니다(${f(h.us10y)}% vs ${f(cur.us10y)}%).`
     : `10년물이 그때 ${f(h.us10y)}%, 지금 ${f(cur.us10y)}%입니다 — 금리 출발점이 다릅니다.`;
   return `연준 금리 기조가 같습니다(그때도 ${CS_FED[h.fed]}기).`;
 }
-const CS_SAME=["crisis","curve","cred","vix","lvl","fed"];
+const CS_SAME=["crisis","curve","cred","fed","lvl","vix"];   // VIX는 가장 덜 특징적이라 뒤로
 function csSameDiff(cur,h,used){
   used=used||{same:[],diff:[]};
   const cand=CS_SAME.filter(k=>h.d[k]!=null && h.d[k]<=0.25);
