@@ -1236,9 +1236,16 @@ def main():
     # 코스피 PBR: KRX 정보데이터시스템이 2025-12 개편 뒤 회원 로그인 필수라 무료·무인증 수집 경로가 없다.
     # 네이버·다음 지수 페이지에도 PBR 값이 없어, 소스를 확보하기 전까지는 null로 두고 화면에서도 그리지 않는다.
     try:
-        pe = sp500_forward_pe()
-        macro["valuation"] = {"sp500_forward_pe": pe, "kospi_pbr": None}
-        print("valuation sp500 fwd", pe["v"], pe["date"], pe["basis"], flush=True)
+        old = (prev_market.get("macro") or {}).get("valuation") or {}
+        oldpe = old.get("sp500_forward_pe") or {}
+        # 15분마다 도는 워크플로가 외부 사이트를 과하게 호출하지 않게, 같은 UTC 날짜에 받은 값은 그날 동안 재사용한다(원본도 하루 1회 갱신)
+        if oldpe.get("v") is not None and str(oldpe.get("updated") or "")[:10] == now.strftime("%Y-%m-%d"):
+            macro["valuation"] = old
+            print("valuation cached", oldpe["v"], oldpe.get("date"), flush=True)
+        else:
+            pe = sp500_forward_pe()
+            macro["valuation"] = {"sp500_forward_pe": pe, "kospi_pbr": None}
+            print("valuation sp500 fwd", pe["v"], pe["date"], pe["basis"], flush=True)
     except Exception as e:  # noqa
         old = (prev_market.get("macro") or {}).get("valuation")
         if old and (old.get("sp500_forward_pe") or {}).get("v") is not None:
