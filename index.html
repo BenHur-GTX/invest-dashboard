@@ -297,6 +297,34 @@ dialog.chartdlg.fb{position:fixed;inset:4vh 3vw auto;margin:0 auto;z-index:50;ov
 .rbc .rbl .mk{width:13px;font-weight:700;flex:0 0 13px}
 .rbc .rbl .cur{margin-left:auto;color:var(--ink2);font-size:12.5px;white-space:nowrap}
 .rbc .note{font-size:12px;margin:8px 0 0;max-width:560px}
+/* 11-23 Ben: 유사 폭락장 · 현재 위치 — QQQ 고점 대비 -15% 이하일 때만 나오는 참고 카드 */
+.csp{padding:12px 14px}
+.csp .cshd{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;flex-wrap:wrap}
+.csp .cshd .muted{font-weight:400;font-size:12px}
+.csp .cshd .pill{margin-left:auto;font-weight:600}
+.csp .cssm{font-size:13px;margin:7px 0 0;line-height:1.5;word-break:keep-all}
+.csp .cssm b{font-weight:700}
+.csc{position:relative;margin:12px 0 0;height:200px}
+.csc svg{width:100%;height:200px;display:block}
+.csy{position:absolute;left:0;width:34px;text-align:right;font-size:9.5px;color:var(--ink2);transform:translateY(-50%)}
+.csdot{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1.5px #fff,0 0 0 2px var(--ink)}
+.csx{position:relative;height:15px;margin-top:2px}
+.csx i{position:absolute;top:0;font-size:9.5px;color:var(--ink2);font-style:normal;white-space:nowrap}
+.csl{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:11.5px;color:var(--ink2);margin-top:3px}
+.csl span{display:inline-flex;align-items:center;gap:5px}
+.csl s{display:inline-block;width:13px;border-top:2.5px solid;text-decoration:none}
+.csl b{color:var(--ink);font-weight:700}
+.cst{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:10px;table-layout:fixed}
+.cst th,.cst td{padding:3px 1px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.cst th:first-child,.cst td:first-child{text-align:left;color:var(--ink2);font-weight:400;width:29%}
+.cst thead th{color:var(--ink2);font-weight:700;border-bottom:1px solid #b9b6ae;font-size:11px}
+.cst td.nw{font-weight:700}
+.cst tbody tr:last-child td{border-bottom:0}
+.cssd{margin-top:10px;display:grid;gap:7px}
+.cssd>div{font-size:12px;line-height:1.5}
+.cssd .nm{font-weight:700;font-size:12.5px}
+.cssd .nm i{font-style:normal;font-weight:400;color:var(--ink2);font-size:11.5px;margin-left:4px}
+.cssd .k{display:inline-block;min-width:42px;color:var(--ink2);font-size:11.5px}
 /* 11-23 Ben: 하락 뉴스 3층 판별(물보라·파도·너울) — 기본 접힘 참고 카드. 신호등·수비/매수 규칙 미반영 */
 .wg{padding:0;overflow:hidden}
 .wg>summary{display:flex;align-items:center;flex-wrap:wrap;gap:2px 6px;padding:11px 14px;font-size:13.5px;font-weight:700;cursor:pointer;list-style:none}
@@ -2656,7 +2684,7 @@ function vMacro(){
   return `<h2>지금 사이클 위치</h2><div class="panel"><div id="cyc"><p class="muted">불러오는 중…</p></div></div>
   <h2>대피 경보</h2>${fleeHTML()}
   <h2 id="m_rates">금리 한눈에</h2>${ratesHTML(m)}
-  <h2 id="m_oil">유가 (WTI) <span class="muted">보조 지표</span></h2>${oilHTML(m)}${reboundCheckHTML(m)}
+  <h2 id="m_oil">유가 (WTI) <span class="muted">보조 지표</span></h2>${oilHTML(m)}${reboundCheckHTML(m)}${crashSimHTML(E.M)}
   <h2 id="m_tips10">실질 금리 (10년 TIPS) <span class="muted">보조 지표</span></h2>${tipsHTML(m)}
   <h2 id="m_cbgold">중앙은행 금 매입 <span class="muted">(주요 27개국)</span></h2>${cbGoldHTML(m)}
   <h2>기준금리 vs 10년물</h2><div class="panel"><div class="muted">월평균 · FRED (FEDFUNDS·GS10)</div><div id="rfc"><p class="muted">불러오는 중…</p></div></div>
@@ -2775,6 +2803,167 @@ function reboundCheckHTML(m){
     <div class="rbhd"><span>본격 반등 조건</span><span class="muted">(참고)</span><span class="pill ${b[1]}">${esc(lbl)}</span></div>
     <div class="rbl">${items.map(i=>`<div><span class="mk ${i.ok===true?"g":"n"}">${i.ok===true?"✓":i.ok===false?"–":"·"}</span><span>${i.k}</span><span class="cur">${esc(i.cur)}${i.ok==null? "" : i.ok? " · 충족" : " · 미충족"}</span></div>`).join("")}</div>
     <p class="note">금리·유가가 동시에 내려와야 반등 압력이 커집니다 (기존 수비·매수 규칙 미반영)</p>
+  </div>`;
+}
+
+// 11-23 Ben: 유사 폭락장 · 현재 위치 — QQQ 고점 대비 -15% 이하일 때만 나오는 참고 카드.
+// 과거 궤적은 야후 QQQ 일봉 종가 실측(2026-11-23 추출), 당시 거시는 FRED 실측(DGS10·DGS2·BAA10Y·VIXCLS·DFEDTARU).
+// pts=[[고점 후 거래일차, 고점 대비 %]] — 아주 긴 장은 250일까지만 담고 cut/fdays/fdd에 최종 바닥을 따로 적었다.
+// 신용은 FRED 무료 하이일드 이력이 2023-11부터라 과거 비교는 Baa−10년 스프레드로 통일했다.
+const CRASH_HIST=[
+{n:"2022 금리인상",yr:"2022",pk:"2021-11-19",tr:"2022-10-12",days:224,mdd:-35,us10y:1.54,curve:1.02,fed:"hike",fedchg:0.75,fedlvl:0.25,cred:1.73,credmax:2.42,vix:36.5,pts:[[0,0],[5,-1.1],[10,-4.4],[15,-2.9],[20,-5.8],[25,-0.6],[30,-1.9],[35,-4.5],[40,-9.3],[45,-14.7],[50,-8.8],[55,-9.2],[60,-11.9],[65,-15.7],[70,-15.3],[75,-18],[80,-14.7],[85,-11],[90,-10.3],[95,-12.3],[100,-16.2],[105,-19.5],[110,-22.5],[115,-23.5],[120,-25.3],[125,-28.5],[130,-23.5],[135,-24],[140,-31.8],[145,-30.4],[150,-29.8],[155,-28.5],[160,-29.3],[165,-25],[170,-24.1],[175,-20.1],[180,-19.3],[185,-18.7],[190,-22],[195,-25.9],[200,-25.6],[205,-27.9],[210,-30.7],[215,-32.7],[220,-30.8],[224,-35]]},
+ {n:"2018 연말 긴축",yr:"2018",pk:"2018-08-29",tr:"2018-12-24",days:80,mdd:-23.2,us10y:2.89,curve:0.22,fed:"hike",fedchg:0.5,fedlvl:2,cred:1.88,credmax:2.35,vix:36.1,pts:[[0,0],[2,-0],[4,-1.8],[6,-3],[8,-1.9],[10,-1.2],[12,-2.9],[14,-2.2],[16,-1.6],[18,-1.4],[20,-0.5],[22,-0.3],[24,-0.4],[26,-3.5],[28,-3.8],[30,-9.2],[32,-7.8],[34,-5.1],[36,-7.3],[38,-7.2],[40,-8.4],[42,-12.6],[44,-9.1],[46,-9.3],[48,-8.8],[50,-6.6],[52,-10.9],[54,-11.5],[56,-10.3],[58,-14.8],[60,-14.7],[62,-12.5],[64,-10],[66,-7.7],[68,-10.6],[70,-12.7],[72,-11.6],[74,-13.7],[76,-15.2],[78,-18.4],[80,-23.2]]},
+ {n:"2000 닷컴버블",yr:"2000",pk:"2000-03-27",tr:"2002-10-09",days:636,mdd:-83,us10y:6.21,curve:-0.45,fed:"hike",fedchg:0.67,fedlvl:5.85,cred:2.11,credmax:3.9,vix:45.1,cut:250,fdays:636,fdd:-83,pts:[[0,0],[6,-13.4],[12,-21.9],[18,-25.9],[24,-18.8],[30,-27],[36,-24.5],[42,-34],[48,-20.3],[54,-20],[60,-16],[66,-22.2],[72,-19.8],[78,-15.5],[84,-18.8],[90,-23.2],[96,-22.7],[102,-18.9],[108,-15.9],[114,-16.7],[120,-22.5],[126,-23.2],[132,-28.7],[138,-34.6],[144,-27.8],[150,-32.3],[156,-30],[162,-35.6],[168,-43.4],[174,-45.6],[180,-36.8],[186,-49.8],[192,-47.8],[198,-51.4],[204,-45.8],[210,-45.2],[216,-47.7],[222,-51.5],[228,-56.3],[234,-58.6],[240,-61.7],[246,-63.3],[250,-63.7]]},
+ {n:"2008 금융위기",yr:"2008",pk:"2007-10-31",tr:"2009-03-09",days:339,mdd:-53.6,us10y:4.48,curve:0.54,fed:"cut",fedchg:-2.48,fedlvl:4.76,cred:1.99,credmax:6.16,vix:80.9,cut:250,fdays:339,fdd:-53.6,pts:[[0,0],[6,-6],[12,-8.6],[18,-9.2],[24,-6.3],[30,-6.4],[36,-5.8],[42,-8.4],[48,-12.8],[54,-17.6],[60,-19.3],[66,-22.2],[72,-20.1],[78,-20.2],[84,-22],[90,-22.4],[96,-21.7],[102,-20.6],[108,-17.5],[114,-17.6],[120,-14.1],[126,-11.4],[132,-10.8],[138,-10.5],[144,-9.7],[150,-10.9],[156,-11.3],[162,-14.9],[168,-18.8],[174,-19],[180,-18.6],[186,-17.6],[192,-15.3],[198,-12.3],[204,-13.7],[210,-17.2],[216,-22.2],[222,-24.5],[228,-25.3],[234,-36.7],[240,-38.9],[246,-44.4],[250,-42.1]]},
+ {n:"2020 코로나",yr:"2020",pk:"2020-02-19",tr:"2020-03-23",days:23,mdd:-28.6,us10y:1.56,curve:0.14,fed:"cut",fedchg:-1.5,fedlvl:1.75,cred:2.05,credmax:4.31,vix:82.7,pts:[[0,0],[1,-0.9],[2,-2.8],[3,-6.6],[4,-9.1],[5,-8.7],[6,-13.2],[7,-13.2],[8,-8.7],[9,-11.6],[10,-7.9],[11,-10.7],[12,-12.2],[13,-18.3],[14,-13.9],[15,-17.6],[16,-25.2],[17,-18.8],[18,-28.6],[19,-23.1],[20,-25.5],[21,-25],[22,-28],[23,-28.1]]},
+];
+const CS_COL=["#b54708","#1d4ed8","#1f7a4d"];   // 1·2·3위 색 (현재 선은 먹색으로 굵게)
+const CS_FED={hike:"인상",hold:"동결",cut:"인하"};
+const CS_W={fed:0.28,lvl:0.20,curve:0.15,cred:0.15,crisis:0.12,vix:0.10};   // 가중치 합 1. 값이 없으면 그 항목만 빼고 다시 나눈다
+// 같은 날짜의 과거 낙폭 (표본 사이는 선형 보간)
+function csAtDay(h,d){
+  const p=h.pts;
+  if(d>=p[p.length-1][0]) return p[p.length-1][1];
+  for(let i=1;i<p.length;i++) if(p[i][0]>=d){ const a=p[i-1], b=p[i];
+    return +(a[1]+(b[1]-a[1])*(d-a[0])/((b[0]-a[0])||1)).toFixed(1); }
+  return p[0][1];
+}
+// 지금 값 — build_data가 넣은 crash_track.live를 우선 쓰고, 없으면 화면의 macro 값으로 대신한다
+function csNow(M){
+  const t=M.crash_track||{}, m=M.macro||{}, lv=t.live||{};
+  const fc=lv.fedchg;
+  return {fed: lv.fed || (fc==null? "hold" : fc>=0.2? "hike" : fc<=-0.2? "cut" : "hold"),
+          us10y: lv.us10y ?? m.dgs10?.v ?? null,
+          curve: lv.curve ?? m.t10y2y?.v ?? null,
+          cred: lv.cred ?? null, credmax: lv.cred_max ?? null,
+          vix: lv.vix_max ?? m.vix?.v ?? null};
+}
+// 유사도 = 100 − 100×Σ(가중치×정규화 거리). 거리 0~1: 연준 기조(같음 0·인접 0.5·반대 1),
+// 10년물 |Δ|/4, 장단기차 |Δ|/2, 신용 |Δ|/1.5, 신용경색 동반 여부(불일치 1), 구간 최고 VIX |Δ|/60
+function csRank(cur){
+  const cl=v=>v==null? null : Math.max(0,Math.min(1,v));
+  const crisisOf=c=>(c.cred==null||c.credmax==null)? null : ((c.credmax-c.cred)>=1.5? 1:0);
+  const cN=crisisOf(cur);
+  return CRASH_HIST.map(h=>{
+    const cP=((h.credmax-h.cred)>=1.5)? 1:0;
+    const d={fed: (cur.fed&&h.fed)? (cur.fed===h.fed? 0 : (cur.fed==="hold"||h.fed==="hold")? 0.5 : 1) : null,
+             lvl: cur.us10y==null? null : cl(Math.abs(cur.us10y-h.us10y)/4),
+             curve: cur.curve==null? null : cl(Math.abs(cur.curve-h.curve)/2),
+             cred: cur.cred==null? null : cl(Math.abs(cur.cred-h.cred)/1.5),
+             crisis: cN==null? null : (cN===cP? 0:1),
+             vix: cur.vix==null? null : cl(Math.abs(cur.vix-h.vix)/60)};
+    let sw=0, sd=0;
+    for(const k in d){ if(d[k]==null) continue; sw+=CS_W[k]; sd+=CS_W[k]*d[k]; }
+    return Object.assign({}, h, {d, score: sw>0? Math.round(100*(1-sd/sw)) : 0});
+  }).sort((a,b)=>b.score-a.score);
+}
+function csLine(cur,h,k){
+  const f=(x,d=2)=>num(x,d);
+  if(k==="crisis"){
+    const a=(cur.credmax-cur.cred), b=(h.credmax-h.cred);
+    if(!((a>=1.5)||(b>=1.5))) return `신용경색 없이 금리·밸류에이션만 눌린 장이 같습니다 — 그때 구간 확대도 ${f(b)}%p였습니다.`;
+    return (b>=1.5)? `그때는 하락 중 신용 스프레드가 ${f(b)}%p 벌어졌지만 지금은 ${f(a)}%p로 아직 잠잠합니다.`
+      : `그때는 신용이 조용했는데 지금은 ${f(a)}%p 벌어졌습니다.`;
+  }
+  if(k==="curve") return `장단기차가 그때 ${f(h.curve)}%p, 지금 ${f(cur.curve)}%p입니다.`;
+  if(k==="cred") return `신용 스프레드(Baa−10Y)가 그때 ${f(h.cred)}%, 지금 ${f(cur.cred)}%입니다.`;
+  if(k==="vix") return `구간 최고 VIX가 그때 ${f(h.vix,1)}, 지금 ${f(cur.vix,1)}입니다.`;
+  if(k==="lvl") return Math.abs(cur.us10y-h.us10y)<0.5? `10년물 수준이 거의 같습니다(${f(h.us10y)}% vs ${f(cur.us10y)}%).`
+    : `10년물이 그때 ${f(h.us10y)}%, 지금 ${f(cur.us10y)}%입니다 — 금리 출발점이 다릅니다.`;
+  return `연준 금리 기조가 같습니다(그때도 ${CS_FED[h.fed]}기).`;
+}
+const CS_SAME=["crisis","curve","cred","vix","lvl","fed"];
+function csSameDiff(cur,h,used){
+  used=used||{same:[],diff:[]};
+  const cand=CS_SAME.filter(k=>h.d[k]!=null && h.d[k]<=0.25);
+  const sk=cand.filter(k=>!used.same.includes(k)).concat(cand)[0] || null;
+  const ds=Object.keys(h.d).filter(k=>h.d[k]!=null && h.d[k]>=0.3 && k!==sk).sort((a,b)=>h.d[b]-h.d[a]);
+  const dk=ds.filter(k=>!used.diff.includes(k)).concat(ds)[0] || null;
+  if(sk) used.same.push(sk);
+  if(dk) used.diff.push(dk);
+  return {same: sk? csLine(cur,h,sk) : null, sameK: sk,
+          diff: dk? csLine(cur,h,dk) : null, diffK: dk};
+}
+// 멀티 라인 궤적 — X: 고점 후 거래일, Y: 고점 대비 %. 글자는 SVG 밖 HTML로 둬서 모바일에서 찌그러지지 않게
+function csChart(rows, tr){
+  const W=520, H=200, PL=52, PR=520, PT=6, PB=182;
+  const xmax=Math.max(250, tr.days);
+  const vals=[];
+  rows.forEach(r=>r.pts.forEach(p=>{ if(p[0]<=xmax) vals.push(p[1]); }));
+  tr.points.forEach(p=>vals.push(p[1]));
+  const rawMin=Math.min(0,...vals);
+  const step=rawMin>-30?10: rawMin>-60?20:25;
+  const ymin=Math.max(-90, Math.min(-step, Math.floor((rawMin-4)/step)*step));
+  const X=d=>PL+(Math.min(d,xmax)/xmax)*(PR-PL);
+  const Y=v=>PT+(v/ymin)*(PB-PT);
+  let grid="";
+  for(let v=0; v>=ymin; v-=step){
+    grid+=`<line x1="${PL}" x2="${PR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${v===0?"#c9c6be":"#eceae4"}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  }
+  grid+=`<line x1="${X(tr.days).toFixed(1)}" x2="${X(tr.days).toFixed(1)}" y1="${PT}" y2="${PB}" stroke="#d6d3cb" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  const paths=rows.map((r,i)=>{
+    const pts=r.pts.filter(p=>p[0]<=xmax).map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    return `<polyline fill="none" stroke="${CS_COL[i]}" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke" opacity=".85" points="${pts}"/>`;
+  }).join("");
+  const cur=tr.points.map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  const yl=[]; for(let v=0; v>=ymin; v-=step) yl.push(`<span class="csy" style="top:${(Y(v)/H*100).toFixed(2)}%">${v}%</span>`);
+  const xt=[]; for(let d=0; d<=xmax; d+=50){ const pc=X(d)/W*100;
+    xt.push(`<i style="left:${pc.toFixed(2)}%;${d===0?"":(d+50>xmax?"transform:translateX(-100%)":"transform:translateX(-50%)")}">${d}일</i>`); }
+  return `<div class="csc">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="과거 폭락장과 현재 QQQ 하락 궤적 비교">
+      ${grid}${paths}
+      <polyline fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="${cur}"/></svg>
+    ${yl.join("")}
+    <span class="csdot" style="left:${(X(tr.days)/W*100).toFixed(2)}%;top:${(Y(tr.dd)/H*100).toFixed(2)}%"></span>
+  </div>
+  <div class="csx">${xt.join("")}</div>`;
+}
+function crashSimHTML(M){
+  const tr=M.crash_track;
+  if(!tr || tr.dd==null || tr.dd>-15) return "";   // -15%보다 얕으면 카드 자체를 그리지 않는다
+  const cur=csNow(M), rank=csRank(cur).slice(0,3);
+  const top=rank[0];
+  const f2=v=>num(v,2);
+  const rateTxt = cur.us10y==null? "" : cur.us10y>=4.5? "고금리" : cur.us10y>=3? "중금리" : "저금리";
+  const credTxt = cur.cred==null? "" : cur.cred>=3? "신용위기" : cur.cred>=2? "신용경계" : "신용정상";
+  const fedTxt = cur.fed==="hike"? "긴축" : cur.fed==="cut"? "완화" : "동결";
+  const tag=[rateTxt,credTxt,fedTxt].filter(Boolean).join(" · ");
+  const near=rank.slice().sort((a,b)=>Math.abs(csAtDay(a,tr.days)-tr.dd)-Math.abs(csAtDay(b,tr.days)-tr.dd))[0];
+  const legend=`<span><s style="border-color:var(--ink)"></s><b>지금 QQQ</b> ${pct(tr.dd,1)} · ${tr.days}일차</span>`+
+    rank.map((h,i)=>`<span><s style="border-color:${CS_COL[i]}"></s>${esc(h.n)} <b>${h.score}%</b> · ${pct(h.mdd,1)}/${h.days}일${h.cut? `<span class="muted">(그래프 ${h.cut}일까지)</span>`:""}</span>`).join("");
+  const rows=[["10년물", f2(cur.us10y)+"%"],["연준 기조", CS_FED[cur.fed]||"–"],
+              ["신용 스프레드", f2(cur.cred)+"%"],["장단기차", (cur.curve>0?"+":"")+f2(cur.curve)+"%p"],
+              ["최고 VIX", num(cur.vix,1)], [`${tr.days}일차 낙폭`, pct(tr.dd,1)],
+              ["최종 낙폭", "진행 중"],["걸린 기간", tr.days+"일"]];
+  const head=`<tr><th>지표</th><th>현재</th>${rank.map((h,i)=>`<th>${i+1}위 ${esc(h.yr)}</th>`).join("")}</tr>`;
+  const body=rows.map((r,ri)=>{
+    const cell=rank.map((h,i)=>{
+      if(ri===0) return f2(h.us10y)+"%";
+      if(ri===1) return CS_FED[h.fed]||"–";
+      if(ri===2) return f2(h.cred)+"%";
+      if(ri===3) return (h.curve>0?"+":"")+f2(h.curve)+"%p";
+      if(ri===4) return num(h.vix,1);
+      if(ri===5) return pct(csAtDay(h,tr.days),1);
+      if(ri===6) return pct(h.mdd,1);
+      return h.days+"일";
+    });
+    return `<tr><td>${esc(r[0])}</td><td class="nw">${esc(r[1])}</td>${cell.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`;
+  }).join("");
+  const used={same:[],diff:[]};
+  const sd=rank.map((h,i)=>{ const x=csSameDiff(cur,h,used);
+    return `<div><span class="nm">${i+1}위 ${esc(h.n)}<i>${h.score}%</i></span><br>
+      <span class="k">같은 점</span>${esc(x.same||"뚜렷이 겹치는 항목은 없습니다.")}<br>
+      <span class="k">다른 점</span>${esc(x.diff||"눈에 띄게 갈리는 항목은 없습니다.")}</div>`; }).join("");
+  return `<h2 id="m_crash">유사 폭락장 · 현재 위치 <span class="muted">참고</span></h2>
+  <div class="panel csp">
+    <div class="cshd"><span>지금 하락은 과거 어느 장과 닮았나</span><span class="pill n">QQQ ${pct(tr.dd,1)} · ${tr.days}일차</span></div>
+    <p class="cssm">가장 닮은 장: <b>${esc(top.n)}형</b> (유사도 ${top.score}%)${tag? ` · ${esc(tag)}`:""}</p>
+    <p class="cssm muted" style="font-size:12px">${esc(tr.peak_date)} 고점 대비 ${pct(tr.dd,1)}. 같은 시점(${tr.days}일차) 낙폭은 <b>${esc(near.n)} ${pct(csAtDay(near,tr.days),1)}</b>에 가장 가깝습니다.</p>
+    ${csChart(rank, tr)}
+    <div class="csl">${legend}</div>
+    <table class="cst"><thead>${head}</thead><tbody>${body}</tbody></table>
+    <div class="cssd">${sd}</div>
+    <details class="mexp sm"><summary>설명 보기</summary><p>과거 5개 장(2022 금리인상·2018 연말 긴축·2000 닷컴버블·2008 금융위기·2020 코로나)의 QQQ 일봉 종가 실측 궤적과, 그 고점 시점의 거시값을 비교합니다. 유사도는 연준 금리 기조·10년물 수준·장단기차·신용 스프레드·하락 중 신용경색 동반 여부·구간 최고 VIX의 정규화 거리(가중치 0.28·0.20·0.15·0.15·0.12·0.10)입니다.</p><p>신용은 FRED의 무료 하이일드 이력이 2023년 11월부터라 과거 비교가 안 되어 Baa−10년 스프레드(1986~)로 통일했습니다. 2000·2008년은 그래프에 고점 후 250일까지만 그리고, 바닥까지의 최종 낙폭·기간은 범례에 적었습니다.</p><p>과거가 지금을 예고하지는 않습니다. 같은 모양이어도 낙폭과 기간이 크게 달랐으니(2018년 −23%/80일, 2000년 −83%/636일) 수비·매수 규칙은 지금 쓰는 기준을 그대로 따릅니다.</p></details>
   </div>`;
 }
 

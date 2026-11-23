@@ -128,6 +128,58 @@ def http_get(url, tries=2, timeout=20, headers=None):
     raise last
 
 
+# ---------- 유사 폭락장 궤적 (11-23 Ben) ----------
+# 거시 점검 탭 '유사 폭락장 · 현재 위치' 카드용. 최근 2년(약 504거래일) 최고 종가를 고점으로 잡고,
+# 고점일부터 최신 거래일까지 거래일차(0..N)와 고점 대비 하락률(%)을 담는다. 화면은 dd ≤ -15%일 때만 그린다.
+CRASH_LOOK = 504
+
+
+def crash_track(rows, vix_rows=None, macro=None):
+    c = [r[4] for r in rows]
+    n = len(c)
+    if n < 30:
+        raise ValueError("too few bars")
+    lo = max(0, n - CRASH_LOOK)
+    pk = max(range(lo, n), key=lambda i: c[i])
+    peak = c[pk]
+    pts = [[i - pk, round((c[i] / peak - 1) * 100, 1)] for i in range(pk, n)]
+    if len(pts) > 400:   # 아주 긴 하락이면 하루 걸러 담아 파일 크기를 묶는다 (마지막 날은 유지)
+        pts = pts[::2] + ([pts[-1]] if (len(pts) - 1) % 2 else [])
+    out = {"peak_date": rows[pk][0], "peak": round(peak, 2), "days": n - 1 - pk,
+           "dd": round((c[-1] / peak - 1) * 100, 1), "points": pts, "live": {}}
+    live = out["live"]
+    mk = macro or {}
+    # 10년물·장단기차·연준 기조는 이번 실행에서 이미 받아 둔 macro 값을 그대로 쓴다
+    if mk.get("dgs10", {}).get("v") is not None:
+        live["us10y"] = mk["dgs10"]["v"]
+    if mk.get("t10y2y", {}).get("v") is not None:
+        live["curve"] = mk["t10y2y"]["v"]
+    f = mk.get("fedu") or {}
+    ch = f.get("changes") or []
+    if ch:
+        try:
+            ago = (datetime.strptime(rows[-1][0], "%Y-%m-%d") - datetime.strptime(ch[-1]["date"], "%Y-%m-%d")).days
+        except Exception:  # noqa
+            ago = 999
+        live["fed"] = ("hike" if ch[-1]["delta"] > 0 else "cut") if ago <= 240 else "hold"
+        live["fedchg"] = ch[-1]["delta"]
+        live["fed_date"] = ch[-1]["date"]
+    if vix_rows:   # 고점 이후 최고 VIX — 과거 하락장의 '구간 최고 VIX'와 같은 방식
+        vs = [r[4] for r in vix_rows if r[0] >= out["peak_date"]]
+        if vs:
+            live["vix_max"] = round(max(vs), 1)
+    # 신용 스프레드: FRED 무료 하이일드 이력이 2023-11부터라 과거 비교는 Baa−10년(1986~)으로 통일한다
+    try:
+        baa = [x for x in fred("BAA10Y", out["peak_date"]) if x[0] >= out["peak_date"]]
+        if baa:
+            live["cred"] = round(baa[-1][1], 2)
+            live["cred0"] = round(baa[0][1], 2)
+            live["cred_max"] = round(max(x[1] for x in baa), 2)
+    except Exception as e:  # noqa
+        print("crash cred fail", e, flush=True)
+    return out
+
+
 # ---------- 소스 ----------
 def yahoo(sym, rng="10y"):
     """[(date, open, high, low, close, adjclose)]"""
@@ -1018,6 +1070,7 @@ def main():
         if sym not in known:
             roster.append((sym, BT_NAMES.get(sym, sym), "빅테크", "USD", "y"))
     hist, symbols, errors = {}, {}, []
+    crash_cur = None
     for sym, name, group, cur, src in roster:
         try:
             rng = "max" if sym in ("QQQ", "^IXIC", "QLD", "^VIX", "TQQQ", "SOXL") else "10y"
@@ -1180,11 +1233,19 @@ def main():
             print("bigtech", [f"{r['rank']}.{r['sym']}" for r in bt["rows"]], flush=True)
     except Exception as e:  # noqa
         print("bigtech fail", e, flush=True)
+    # 11-23 Ben: 유사 폭락장 카드용 궤적 (최근 2년 고점 이후 QQQ 하락률). macro·VIX가 다 모인 뒤에 계산한다
+    try:
+        crash_cur = crash_track(hist["QQQ"], hist.get("^VIX"), macro) if "QQQ" in hist else None
+        if crash_cur:
+            print("crash_track", crash_cur["peak_date"], crash_cur["days"], crash_cur["dd"], crash_cur["live"], flush=True)
+    except Exception as e:  # noqa
+        crash_cur = None
+        print("crash_track fail", e, flush=True)
     market = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fx": fx_live or {"usdkrw": symbols.get("KRW=X", {}).get("price")},
         "symbols": symbols, "macro": macro, "fng": fng, "sentiment": sent, "errors": errors,
-        "oversold": over, "bigtech": bt,
+        "oversold": over, "bigtech": bt, "crash_track": crash_cur,
         "snapshot": False,
     }
     with open(os.path.join(DATA, "market.json"), "w", encoding="utf-8") as f:
