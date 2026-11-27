@@ -1191,7 +1191,7 @@ const BANDS = {
 function bands(E){
   const b = BANDS[E.mode.name] || BANDS["공격"];
   const lt = E.acc.list.find(a=>a.id==="longterm"); const tot = lt?.val||0;
-  const bucket = t => ["QQQM","SPYM","QQQ","VOO","SPY","MGK"].includes(t)?"one": ["QLD","TQQQ"].includes(t)?"lev": ["SCHD","JEPI","JEPQ","DIVO","FDVV","VIG","DGRO","O","MO"].includes(t)?"div":"cash";
+  const bucket = t => ["QQQM","SPYM","QQQ","VOO","SPY","MGK","QNDX"].includes(t)?"one": ["QLD","TQQQ"].includes(t)?"lev": ["SCHD","JEPI","JEPQ","DIVO","FDVV","VIG","DGRO","O","MO"].includes(t)?"div":"cash";
   const cur = {one:0,lev:0,div:0,cash:lt?.cash||0};
   (lt?.pos||[]).forEach(p=>{ cur[bucket(p.t)] += p.v; });
   const rows = [["one","1배 지수"],["lev","레버리지"],["div","배당"],["cash","현금성"]].map(([k,n])=>({k,n,band:b[k],pct: tot? cur[k]/tot*100 : null}));
@@ -2261,7 +2261,7 @@ function accountsTable(compact){
 }
 /* ---------- 전체 합계 (Ben 2026-11-08) ---------- */
 const ASSET_CLASS = [
-  ["나스닥100", "#0f3d3e", ["QQQM","QQQ","426030","133690"]],
+  ["나스닥100", "#0f3d3e", ["QQQM","QQQ","QNDX","426030","133690"]],
   ["S&P500", "#3f7f7f", ["SPYM","SPY","VOO","360750","0137W0"]],
   ["배당", "#8a9a5b", ["SCHD","JEPI","JEPQ","DIVO","FDVV","DGRO","VIG","O","MO","458730"]],
   ["레버리지", "#b54708", ["QLD","TQQQ","SOXL"]],

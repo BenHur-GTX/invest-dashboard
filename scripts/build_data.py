@@ -27,6 +27,7 @@ SYMBOLS = [
     ("SPYM", "SPYM", "1배 지수", "USD", "y"),
     ("MGK", "MGK", "1배 지수", "USD", "y"),
     ("TOPT", "Top20", "1배 지수", "USD", "y"),   # 11-21 Ben: iShares Top 20 U.S. Stocks ETF. 시세 탭 표시용(적립·추천 규칙엔 넣지 않음)
+    ("QNDX", "QNDX (나스닥100 1배)", "1배 지수", "USD", "y"),   # 11-25 Ben 장투 보유. 시세·평가용(적립·추천 규칙엔 넣지 않음)
     # 섹터: SPDR 11개 섹터 + 반도체 SOXX (11-08 Ben, 중복 SMH 제외)
     ("XLK", "기술", "섹터", "USD", "y"),
     ("SOXX", "반도체", "섹터", "USD", "y"),
